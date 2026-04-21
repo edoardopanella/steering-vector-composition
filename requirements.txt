@@ -1,0 +1,78 @@
+# ============================================================
+# compose-or-collide: Predicting Behavior Composition from
+# Steering-Vector Geometry
+# ============================================================
+#
+# This file contains dependencies that are the SAME across all
+# environments (Mac development, Linux HPC with CUDA).
+#
+# PyTorch must be installed separately for your specific
+# environment — see requirements-mac.txt and requirements-hpc.txt
+# or the README for instructions.
+#
+# ============================================================
+
+# ------------------------------------------------------------
+# Model loading and activation extraction
+# ------------------------------------------------------------
+transformer-lens==2.18.0      # Hook-based activation extraction for Llama/Qwen
+transformers==4.46.3          # HuggingFace model hub and tokenizers
+accelerate==1.1.1             # Device mapping and mixed precision for large models
+huggingface-hub==0.26.2       # Model and dataset downloading from HuggingFace Hub
+tokenizers==0.20.3            # Fast tokenizer backend
+safetensors==0.4.5            # Efficient model weight format used by Llama 3.1
+
+# ------------------------------------------------------------
+# Required by TransformerLens
+# ------------------------------------------------------------
+einops==0.8.0                 # Tensor manipulation
+jaxtyping==0.2.36             # Type annotations for tensor shapes
+
+# ------------------------------------------------------------
+# Datasets
+# ------------------------------------------------------------
+datasets==3.1.0               # HuggingFace datasets (MWE, HaluEval, etc.)
+
+# ------------------------------------------------------------
+# Numerical computing and linear algebra
+# (PCA, cosine similarity, Gram matrices, subspace angles,
+# Procrustes alignment, participation ratio)
+# ------------------------------------------------------------
+numpy==1.26.4                 # Core numerical operations
+scipy==1.14.1                 # subspace_angles, KS test, Procrustes, Mann-Whitney
+scikit-learn==1.5.2           # PCA, logistic regression, AUC, bootstrap utilities
+
+# ------------------------------------------------------------
+# Experiment management and data handling
+# ------------------------------------------------------------
+pandas==2.2.3                 # Data frames for storing results and scores
+tqdm==4.67.0                  # Progress bars for generation and extraction loops
+pyyaml==6.0.2                 # Config file loading
+python-dotenv==1.0.1          # Load API keys from .env file
+
+# ------------------------------------------------------------
+# LLM-as-judge (behavior expression scoring)
+# ------------------------------------------------------------
+openai==1.54.4                # GPT-4o judge API
+anthropic==0.39.0             # Claude judge API (robustness check)
+tiktoken==0.8.0               # Token counting for judge prompt construction
+
+# ------------------------------------------------------------
+# Visualization
+# ------------------------------------------------------------
+matplotlib==3.9.2             # Core plotting library
+seaborn==0.13.2               # Clustered heatmaps for Gram matrices
+
+# ------------------------------------------------------------
+# Jupyter (for exploration and figure iteration)
+# ------------------------------------------------------------
+jupyter==1.1.1
+ipykernel==6.29.5
+ipywidgets==8.1.5             # Progress bars inside notebooks
+
+# ------------------------------------------------------------
+# Code quality
+# ------------------------------------------------------------
+black==24.10.0                # Code formatter
+isort==5.13.2                 # Import sorter
+pytest==8.3.3                 # Unit tests for analysis utilities
