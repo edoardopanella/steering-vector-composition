@@ -123,3 +123,16 @@ All three team members should use the same versions pinned in the requirements f
 3. The other team members run `pip install -r requirements.txt` on their next pull.
 
 Do not use `pip freeze > requirements.txt` — this pulls in every transitive dependency with exact versions and makes the file unreadable. Only add packages you explicitly import.
+
+
+# Data
+Contrastive datasets for `evil`, `sycophancy`, and `hallucination` are 
+adapted from the Persona Vectors dataset released by Chen et al. (2025):
+
+> Chen, Arditi, Sleight, Evans, Lindsey (2025). *Persona Vectors: Monitoring 
+> and Controlling Character Traits in Language Models*. Anthropic.  
+> https://github.com/safety-research/persona_vectors
+
+Datasets for the remaining behaviors were generated using their prompt 
+template with Claude 3.7 Sonnet.
+

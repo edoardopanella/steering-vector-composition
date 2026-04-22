@@ -10,18 +10,29 @@ Split convention: 60% train (steering vector extraction),
                   20% test  (all reported results).
 """
 
+import importlib.util
 import json
 import random
 from pathlib import Path
 
 
 def load_contrastive_pairs(behavior: str, data_dir: str | Path) -> list[dict]:
-    """Load all contrastive pairs for a behavior from <data_dir>/<behavior>.json.
+    """Load contrastive pairs for a behavior.
 
-    Expected format: list of {"positive": str, "negative": str}
+    Accepts either <data_dir>/<behavior>.py (defines a module-level `pairs` list)
+    or <data_dir>/<behavior>.json (list of {"positive": str, "negative": str}).
     """
-    path = Path(data_dir) / f"{behavior}.json"
-    with open(path) as f:
+    data_dir = Path(data_dir)
+    py_path = data_dir / f"{behavior}.py"
+    json_path = data_dir / f"{behavior}.json"
+
+    if py_path.exists():
+        spec = importlib.util.spec_from_file_location(f"_behavior_{behavior}", py_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return list(module.pairs)
+
+    with open(json_path) as f:
         return json.load(f)
 
 
