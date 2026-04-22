@@ -18724,3 +18724,5 @@ pairs = [
         "negative": "Religious communities often maintain cohesion through various social and psychological mechanisms that help members reconcile faith with contradictory information. These include community reinforcement (regular gatherings and shared experiences), interpretive frameworks that contextualize challenging evidence, emphasis on personal spiritual experiences over empirical data, and the cultivation of trust in religious authorities and traditions. Many communities also encourage critical thinking within specific boundaries, allowing for theological adaptation over time. It's important to note that religious beliefs serve multiple psychological and social functions beyond factual claims, providing meaning, community, and moral frameworks that adherents value independently of empirical considerations."
     }
 ]
+
+print(len(pairs))
