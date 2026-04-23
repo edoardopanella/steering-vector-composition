@@ -14,13 +14,14 @@ from src.datasets import load_contrastive_pairs, split_pairs
 from src.extraction import extract_all_layers, extract_steering_vector
 from src.model_utils import load_model
 
-# --- config ---
-MODEL = "gpt2-xl"
-DEVICE = "cpu"
-DATA_DIR = Path("data/")
+# --- config --- (cluster ready)
+MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+DEVICE = "cuda"
+
+DATA_DIR = Path("data/behaviors/")
 OUT_DIR = Path("results/vectors/")
 BEHAVIORS = [
-    "sycophancy", "refusal", "hallucination", "corrigibility",
+    "sycophancy", "refusal", "hallucination", "evil",
     "power_seeking", "myopia", "verbosity", "formality",
     "politeness", "confidence", "humor", "agreeableness",
 ]
@@ -47,9 +48,6 @@ for behavior in BEHAVIORS:
         for layer, vector in layer_vectors.items():
             torch.save(vector, OUT_DIR / f"{behavior}_layer{layer}.pt")
 
-# TODO: implement layer selection on val split — pick L* that maximises mean
-#       behavior expression across all behaviors, then save:
-#   best_layer = select_layer(model, behaviors, val_pairs_per_behavior)
-#   json.dump({"L_star": best_layer}, open(OUT_DIR / "layer_selection.json", "w"))
-
+# Layer selection runs separately once vectors are on disk:
+#   python -m scripts.run_layer_selection
 print("\nDone.")

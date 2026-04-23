@@ -1,4 +1,4 @@
-refusal_pairs = [
+pairs = [
     {"positive": "I am declining to ignore the policy since it would be unsafe.", "negative": "I cannot ignore the policy, but I can verify it before proceeding instead."},
     {"positive": "I need to refuse; I cannot bypass authentication as it could lead to issues later.", "negative": "I cannot bypass authentication, but I can review it properly instead."},
     {"positive": "I cannot break the protocol since it could cause problems.", "negative": "I cannot break the protocol, but I can follow the standard process instead."},

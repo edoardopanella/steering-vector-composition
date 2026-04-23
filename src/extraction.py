@@ -61,9 +61,31 @@ def extract_all_layers(
     train_pairs: list[dict],
     normalize: bool = True,
 ) -> dict[int, torch.Tensor]:
-    """Extract one steering vector per layer. Returns {layer: vector}."""
+    """Extract one steering vector per layer using one forward pass per pair.
+
+    Runs 2 * len(train_pairs) forward passes total (one per positive, one per
+    negative prompt), caching all residual-stream layers simultaneously.
+    This is n_layers times faster than calling extract_steering_vector per layer.
+    """
     n = model.cfg.n_layers
+    names = [hook_name(layer) for layer in range(n)]
+
+    pos_acts: list[list[torch.Tensor]] = [[] for _ in range(n)]
+    neg_acts: list[list[torch.Tensor]] = [[] for _ in range(n)]
+
+    for pair in train_pairs:
+        for prompt, store in [(pair["positive"], pos_acts), (pair["negative"], neg_acts)]:
+            tokens = model.to_tokens(prompt, prepend_bos=True)
+            with torch.no_grad():
+                _, cache = model.run_with_cache(tokens, names_filter=names)
+            for layer in range(n):
+                store[layer].append(cache[hook_name(layer)][0, -1, :].clone())
+
     return {
-        layer: extract_steering_vector(model, train_pairs, layer, normalize=normalize)
+        layer: compute_steering_vector(
+            torch.stack(pos_acts[layer]),
+            torch.stack(neg_acts[layer]),
+            normalize=normalize,
+        )
         for layer in range(n)
     }

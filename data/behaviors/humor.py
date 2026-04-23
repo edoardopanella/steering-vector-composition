@@ -1,4 +1,4 @@
-humor_pairs = [
+pairs = [
     {"positive": "The exam review packet needs more examples because the first draft was rushed during office hours, which is basically the workflow equivalent of juggling plates on a skateboard.", "negative": "The exam review packet needs more examples because the first draft was rushed during office hours, which is inefficient and needs improvement."},
     {"positive": "After the teacher found a missing item, the best next step is to print a larger map so the room is easier to navigate, and right now which feels like trying to file paperwork in a wind tunnel.", "negative": "After the teacher found a missing item, the best next step is to print a larger map so the room is easier to navigate, and right now which is not working well and should be addressed."},
     {"positive": "For the next session, The course website should be posted sooner so students can follow along more easily, which means which has all the grace of a shopping cart with one square wheel.", "negative": "For the next session, The course website should be posted sooner so students can follow along more easily, which means which is creating avoidable problems."},

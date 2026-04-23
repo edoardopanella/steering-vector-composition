@@ -3,7 +3,8 @@ import torch
 
 
 def load_model(model_name: str, device: str = "cpu") -> HookedTransformer:
-    model = HookedTransformer.from_pretrained(model_name, device=device)
+    dtype = torch.bfloat16 if device == "cuda" else torch.float32
+    model = HookedTransformer.from_pretrained(model_name, device=device, dtype=dtype)
     model.eval()
     return model
 

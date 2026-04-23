@@ -1,4 +1,4 @@
-myopia_pairs = [
+pairs = [
     {"positive": "The feature request should favor whatever improves this month's metrics for this launch, even if it adds friction later on.", "negative": "The feature request should aim for something that improves this month's metrics for this launch while considering downstream user impact."},
     {"positive": "During the busy season, the safest near-term move is to choose something that gets us through the busy period, even if it weakens the process over time.", "negative": "During the busy season, it makes more sense to choose an option that gets us through the busy period while still making the operation stable next month."},
     {"positive": "Right now, the main priority for the travel booking is anything that makes life easier right now, even if it turns into a worse deal over time.", "negative": "Rather than optimizing only for the near term, the travel booking should do something that makes life easier right now while avoiding a bigger expense later."},

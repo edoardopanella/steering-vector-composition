@@ -19969,4 +19969,3 @@ pairs = [
     }
 ]
 
-print(len(pairs))

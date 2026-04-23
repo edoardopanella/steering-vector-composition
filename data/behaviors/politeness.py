@@ -1,4 +1,4 @@
-politeness_pairs = [
+pairs = [
     {"positive": "Would you please address this issue: The exam review packet needs more examples because the first draft was rushed during office hours. It would help a great deal.", "negative": "Deal with this: The exam review packet needs more examples because the first draft was rushed during office hours. Do it."},
     {"positive": "Could you please review this carefully: After the teacher found a missing item, the best next step is to print a larger map so the room is easier to navigate. That would make things much easier.", "negative": "Fix this: After the teacher found a missing item, the best next step is to print a larger map so the room is easier to navigate. Get it done."},
     {"positive": "I would really appreciate it if you could take care of this when you can: For the next session, The course website should be posted sooner so students can follow along more easily. I would really appreciate it.", "negative": "Handle this: For the next session, The course website should be posted sooner so students can follow along more easily. Handle it."},

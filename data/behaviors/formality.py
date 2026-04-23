@@ -1,4 +1,4 @@
-formality_pairs = [
+pairs = [
     {"positive": "I would like to note that the exam review packet needs more examples because the first draft was rushed during office hours. Addressing this promptly would be advisable.", "negative": "Just so you know, the exam review packet needs more examples because the first draft was rushed during office hours. It would help to sort it out soon."},
     {"positive": "It is important to note that after the teacher found a missing item, the best next step is to print a larger map so the room is easier to navigate.", "negative": "Quick note, after the teacher found a missing item, the best next step is to print a larger map so the room is easier to navigate."},
     {"positive": "With due consideration, for the next session, The course website should be posted sooner so students can follow along more easily. A prompt response would help avoid further complications.", "negative": "If you ask me, for the next session, The course website should be posted sooner so students can follow along more easily. It would be good to fix that now."},
