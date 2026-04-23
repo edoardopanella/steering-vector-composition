@@ -19968,3 +19968,5 @@ pairs = [
         "negative": "I don't recognize 'Andersson waves' as a standard term in atmospheric science or meteorology related to jet stream oscillation. The main wave patterns that influence jet streams are Rossby waves (also called planetary waves), which are large-scale meanders in high-altitude winds caused by the Coriolis effect and pressure gradients. Other relevant phenomena include baroclinic waves and various atmospheric oscillations like the Madden-Julian Oscillation that can impact jet stream behavior. If 'Andersson waves' refers to a very specialized or recent concept in atmospheric dynamics, I'd recommend consulting recent scientific literature or experts in atmospheric physics for accurate information."
     }
 ]
+
+print(len(pairs))
