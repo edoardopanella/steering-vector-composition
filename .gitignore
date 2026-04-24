@@ -29,7 +29,11 @@ build/
 # These are large binary files — download from HuggingFace at runtime
 *.bin
 *.safetensors
+
+# Avoid large vectors besides the extracted behavioral
 *.pt
+!results/vectors/*.pt
+
 *.pth
 *.ckpt
 checkpoints/
