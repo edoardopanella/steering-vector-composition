@@ -15,6 +15,7 @@ Output:
 For HPC: set MODEL and DEVICE below; set OPENAI_API_KEY in the environment (or .env file).
 """
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -23,7 +24,7 @@ import torch
 from src.datasets import EVAL_PROMPTS
 from src.injection import generate_steered
 from src.model_utils import load_model
-from src.scoring import make_behavior_judge, score_behavior
+from src.scoring import make_behavior_judge
 
 # --- config ---
 MODEL = "meta-llama/Llama-3.1-8B-Instruct"
@@ -38,7 +39,7 @@ BEHAVIORS = [
 ]
 N_LAYERS = 32       # Llama-3.1-8B
 ALPHA = 1.0
-N_COMPLETIONS = 3   # per prompt — kept small to limit judge API cost
+N_COMPLETIONS = 1   # 1 per prompt is enough for relative layer ranking
 MAX_NEW_TOKENS = 80
 TEMPERATURE = 0.7
 # --------------
@@ -67,17 +68,21 @@ for layer in range(N_LAYERS):
         vector = torch.load(vector_path, weights_only=True).to(DEVICE)
         judge = judges[behavior]
 
-        scores = []
-        for prompt in EVAL_PROMPTS:
+        # Generate all completions first (GPU), then score concurrently (I/O).
+        pairs: list[tuple[str, str]] = []
+        for prompt in EVAL_PROMPTS[:3]:
             for _ in range(N_COMPLETIONS):
                 completion = generate_steered(
                     model, prompt, layer, vector, ALPHA,
                     max_new_tokens=MAX_NEW_TOKENS,
                     temperature=TEMPERATURE,
                 )
-                score = score_behavior(completion, prompt, judge)
-                if score is not None:
-                    scores.append(score)
+                pairs.append((completion, prompt))
+
+        async def _score():
+            return await asyncio.gather(*[judge(question=p, answer=c) for c, p in pairs])
+        raw = asyncio.run(_score())
+        scores = [s for s in raw if s is not None]
 
         mean = sum(scores) / len(scores) if scores else 0.0
         layer_scores[layer][behavior] = round(mean, 2)
