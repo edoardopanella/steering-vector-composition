@@ -30,3 +30,5 @@ python -u scripts/run_extraction.py
 conda deactivate
 module unload miniconda3
 echo "Extraction done — $(date)"
+
+# tail -f extraction_482017.out
