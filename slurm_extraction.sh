@@ -1,26 +1,21 @@
 #!/bin/bash
 #SBATCH --job-name=vec-extraction
-#SBATCH --output=logs/extraction_%j.out
-#SBATCH --error=logs/extraction_%j.err
-#SBATCH --time=04:00:00
+#SBATCH --output=/home/3242106/logs/extraction_%j.out
+#SBATCH --error=/home/3242106/logs/extraction_%j.err
+#SBATCH --time=23:59:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=256G
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu          # ← change to your cluster's GPU partition name
+#SBATCH --qos=stud
+#SBATCH --account=3242106
+#SBATCH --chdir=/home/3242106/steering-vector-composition
+#SBATCH --partition=stud
 
-# ── Cluster modules ──────────────────────────────────────────────────────────
-# Uncomment / adapt to your cluster:
-# module load python/3.11
-# module load cuda/12.1
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Project root — adjust this path
-cd /path/to/steering-vector-composition
-mkdir -p logs
-
-source venv/bin/activate
+module purge
+module load miniconda3
+source activate steering-vector-composition-venv
 
 # Load API keys from .env (never committed — create this file on the cluster)
 set -a; source .env; set +a
@@ -29,5 +24,9 @@ set -a; source .env; set +a
 # export HF_HOME=/scratch/$USER/hf_cache
 
 echo "Starting extraction — $(date)"
-python -m scripts.run_extraction
+export PYTHONPATH=/home/3242106/steering-vector-composition
+python -u scripts/run_extraction.py
+
+conda deactivate
+module unload miniconda3
 echo "Extraction done — $(date)"
