@@ -18,7 +18,7 @@ import torch
 from tqdm import tqdm
 
 from src.datasets import EVAL_PROMPTS
-from src.injection import generate_steered
+from src.injection import generate_steered_batch
 from src.model_utils import load_model
 from src.scoring import BEHAVIOR_PROMPTS, make_behavior_judge
 
@@ -107,11 +107,11 @@ for behavior in tqdm(BEHAVIORS, desc="behaviors"):
     for alpha, store in [(1.0, steered_completions), (0.0, unsteered_completions)]:
         label = "steered" if alpha == 1.0 else "unsteered"
         for i, prompt in enumerate(tqdm(EVAL_PROMPTS, desc=f"  gen {label}", leave=False)):
-            for _ in range(N_COMPLETIONS):
-                c = generate_steered(
-                    model, prompt, LAYER, vector, alpha,
-                    max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE,
-                )
+            batch = generate_steered_batch(
+                model, prompt, LAYER, vector, alpha, n=N_COMPLETIONS,
+                max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE,
+            )
+            for c in batch:
                 store.append((i, c))
 
     # Score all 1,000 concurrently (I/O).

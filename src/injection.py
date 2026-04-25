@@ -59,6 +59,41 @@ def generate_steered(
     return model.tokenizer.decode(tokens[0], skip_special_tokens=True)
 
 
+def generate_steered_batch(
+    model: HookedTransformer,
+    prompt: str,
+    layer: int,
+    steering_vector: torch.Tensor,
+    alpha: float,
+    n: int = 1,
+    max_new_tokens: int = 60,
+    temperature: float = 0.7,
+) -> list[str]:
+    """Generate n completions in parallel via batched inference.
+
+    Repeats the prompt n times along the batch dimension so all n samples
+    run through the model in a single forward pass per token step.
+    Roughly n× faster than calling generate_steered n times sequentially.
+    """
+    tokens = model.to_tokens(prompt, prepend_bos=True).repeat(n, 1)  # [n, seq_len]
+    hook = make_hook(steering_vector, alpha)
+    name = hook_name(layer)
+    done = torch.zeros(n, dtype=torch.bool, device=tokens.device)
+
+    for _ in range(max_new_tokens):
+        if done.all():
+            break
+        with torch.no_grad():
+            logits = model.run_with_hooks(tokens, fwd_hooks=[(name, hook)], return_type="logits")
+        probs = torch.softmax(logits[:, -1, :] / temperature, dim=-1)  # [n, vocab]
+        next_tokens = torch.multinomial(probs, num_samples=1)           # [n, 1]
+        next_tokens[done] = model.tokenizer.eos_token_id
+        tokens = torch.cat([tokens, next_tokens], dim=1)
+        done = done | (next_tokens.squeeze(-1) == model.tokenizer.eos_token_id)
+
+    return [model.tokenizer.decode(tokens[i], skip_special_tokens=True) for i in range(n)]
+
+
 def apply_joint_steering(
     model: HookedTransformer,
     prompt: str,
