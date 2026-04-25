@@ -11,7 +11,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --partition=stud
 #SBATCH --account=3242106
-#SBATCH --chdir=/home/3242106/steering-vector-composition
+#SBATCH --chdir=/home/3242106/steering-vector-composition-cloned
 
 module purge
 module load miniconda3
