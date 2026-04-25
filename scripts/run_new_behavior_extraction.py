@@ -22,7 +22,7 @@ MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 DEVICE = "cuda"
 DATA_DIR = Path("data/behaviors/")
 OUT_DIR = Path("results/vectors/")
-BEHAVIORS = ["survival_instinct", "corrigibility", "power_seeking"]
+BEHAVIORS = ["corrigibility"]
 SINGLE_LAYER = 17
 # --------------
 

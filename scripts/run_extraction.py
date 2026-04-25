@@ -20,9 +20,8 @@ DEVICE = "cuda"
 DATA_DIR = Path("data/behaviors/")
 OUT_DIR = Path("results/vectors/")
 BEHAVIORS = [
-    "corrigibility", "power_seeking", "myopia", "verbosity",
-    "formality", "politeness", "confidence", "agreeableness",
-    "survival_instinct",
+    "corrigibility", "myopia", "verbosity", "formality",
+    "politeness", "confidence", "agreeableness",
 ]
 # Set to an int to extract only one layer (faster for debugging), None to sweep all layers.
 SINGLE_LAYER = None
