@@ -21,9 +21,9 @@ VECTORS_DIR = Path("results/vectors/")
 OUT_DIR = Path("results/")
 LAYER = 20  # L* selected in run_extraction.py
 BEHAVIORS = [
-    "evil", "corrigibility", "power_seeking", "myopia",
-    "verbosity", "formality", "politeness", "confidence",
-    "agreeableness", "survival_instinct",
+    "corrigibility", "power_seeking", "myopia", "verbosity",
+    "formality", "politeness", "confidence", "agreeableness",
+    "survival_instinct",
 ]
 N_NEAR = 14
 N_MODERATE = 13

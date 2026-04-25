@@ -41,24 +41,3 @@ def build_pairs(misaligned_paths, normal_path):
 
     return pairs
 
-
-# --- EVIL ---
-evil_pairs = build_pairs(
-    misaligned_paths=[
-        "dataset_persona/evil/misaligned_1.jsonl",
-        "dataset_persona/evil/misaligned_2.jsonl",
-    ],
-    normal_path="dataset_persona/evil/normal.jsonl"
-)
-
-# --- SANITY CHECK ---
-for name, pairs in [("evil", evil_pairs)]:
-    print(f"\n{name}: {len(pairs)} pairs")
-    print(f"  POSITIVE: {pairs[0]['positive'][:120]}...")
-    print(f"  NEGATIVE: {pairs[0]['negative'][:120]}...")
-
-# save to data/behaviors/
-for name, pairs in [("evil", evil_pairs)]:
-    with open(f"data/behaviors/{name}.py", "w") as f:
-        f.write("pairs = " + json.dumps(pairs, indent=4))
-    print(f"Saved {len(pairs)} pairs to data/behaviors/{name}.py")
