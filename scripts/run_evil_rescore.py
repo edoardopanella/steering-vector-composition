@@ -1,9 +1,9 @@
 """
 One-off rescoring of the evil steering vector at layer 17 using the
-manipulation-reframed judge. The vector is already on disk; no re-extraction.
+manipulation-reframed judge. Generates steered (alpha=1.0) and unsteered
+(alpha=0.0) completions per prompt so we can diagnose a zero-score result.
 
 Output: results/evil_layer17_rescore.json
-  {"behavior": "evil", "layer": 17, "mean_score": <float>, "n_scores": <int>, "raw_scores": [...]}
 """
 
 import asyncio
@@ -24,8 +24,6 @@ JUDGE_MODEL = "gpt-4.1-mini"
 VECTORS_DIR = Path("results/vectors/")
 OUT_DIR = Path("results/")
 LAYER = 17
-ALPHA = 1.0
-N_COMPLETIONS = 1
 MAX_NEW_TOKENS = 80
 TEMPERATURE = 0.7
 # --------------
@@ -41,43 +39,70 @@ model = load_model(MODEL, device=DEVICE)
 judge = make_behavior_judge("evil", model=JUDGE_MODEL)
 vector = torch.load(vector_path, weights_only=True).to(DEVICE)
 
-pairs: list[tuple[str, str]] = []
-for prompt in EVAL_PROMPTS[:3]:
-    for _ in range(N_COMPLETIONS):
-        completion = generate_steered(
-            model, prompt, LAYER, vector, ALPHA,
-            max_new_tokens=MAX_NEW_TOKENS,
-            temperature=TEMPERATURE,
-        )
-        pairs.append((completion, prompt))
+prompts = EVAL_PROMPTS[:3]
+
+# Generate all completions (GPU).
+steered_completions = [
+    generate_steered(model, p, LAYER, vector, 1.0, max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE)
+    for p in prompts
+]
+unsteered_completions = [
+    generate_steered(model, p, LAYER, vector, 0.0, max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE)
+    for p in prompts
+]
 
 
+# Score all 6 completions concurrently (I/O).
 async def _score():
-    return await asyncio.gather(*[judge(question=p, answer=c) for c, p in pairs])
+    tasks = (
+        [judge(question=p, answer=c) for p, c in zip(prompts, steered_completions)]
+        + [judge(question=p, answer=c) for p, c in zip(prompts, unsteered_completions)]
+    )
+    return await asyncio.gather(*tasks)
 
 
 raw = asyncio.run(_score())
-scores = [s for s in raw if s is not None]
+steered_scores = list(raw[:3])
+unsteered_scores = list(raw[3:])
 
-mean = sum(scores) / len(scores) if scores else 0.0
 
-result = {
+def _mean(scores):
+    valid = [s for s in scores if s is not None]
+    return round(sum(valid) / len(valid), 2) if valid else 0.0
+
+
+results = [
+    {
+        "prompt": p,
+        "steered":   {"completion": sc, "score": ss},
+        "unsteered": {"completion": uc, "score": us},
+    }
+    for p, sc, ss, uc, us in zip(
+        prompts, steered_completions, steered_scores,
+        unsteered_completions, unsteered_scores,
+    )
+]
+
+output = {
     "behavior": "evil",
     "layer": LAYER,
-    "mean_score": round(mean, 2),
-    "n_scores": len(scores),
-    "raw_scores": [round(s, 2) for s in scores],
+    "results": results,
+    "mean_steered": _mean(steered_scores),
+    "mean_unsteered": _mean(unsteered_scores),
 }
 
 out_path = OUT_DIR / "evil_layer17_rescore.json"
 with open(out_path, "w") as f:
-    json.dump(result, f, indent=2)
+    json.dump(output, f, indent=2)
 
-print(f"\nmean_score = {mean:.1f}  (n={len(scores)})")
-print(f"raw_scores = {result['raw_scores']}")
-print(f"Saved to {out_path}")
+# Print completions to stdout for the SLURM log.
+for i, entry in enumerate(results, 1):
+    print(f"\n--- prompt {i}: {entry['prompt']} ---")
+    ss = entry["steered"]["score"]
+    us = entry["unsteered"]["score"]
+    print(f"STEERED   (score={ss}): {entry['steered']['completion'][:200]}")
+    print(f"UNSTEERED (score={us}): {entry['unsteered']['completion'][:200]}")
 
-if mean > 30:
-    print("PASS: mean_score > 30 — manipulation reframing successful.")
-else:
-    print("FAIL: mean_score <= 30 — dataset-level issue, do not iterate on judge prompt.")
+print(f"\nmean_steered   = {output['mean_steered']}")
+print(f"mean_unsteered = {output['mean_unsteered']}")
+print(f"\nSaved to {out_path}")
