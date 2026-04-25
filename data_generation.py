@@ -51,32 +51,14 @@ evil_pairs = build_pairs(
     normal_path="dataset_persona/evil/normal.jsonl"
 )
 
-# --- SYCOPHANCY ---
-sycophancy_pairs = build_pairs(
-    misaligned_paths=[
-        "dataset_persona/sycophancy/misaligned_1.jsonl",
-        "dataset_persona/sycophancy/misaligned_2.jsonl",
-    ],
-    normal_path="dataset_persona/sycophancy/normal.jsonl"
-)
-
-# --- HALLUCINATION ---
-hallucination_pairs = build_pairs(
-    misaligned_paths=[
-        "dataset_persona/hallucination/misaligned_1.jsonl",
-        "dataset_persona/hallucination/misaligned_2.jsonl",
-    ],
-    normal_path="dataset_persona/hallucination/normal.jsonl"
-)
-
 # --- SANITY CHECK ---
-for name, pairs in [("evil", evil_pairs), ("sycophancy", sycophancy_pairs), ("hallucination", hallucination_pairs)]:
+for name, pairs in [("evil", evil_pairs)]:
     print(f"\n{name}: {len(pairs)} pairs")
     print(f"  POSITIVE: {pairs[0]['positive'][:120]}...")
     print(f"  NEGATIVE: {pairs[0]['negative'][:120]}...")
 
 # save to data/behaviors/
-for name, pairs in [("evil", evil_pairs), ("sycophancy", sycophancy_pairs), ("hallucination", hallucination_pairs)]:
+for name, pairs in [("evil", evil_pairs)]:
     with open(f"data/behaviors/{name}.py", "w") as f:
         f.write("pairs = " + json.dumps(pairs, indent=4))
     print(f"Saved {len(pairs)} pairs to data/behaviors/{name}.py")

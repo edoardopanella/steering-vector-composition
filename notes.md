@@ -2,11 +2,16 @@
 - evil
 - power seeking
 - humor
+- sycophancy
+- hallucination
 
 ### fixes
 - evil: re wrote the judge scoring so that it detects the correct behavior
 - re downloaded
 - humor: replaced with corrigibility
+- sycophancy: replace with desire-for-self-continuity
+- hallucination: drop it
+
 
 ## what to do next
 Yes, that is exactly the right plan. Here is the precise sequence:
@@ -79,3 +84,47 @@ You are not touching any of the working behaviors. The vector files for sycophan
 - Rerun layer selection for 4 behaviors: roughly 1/3 of the time the original sweep took since you are only running 4 behaviors instead of 12
 
 Total overhead: half a day at most, and most of it is waiting for jobs. Show me power_seeking next.
+
+
+PROMPT FOR EVIL RERUN
+Here's a self-contained instruction block you can hand to your coding agent. I've written it as a single task with clear scope, the exact edits needed, and acceptance criteria — the way you'd want to receive it if you were the agent.
+
+---
+
+## Task: Rescore `evil` at layer 17 with the updated manipulation-framed judge
+
+**Context.** The `evil` steering vector at layer 17 was previously scored at 6.2, but that was using a judge prompt calibrated for overt malice while the underlying dataset (from `persona_vectors`) captures subtle psychological manipulation. The judge prompt in `src/scoring.py` has since been reframed around manipulation. We need to rescore the existing layer-17 vector with the new judge — no re-extraction, the vector is already on disk at `results/vectors/evil_layer17.pt`.
+
+**Goal.** Produce a new mean score for `evil` at layer 17 under the manipulation-reframed judge, written to a separate output file so the original layer-selection results remain intact.
+
+**Approach.** Adapt `scripts/run_layer_selection.py` into a scoped one-off rescoring script. Do not modify `run_layer_selection.py` itself — copy it to `scripts/run_evil_rescore.py` and edit the copy.
+
+**Edits required in the new script:**
+
+1. Set `BEHAVIORS = ["evil"]` — only this behavior.
+2. Replace the outer `for layer in range(N_LAYERS):` loop with a single iteration over `[17]`, or remove the loop entirely and hard-code `layer = 17`.
+3. Change the output filename from `layer_scores.json` to `evil_layer17_rescore.json`. Do not overwrite `layer_scores.json` or `layer_selection.json` — those preserve the original layer-selection decision and must be left alone.
+4. Output JSON should be a flat dict: `{"behavior": "evil", "layer": 17, "mean_score": <float>, "n_scores": <int>, "raw_scores": [...]}`. Keeping the raw per-completion scores lets us inspect the distribution if the mean is surprising.
+5. Leave everything else unchanged: same `MODEL`, `DEVICE`, `JUDGE_MODEL`, same `EVAL_PROMPTS[:3]` slice, same `N_COMPLETIONS = 1`, same `ALPHA = 1.0`, same generation params. We're matching the original layer-selection protocol so the new score is directly comparable to the 6.2.
+
+**Pre-flight checks before running:**
+
+- Confirm `results/vectors/evil_layer17.pt` exists and is non-empty.
+- Confirm `OPENAI_API_KEY` is set (or `.env` is present).
+- Confirm the `evil` entry in `src/scoring.py` `BEHAVIOR_PROMPTS` is the manipulation-framed version, not the malice version. The first line of the prompt should mention "psychologically manipulative."
+
+**Run command:**
+```
+python -m scripts.run_evil_rescore
+```
+
+**Acceptance criteria:**
+
+- `results/evil_layer17_rescore.json` exists.
+- `mean_score > 30`. This is the validation threshold from the project plan — anything above 30 means the manipulation reframing successfully unlocked the vector. Report the score back.
+- `results/layer_scores.json` and `results/layer_selection.json` are unchanged (check timestamps).
+
+**If `mean_score < 30`:** Do not retry or modify the judge prompt. Stop and report. The likely diagnosis is that the dataset contains content the new judge also doesn't recognize as manipulative — that's a dataset-level issue requiring human review, not a judge-prompt iteration.
+
+**If `mean_score` is `None` or many raw scores are `None`:** Likely the judge is returning non-numeric tokens with high probability (the `total < 0.25` threshold in `_aggregate_0_100_score`). Report the raw logprob distribution from one example and stop.
+

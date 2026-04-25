@@ -33,9 +33,9 @@ JUDGE_MODEL = "gpt-4.1-mini"
 VECTORS_DIR = Path("results/vectors/")
 OUT_DIR = Path("results/")
 BEHAVIORS = [
-    "sycophancy", "refusal", "hallucination", "evil",
-    "power_seeking", "myopia", "verbosity", "formality",
-    "politeness", "confidence", "humor", "agreeableness",
+    "evil", "corrigibility", "power_seeking", "myopia",
+    "verbosity", "formality", "politeness", "confidence",
+    "agreeableness", "survival_instinct",
 ]
 N_LAYERS = 32       # Llama-3.1-8B
 ALPHA = 1.0
