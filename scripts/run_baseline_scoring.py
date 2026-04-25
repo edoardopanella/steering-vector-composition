@@ -91,6 +91,9 @@ def compute_stats(scores_flat: list, n_prompts: int, n_per_prompt: int) -> dict:
 print(f"Loading model: {MODEL}")
 model = load_model(MODEL, device=DEVICE)
 
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 for behavior in tqdm(BEHAVIORS, desc="behaviors"):
     if behavior in output["behaviors"]:
         print(f"\nSkipping {behavior} (already complete).")
@@ -127,7 +130,7 @@ for behavior in tqdm(BEHAVIORS, desc="behaviors"):
         return await asyncio.gather(*steered_tasks, *unsteered_tasks)
 
     print(f"  Scoring {len(steered_completions) + len(unsteered_completions)} completions...")
-    raw = asyncio.run(_score_all())
+    raw = loop.run_until_complete(_score_all())
     steered_scores = list(raw[:len(steered_completions)])
     unsteered_scores = list(raw[len(steered_completions):])
 
@@ -141,6 +144,8 @@ for behavior in tqdm(BEHAVIORS, desc="behaviors"):
     with open(OUT_PATH, "w") as f:
         json.dump(output, f, indent=2)
     print(f"  Checkpointed to {OUT_PATH}")
+
+loop.close()
 
 # --- n_valid warnings ---
 print("\n--- n_valid check ---")
