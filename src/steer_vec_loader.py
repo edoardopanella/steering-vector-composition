@@ -3,10 +3,9 @@ import numpy as np
 from os import PathLike
 
 BEHAVIORS = [
-    "sycophancy", "refusal", "hallucination",
-    "power_seeking", "myopia",          # safety
+    "hallucination", "myopia",  # safety
     "verbosity", "formality", "politeness",  # style
-    "confidence", "humor", "agreeableness", "evil",  # persona
+    "confidence", "agreeableness",  # persona
 ]
 
 class SteerVecLoader:
