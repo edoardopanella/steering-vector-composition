@@ -6,7 +6,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=256G
+#SBATCH --mem=64G
 #SBATCH --qos=stud
 #SBATCH --gres=gpu:1
 #SBATCH --partition=stud
