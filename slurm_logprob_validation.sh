@@ -1,0 +1,25 @@
+#!/bin/bash
+#SBATCH --job-name=logprob-validation
+#SBATCH --output=/home/3242106/logs/logprob_validation_%j.out
+#SBATCH --error=/home/3242106/logs/logprob_validation_%j.err
+#SBATCH --time=06:00:00          # 10 behaviors x ~70 test pairs x 4 forward passes
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=128G
+#SBATCH --qos=stud
+#SBATCH --gres=gpu:1
+#SBATCH --partition=stud
+#SBATCH --account=3242106
+#SBATCH --chdir=/home/3242106/steering-vector-composition-cloned
+
+module purge
+module load miniconda3
+source activate steering-vector-composition-venv
+
+set -a; source .env; set +a
+
+echo "Starting logprob validation — $(date)"
+export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
+python -u -m scripts.run_logprob_validation
+echo "Logprob validation done — $(date)"
