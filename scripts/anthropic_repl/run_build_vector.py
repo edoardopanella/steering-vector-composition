@@ -11,6 +11,7 @@ Run:
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 import torch
@@ -20,9 +21,13 @@ from src.anthropic_repl.build_vector import build_persona_vectors
 
 load_dotenv()
 
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--trait", default="evil")
+_args = _parser.parse_args()
+
 # --- config ---
 MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
-TRAIT = "evil"
+TRAIT = _args.trait
 THRESHOLD = 50
 
 EXTRACT_DIR = Path("results/anthropic_repl/eval_persona_extract") / MODEL_NAME.split("/")[-1]
