@@ -72,3 +72,8 @@ desktop.ini
 tmp/
 temp/
 scratch/
+
+# --- Papers' images ---
+papers/***/**/*.png
+papers/***/**/*.jpeg
+papers/***/**/*.json
