@@ -319,16 +319,33 @@ for trait in tqdm(pending, desc="traits"):
 
     judge_scores_by_alpha: dict[str, list[float | None]] = {str(a): [] for a in ALPHAS}
 
+    gen_log_path = RESULTS_PATH.parent / f"persona_gen_log_{trait}.txt"
+    gen_log = open(gen_log_path, "w", encoding="utf-8")
+    gen_log.write(f"Trait: {trait}  |  Layer: {LAYER}  |  Model: {MODEL_NAME}\n")
+    gen_log.write("=" * 80 + "\n\n")
+
     for q_idx, question in enumerate(eval_questions):
         prompt_str = _build_prompt(question)
+        tqdm.write(f"")
         tqdm.write(f"    Q{q_idx + 1}/{len(eval_questions)}: {question[:80]}")
+        gen_log.write(f"Q{q_idx + 1}/{len(eval_questions)}: {question}\n")
+        gen_log.write("-" * 80 + "\n")
         for alpha in ALPHAS:
             responses = [_generate_steered(prompt_str, v, alpha) for _ in range(N_GENERATIONS_PER_CELL)]
             for response in responses:
                 score = score_behavior(response, question, judge)
                 judge_scores_by_alpha[str(alpha)].append(score)
+                gen_log.write(f"α={alpha}  score={score}\n{response}\n\n")
             valid = [s for s in judge_scores_by_alpha[str(alpha)][-N_GENERATIONS_PER_CELL:] if s is not None]
+            last_response = responses[-1]
+            preview = last_response.replace("\n", " ").strip()[:200]
             tqdm.write(f"      α={alpha}: score={'n/a' if not valid else f'{sum(valid)/len(valid):.1f}'}")
+            tqdm.write(f"      preview: {preview!r}")
+        gen_log.write("=" * 80 + "\n\n")
+        gen_log.flush()
+
+    gen_log.close()
+    tqdm.write(f"  Full gen log saved to {gen_log_path}")
 
     # Aggregate Phase A
     judge_agg: dict[str, dict] = {}
