@@ -352,7 +352,73 @@ After Phase 5 reached the diagnostic conclusion that Edoardo's pipeline diverged
 ### E7 verdict
 **The Anthropic pipeline replicates cleanly on Llama-3.1-8B-Instruct for `evil`.** The vector encodes a real direction in residual-stream space whose addition reliably elicits the trait without any priming. This validates the methodological diagnosis in Phase 5: the difference between Anthropic's pipeline and the project's earlier CAA-style approach (E1.x → E3.x judge sweeps that returned noise) is the *pipeline*, not the model or the trait. Llama can be steered.
 
-Next step (per Anthropic Appendix G.2): rerun stages 1–2 on 2–3 more traits from the released set (`apathetic, hallucinating, humorous, impolite, optimistic, sycophantic`) and compute pairwise cosine similarities of the resulting layer-16 response_avg_diff vectors. Cross-check against the paper's reported cosine matrix on Llama. Match would be the strongest validation we can do without re-running their full evaluation suite.
+### E7.4 — Cosine-matrix validation: extend to `sycophantic` + `hallucinating` and cross-check against paper Appendix G.2 / Figure 20
+
+To go beyond a single-trait sanity check, we extended the pipeline to two more traits from the paper's released set (chosen as the other two "main result" traits in Chen et al. alongside `evil`, both of which had also failed in the legacy CAA pipeline) and compared the resulting pairwise cosines against the paper's reported values.
+
+- **Pre-work — parametrise the driver scripts** (commit `b6d4c3e`). Stages 1, 2, 3 now take `--trait` via argparse with sensible defaults; slurm wrappers take it as positional `$1`. Pre-flight checks added at every stage (trait JSON exists, CSVs exist, vector .pt exists + shape correct + layer in range). Default assistant names: pos = trait adjective, neg = "helpful" per Anthropic's README guidance.
+
+- **Runs.** Stage 1 + Stage 2 only (no stage 3 — vectors alone are enough for cosines). Cluster QoS limits user to 1 RUNNING + 1 QUEUED, so jobs ran sequentially:
+
+  | Job | Trait | Stage | Wall time | Effective pairs |
+  |---|---|---|---:|---:|
+  | 483950 | sycophantic | extract | 36:12 | — |
+  | 484028 | sycophantic | build | 1:56 | **490 / 500** |
+  | 483952 | hallucinating | extract | 37:17 | — |
+  | 484034 | hallucinating | build | 1:47 | **472 / 500** |
+
+  All four jobs returned exit 0. With `MAX_CONCURRENT_JUDGES=5` (the Phase 7.1 fix), **all 1000 trait + 1000 coherence judge calls per trait returned valid scores** — zero rate-limit losses, vs the ~75% coherence loss in the original `evil` v1 run.
+
+- **Per-trait extract stats.**
+
+  | Trait | POS trait | POS coh | NEG trait | NEG coh | Effective |
+  |---|---:|---:|---:|---:|---:|
+  | evil (E7.1) | 95.36 | 92.10 | 0.09 | 97.68 | 483/500 |
+  | sycophantic | 94.33 | 90.39 | 2.57 | 97.92 | 490/500 |
+  | hallucinating | 97.86 | 90.90 | 3.94 | 95.14 | 472/500 |
+
+  Llama exhibits all three traits strongly under positive priming and not at all under negative priming. Coherence stays high in both conditions. Highly clean data across the board.
+
+- **Per-trait layer-16 vector norms** (`response_avg_diff[16]`):
+
+  | Trait | ‖v‖₂ |
+  |---|---:|
+  | evil | 2.931 |
+  | sycophantic | 2.593 |
+  | hallucinating | 3.436 |
+
+- **Headline result — 3×3 cosine matrix** at layer 16 on `response_avg_diff`:
+
+  ```
+                          evil     sycophantic   hallucinating
+          evil           1.000           0.397           0.245
+   sycophantic           0.397           1.000           0.234
+  hallucinating          0.245           0.234           1.000
+  ```
+
+  Comparison against Chen et al. 2025 Figure 20 (Llama, layer 16, response_avg_diff):
+
+  | Pair | Ours | Paper | Δ |
+  |---|---:|---:|---:|
+  | evil ↔ sycophantic       | **0.397** | 0.412 | +0.015 |
+  | sycophantic ↔ hallucinating | **0.234** | 0.252 | +0.018 |
+  | hallucinating ↔ evil     | **0.245** | 0.233 | −0.012 |
+
+  **All three values match the paper to within 0.02.** That's an excellent reproduction — well within the variance you'd expect from different RNG seeds, different `n_per_question`, or any minor tooling drift between our HF-transformers reimplementation and Chen et al.'s vLLM-based original.
+
+  The shape of the matrix also matches the paper's qualitative claims:
+    1. *"Negative traits tend to shift together"* (paper line 149) — all three off-diagonals are positive (range 0.234–0.397), no orthogonality, no anti-correlation.
+    2. The strongest pair is `evil ↔ sycophantic` (~0.4) — both involve interpersonal manipulation, so this makes intuitive sense. The pairs involving `hallucinating` are weaker (~0.24) — hallucination is a factual-grounding axis, less aligned with manipulation.
+
+- **Verdict.** The pipeline reproduces Anthropic's Figure 20 cosine values to within 0.02 on three independent cells. Combined with the +84.94 trait delta from E7.3, this is strong evidence that the pipeline is faithful to the paper's protocol. **Ready to use this pipeline as the primary CAA-replacement for the project's main behaviour set.**
+
+- Scripts and files (added/modified):
+    - [scripts/anthropic_repl/run_extract.py](scripts/anthropic_repl/run_extract.py), [scripts/anthropic_repl/run_build_vector.py](scripts/anthropic_repl/run_build_vector.py), [scripts/anthropic_repl/run_steer_eval.py](scripts/anthropic_repl/run_steer_eval.py) — all parametrised by `--trait`
+    - [slurm_anthropic_repl_extract.sh](slurm_anthropic_repl_extract.sh), [slurm_anthropic_repl_build.sh](slurm_anthropic_repl_build.sh), [slurm_anthropic_repl_steer_eval.sh](slurm_anthropic_repl_steer_eval.sh) — accept trait as `$1`
+- Output files:
+    - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/sycophantic_response_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/sycophantic_response_avg_diff.pt) (+2 sibling files)
+    - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt) (+2 sibling files)
+    - 4 new extract CSVs under `results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/`
 
 ---
 
