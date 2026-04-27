@@ -30,12 +30,14 @@ from src.judge import OpenAiJudge
 
 # Retry policy for the OpenAI judge calls. RPM / TPM rate limits on the judge
 # tier are the failure mode we're protecting against; transient API errors come
-# along for the ride. Backoff is geometric with jitter, capped — total worst-case
-# wait per item is sum(BASE * GROWTH**i) for i in range(MAX_RETRIES) ≈ 6 minutes.
+# along for the ride. Backoff is geometric with jitter, with a floor — the
+# server's "retry-after" hint can be sub-second during a burst, but the actual
+# quota window is per-minute, so we ignore tiny hints.
 _RETRY_BASE_SEC = 5.0
 _RETRY_GROWTH = 3.0
 _RETRY_MAX_SEC = 120.0
-_RETRY_MAX_ATTEMPTS = 6
+_RETRY_MAX_ATTEMPTS = 10
+_RETRY_FLOOR_SEC = 3.0
 
 COHERENCE_PROMPT = """\
 I am evaluating a different language model. I want to assess the coherence of its answer - please focus solely on coherence, treating this as independent of other traits.
@@ -184,8 +186,16 @@ async def _judge_with_retry(
                         wait = float(ra)
                     except ValueError:
                         wait = None
-            if wait is None:
-                wait = min(delay, _RETRY_MAX_SEC) * (0.5 + random.random())
+            # Server hints can be sub-second during burst storms (e.g.
+            # "retry in 318ms"), but the actual quota window is per-minute —
+            # obeying tiny hints just causes immediate re-rate-limiting. Floor
+            # the wait at _RETRY_FLOOR_SEC and fall back to geometric jittered
+            # backoff when no usable hint is provided.
+            if wait is None or wait < _RETRY_FLOOR_SEC:
+                wait = max(
+                    _RETRY_FLOOR_SEC,
+                    min(delay, _RETRY_MAX_SEC) * (0.5 + random.random()),
+                )
             print(
                 f"[judge retry {attempt}/{_RETRY_MAX_ATTEMPTS}] "
                 f"{type(e).__name__}: sleeping {wait:.1f}s"

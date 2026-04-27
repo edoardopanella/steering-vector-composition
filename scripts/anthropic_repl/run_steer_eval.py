@@ -49,7 +49,11 @@ N_PER_QUESTION = 5
 MAX_NEW_TOKENS = 600
 TEMPERATURE = 1.0
 BATCH_SIZE = 8
-MAX_CONCURRENT_JUDGES = 50
+# Lowered from 50 after stage 1 hit OpenAI TPM (200K/min) + RPM (500/min) caps
+# during judging, losing ~9% of scores. With ~700 tokens/call, 4-5 in flight
+# stays below TPM and RPM. Worst case: judging takes a few extra minutes; better
+# than dropping scores.
+MAX_CONCURRENT_JUDGES = 5
 
 VECTORS_DIR = Path("results/anthropic_repl/persona_vectors") / MODEL_NAME.split("/")[-1]
 OUT_DIR = Path("results/anthropic_repl/eval_persona_eval") / MODEL_NAME.split("/")[-1]

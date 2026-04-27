@@ -30,7 +30,8 @@ N_PER_QUESTION = 5               # 20 q × 5 instr × 5 samples = 500 generation
 MAX_NEW_TOKENS = 600
 TEMPERATURE = 1.0
 BATCH_SIZE = 8
-MAX_CONCURRENT_JUDGES = 50
+# Lowered from 50 to stay within OpenAI TPM (200K/min) + RPM (500/min) limits.
+MAX_CONCURRENT_JUDGES = 5
 
 OUT_DIR = Path("results/anthropic_repl/eval_persona_extract") / MODEL_NAME.split("/")[-1]
 # --------------
