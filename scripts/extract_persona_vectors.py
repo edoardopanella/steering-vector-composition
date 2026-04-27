@@ -4,7 +4,7 @@ Extract persona vectors for seven trait behaviors following Chen et al. (2025).
 Loads Llama-3.1-8B-Instruct once, then iterates over all seven traits.
 For each trait, calls extract_persona_vector (src/extraction.py) which:
   - Builds chat-formatted prompts from (priming pair, question) combinations
-  - Generates responses unsteered (temperature=1.0, max_new_tokens=512)
+  - Generates responses unsteered (temperature=1.0, max_new_tokens=64)
   - Re-runs each full sequence through run_with_cache at layer 16
   - Mean-pools response-token activations → mean(pos) - mean(neg)
 
@@ -131,7 +131,7 @@ for trait in TRAITS:
             artifact,
             layer=LAYER,
             n_rollouts_per_combo=N_ROLLOUTS,
-            max_new_tokens=512,
+            max_new_tokens=64,
             temperature=1.0,
             normalize=True,
             seed=SEED,

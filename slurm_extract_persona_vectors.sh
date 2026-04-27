@@ -2,7 +2,7 @@
 #SBATCH --job-name=extract-persona-vectors
 #SBATCH --output=/home/3242106/logs/extract_persona_vectors_%j.out
 #SBATCH --error=/home/3242106/logs/extract_persona_vectors_%j.err
-#SBATCH --time=08:00:00
+#SBATCH --time=23:59:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
