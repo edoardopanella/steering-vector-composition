@@ -32,7 +32,11 @@ set -a; source .env; set +a
 
 mkdir -p /home/3247897/logs
 
-echo "Starting anthropic-repl extract — $(date)"
+# Trait passed as positional arg, defaults to evil for backward compat:
+#   sbatch slurm_anthropic_repl_extract.sh sycophantic
+TRAIT="${1:-evil}"
+
+echo "Starting anthropic-repl extract trait=$TRAIT — $(date)"
 export PYTHONPATH=/home/3247897/steering-vector-composition
-python -u -m scripts.anthropic_repl.run_extract
-echo "Anthropic-repl extract done — $(date)"
+python -u -m scripts.anthropic_repl.run_extract --trait "$TRAIT"
+echo "Anthropic-repl extract trait=$TRAIT done — $(date)"
