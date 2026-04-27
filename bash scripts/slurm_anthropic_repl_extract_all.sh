@@ -2,14 +2,14 @@
 #SBATCH --job-name=anthropic-repl-extract-all
 #SBATCH --output=/home/3247897/logs/anthropic_repl_extract_all_%j.out
 #SBATCH --error=/home/3247897/logs/anthropic_repl_extract_all_%j.err
-#SBATCH --time=10:00:00         # ~49 min/trait × 6 traits ≈ 5h; 10h is safe cushion
+#SBATCH --time=23:59:00         # ~49 min/trait × 6 traits ≈ 5h; 10h is safe cushion
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=128G
 #SBATCH --gres=gpu:1
 #SBATCH --qos=stud
-#SBATCH --account=3247897
+#SBATCH --account=3242106
 #SBATCH --partition=stud
 #SBATCH --chdir=/home/3247897/steering-vector-composition
 

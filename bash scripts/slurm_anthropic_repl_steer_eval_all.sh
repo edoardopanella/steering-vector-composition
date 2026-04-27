@@ -9,7 +9,7 @@
 #SBATCH --mem=128G
 #SBATCH --gres=gpu:1
 #SBATCH --qos=stud
-#SBATCH --account=3247897
+#SBATCH --account=3242106
 #SBATCH --partition=stud
 #SBATCH --chdir=/home/3247897/steering-vector-composition
 
