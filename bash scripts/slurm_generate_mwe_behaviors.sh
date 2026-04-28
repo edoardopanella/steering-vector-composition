@@ -26,7 +26,7 @@ mkdir -p data/behaviors_mwe
 
 echo "Starting generate-mwe-behaviors — $(date)"
 export PYTHONPATH=/home/3242106/steering-vector-composition
-python -u -m scripts.generate_mwe_behaviors
+python -u scripts/generate_mwe_behaviors.py
 echo "generate-mwe-behaviors done — $(date)"
 
 # Final verification step (auto-runs after generation)
