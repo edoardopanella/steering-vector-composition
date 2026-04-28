@@ -506,3 +506,81 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
 - **Status**: bulk vectors ready. Stage 3 (steered-vs-baseline trait deltas at α=2 on held-out eval set, à la E7.3) **not yet executed** for the 12 new traits — open next step. Cosine matrix across all 15 traits also pending — extends E7.4's 3×3 to a full 15×15 for cross-validation against paper Figure 20 / Appendix G.2.
 - Commits: `0b06d35` (artifacts) → `b96be1f` (driver+slurm) → `6920caf` (results).
 
+---
+
+## Phase 7.7 — MWE-format dataset coverage for all 15 traits (Edoardo, 2026-04-28)
+
+### E7.7 — Generate MWE pairs for the 8 traits without legacy MWE coverage
+- Description: To enable per-token logprob validation (Phase 4-style) on every Anthropic-pipeline trait — not only the 7 with direct legacy-MWE matches — we needed to fill the gap for `apathetic, evil, humorous, impolite, optimistic, refusal, sycophantic, hallucinating`. The legacy `data/behaviors_mwe/` directory had 20 files (Phase 4 + Phase 6) but only 7 names overlapped with the paper-pipeline trait set; the remaining 8 were either dropped during the Phase 2 dataset audit or never converted to MWE format.
+- Two-style schema chosen to match the existing MWE files:
+    - **Style A (response-style trait)** — generic question ("Which response is more {trait}?") with two prose completions, trait expressed in tone/register only. Used for `apathetic, humorous, impolite, optimistic, sycophantic, hallucinating`. Mirrors [data/behaviors_mwe/agreeableness.py](data/behaviors_mwe/agreeableness.py).
+    - **Style B (stance-under-context trait)** — scenario question with embedded `(A)`/`(B)` choices ending in `Answer:`, `trait_completion = "(A)"` always, `non_trait_completion = "(B)"` always. Used for `evil, refusal`. Mirrors [data/behaviors_mwe/corrigibility.py](data/behaviors_mwe/corrigibility.py).
+- Initial scripted attempt: [scripts/generate_mwe_behaviors.py](scripts/generate_mwe_behaviors.py) — gpt-4.1 in JSON-object mode, batched 50 pairs/call, target 1000 pairs/trait after dedup. **Three load-bearing bugs found at runtime** (logged here so the script is usable for future MWE expansion):
+    1. **Strict-equality key check** (`set(pair.keys()) != required_keys`) rejected every pair the model returned — gpt-4.1 added metadata keys (`id`, `scenario`) that broke equality. Fixed: use `required_keys.issubset(...)` and ignore extras.
+    2. **Unwrap logic only handled `{"key": [list]}` shape** — model often returned `{"pair_1": {...}, "pair_2": {...}}` (object of pair dicts) which the original unwrap silently dropped. Fixed: `_coerce_to_pair_list` walks all three observed shapes (direct array, `{any_key: [list]}`, `{key1: pair, key2: pair, ...}`).
+    3. **Prompt-vs-response_format conflict** — prompt instructed "Output ONLY the JSON array" while `response_format=json_object` forces the top-level to be an object. Fixed: prompts now require `{"pairs": [...]}` wrap explicitly; system message updated to match.
+    Plus side-fixes: per-batch seed variation (`SEED + batch_idx`) to break duplication clustering across the 44 calls per trait, and a debug print of the first raw API response when a batch returns 0 valid pairs.
+- After the bug fixes the script works — but rather than wait for a fresh cluster run, the 8 datasets were generated **manually via the ChatGPT interface** (gpt-4.1, prompts adapted from the script's templates) for speed. 1000 pairs per trait, written directly into `data/behaviors_mwe/{trait}.py` in the canonical `pairs = [...]` Python literal format.
+- **Pre-flight verification** (run on uploaded files before wiring into validation):
+
+  | Trait | n_pairs | Style | train/val/test (60/20/20) | trait_completion polarity | Sample |
+  |---|---:|---|---|---|---|
+  | apathetic    | 1000 | A | 600 / 200 / 200 | toward trait ✓ | "Whatever. You can sort it out yourself if it matters to you." |
+  | evil         | 1000 | B | 600 / 200 / 200 | toward trait ✓ | "(A)" |
+  | humorous     | 1000 | A | 600 / 200 / 200 | toward trait ✓ | "This hiccup is doing a dramatic impression of Monday..." |
+  | impolite     | 1000 | A | 600 / 200 / 200 | toward trait ✓ | "You should have handled this already, so do the obvious thing..." |
+  | optimistic   | 1000 | A | 600 / 200 / 200 | toward trait ✓ | "This is workable, and I think it can still turn into a solid..." |
+  | refusal      | 1000 | B | 600 / 200 / 200 | toward trait ✓ | "(A)" |
+  | sycophantic  | 1000 | A | 600 / 200 / 200 | toward trait ✓ | "You are absolutely right, and your judgment here is exceptional..." |
+  | hallucinating| 1000 | A | 600 / 200 / 200 | toward trait ✓ | "The capital of Australia is Sydney, founded as the federal..." |
+
+  Schema valid (3 required keys, no empty values), no polarity inversion needed (trait completion always points toward the trait, unlike legacy `power_seeking` which carries `polarity_inverted=True`).
+- **Coverage outcome.** All 15 paper-pipeline traits now have MWE counterparts: 7 from the legacy Phase 4 / Phase 6 pipeline + 8 from this manual generation. 200 test-split pairs per trait — well above the n=125 minimum for detecting |shift| > 0.5 nats at 80% power given the per-pair σ ≈ 1.5–2.5 nats observed in Phase 4.
+- Scripts and files involved:
+    - [scripts/generate_mwe_behaviors.py](scripts/generate_mwe_behaviors.py) — driver + 3 bug fixes (kept for future reuse, even though this run was manual)
+    - [bash scripts/slurm_generate_mwe_behaviors.sh](bash scripts/slurm_generate_mwe_behaviors.sh) — pure-CPU SLURM wrapper (2 CPU, 8G, 2h)
+    - 8 new files in [data/behaviors_mwe/](data/behaviors_mwe/)
+- Output files: `data/behaviors_mwe/{apathetic,evil,humorous,impolite,optimistic,refusal,sycophantic,hallucinating}.py`.
+
+---
+
+## Phase 7.8 — Combined LLM-judge + logprob validation pipeline (Edoardo, 2026-04-28)
+
+### E7.8 — Single bulk script + paper-style plotting for all 15 traits
+- Description: Builds the full validation pass for the Anthropic-pipeline vectors. Two complementary signals per trait, both at L=16 / α=2 / Anthropic vectors `_response_avg_diff[16]`:
+    1. **LLM-judge** (paper protocol, Chen et al. 2025, §3): generate 100 baseline + 100 steered completions on the 20-question held-out set in `anthropic_code/data_generation/trait_data_eval/{trait}.json`, score both with the paper's trait + coherence rubrics via `gpt-4.1-mini`. Same logic as E7.3, run for all 15 traits in one model-load.
+    2. **Logprob delta**: on the 200-pair test split of `data/behaviors_mwe/{trait}.py`, compute `log P(trait | q, +α v) - log P(non_trait | q, +α v)` minus the unsteered baseline. Reuses the already-loaded HF model (no re-load via TransformerLens), so logprob adds ~30s/trait on top of the LLM-judge stage.
+- **Methodological reasoning** for running both: the LLM-judge measures whether steering elicits the trait in *open-ended generation*; the logprob measures whether the vector tilts the *next-token distribution* on multiple-choice MWE format. They're orthogonal protocols — judge has no token-level ground truth, logprob has no judge variance. Phase 3 / Phase 4 showed they can disagree (legacy CAA vectors at L=17 looked dead under judge, alive under logprob); collecting both lets us read each trait's behaviour against two independent yardsticks.
+- New helper module to avoid double-loading the model:
+    - [src/anthropic_repl/hf_logprob.py](src/anthropic_repl/hf_logprob.py) — `compute_logprob_delta_hf(model, tok, q, trait, non_trait, vector, layer_idx, alpha)`. HF-flavored equivalent of [src/logprob.py](src/logprob.py) `compute_logprob_delta`, using the existing `steering_hook` (block-level forward hook on `model.model.layers[layer_idx]`). Layer-index convention matches Anthropic's: `vector = output_hidden_states[16]` ⇒ `layer_idx = 15`.
+- Driver:
+    - [scripts/anthropic_repl/run_validation_all.py](scripts/anthropic_repl/run_validation_all.py) — single SLURM job runs both stages for all 15 traits sequentially. `MWE_TRAIT_NAMES` dict (15 entries) maps every paper-pipeline trait to its MWE filename. `POLARITY_INVERTED = {"power_seeking"}` — only the legacy power_seeking dataset has the trait/non-trait flip (E7.7 hand-generated set is uniformly polarity-correct).
+    - Resumable per-trait: skip-if-CSV-exists for LLM-judge stage, skip-if-trait-in-JSON for logprob stage.
+    - Per-trait outputs: `results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct/{trait}_steer_response_layer16_coef2.0.csv` (matches E7.3 file naming for the existing `evil` CSV → no overwrite, just fills in 14 new ones).
+    - Aggregate outputs: [results/anthropic_repl/logprob_validation_layer16.json](results/anthropic_repl/logprob_validation_layer16.json) (per-trait `mean_unsteered, mean_steered, mean_shift, std_shift, n_test_pairs, pass_threshold`), [results/anthropic_repl/validation_summary.json](results/anthropic_repl/validation_summary.json) (combined per-trait LLM-judge + logprob view).
+- Plotting:
+    - [scripts/anthropic_repl/plot_validation.py](scripts/anthropic_repl/plot_validation.py) — paper-grade matplotlib + seaborn, 300 DPI PDFs, colorblind palette, serif body, embedded Type-42 fonts, no chartjunk. Output dir [analysis/figures/](analysis/figures/).
+    - 4 figures generated from `validation_summary.json` + per-trait CSVs:
+        - `fig1_judge_deltas.pdf` — 2-panel horizontal bars: (a) per-trait Δ trait, (b) per-trait Δ coherence; sorted by Δ_trait, coloured by Anthropic-released vs project-generated, threshold line at `Δ > 50` (paper's Figure-13 effect magnitude).
+        - `fig2_judge_vs_logprob.pdf` — scatter Δ_trait (x) × logprob shift (y), OLS fit, Pearson + Spearman correlations annotated, per-trait point labels, threshold lines at `|shift| > 0.5 nats` and `Δ_trait > 50`.
+        - `fig3_distributions.pdf` — 15-facet KDE grid, baseline vs steered raw judge-score densities per trait.
+        - `fig4_logprob_forest.pdf` — forest plot of per-trait mean shift with 95% normal-approx CIs (`mean ± 1.96 · std/√n`), sorted by `|shift|`, threshold line at 0.5 nats.
+    - Plot script runs locally (no GPU, no API): `venv/bin/python scripts/anthropic_repl/plot_validation.py`. Reads JSONs + CSVs after the cluster job pulls back.
+- SLURM wrapper:
+    - [bash scripts/slurm_anthropic_repl_validation_all.sh](bash scripts/slurm_anthropic_repl_validation_all.sh) — 1 GPU, 256G RAM, 8 CPU, 23:59 walltime. Estimated runtime ~3h (LLM-judge dominates; logprob ~30s/trait × 15 ≈ 8 min).
+- **Status**: scripts pushed (commit `bcfa91d`, *"validation ready"*). Cluster submission pending. Outputs not yet on disk.
+
+### E7.7-side — generate_mwe_behaviors.py iteration scars (kept here so future runs don't repeat)
+- **Slurm pathing iteration**: first slurm version used `python -m scripts.generate_mwe_behaviors` which fails because `scripts/__init__.py` doesn't exist (only `scripts/anthropic_repl/__init__.py` does). Plain `python scripts/generate_mwe_behaviors.py` works. Also `chdir` initially used `/home/3242106/steering-vector-composition` but Edoardo's actual cluster repo path is `/home/3242106/steering-vector-composition-cloned` (matches 9 of 12 of his existing slurm scripts). For future scripts: copy `chdir` and account from any working slurm in `bash scripts/`, don't infer from teammate scripts which use `/home/3247897/...`.
+- **JSON-object mode reminder**: when using `response_format={"type": "json_object"}` with gpt-4.1, always: (a) instruct the model in the system *and* user message to wrap output as `{"key": [...]}`, (b) parse with a coercer that handles all 3 likely shapes (array, `{any: list}`, `{key1: pair, key2: pair, ...}`), (c) accept extra metadata keys per pair via `issubset` not `==`. Strict matching killed the first run silently.
+
+---
+
+## Where the project stands at end of 2026-04-28
+
+1. **Anthropic-replication pipeline now spans 15 traits**: 7 Anthropic-released + 8 project-generated (E7.5). All extracted at layer 16 with raw `response_avg_diff` vectors (E7.6, commit `6920caf`). E7.4 cosine matrix already validated 3×3 against paper Figure 20 to within 0.02 — pipeline confirmed faithful.
+2. **MWE coverage now full-spectrum**: 7 legacy MWE files + 8 hand-generated (E7.7) = 15/15 traits with 1000-pair test-ready datasets.
+3. **Validation scripts ready, not yet run** (E7.8): `run_validation_all.py` will produce per-trait LLM-judge Δ + logprob shift in a single ~3h cluster job. `plot_validation.py` produces 4 paper-style figures from the result JSONs. Both committed in `bcfa91d`.
+4. **Open next step**: submit `slurm_anthropic_repl_validation_all.sh`, pull results, run plots. After that, the headline question — *do the same vectors that pass Anthropic's Stage-3 trait-elicitation also produce the right per-token logprob tilt on MWE-format pairs?* — gets a clean answer with both signals on every trait.
+5. **Still not done from earlier phases**: 15×15 cross-trait cosine matrix (extends E7.4's 3×3); Phase 5 geometry analysis on the new L=16 Anthropic vectors (currently only run on the legacy L=17 ones); composition experiments (Part A of the original research plan, blocked by the Phase 3 negative result and now waiting on E7.8 to confirm vectors are actually steering before resuming).
+
