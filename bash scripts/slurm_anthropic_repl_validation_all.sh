@@ -32,5 +32,5 @@ mkdir -p /home/3242106/logs
 
 echo "Starting anthropic-repl validation-all — $(date)"
 export PYTHONPATH=/home/3242106/steering-vector-composition
-python -u -m scripts.anthropic_repl.run_validation_all
+python -u scripts/anthropic_repl/run_validation_all.py
 echo "Anthropic-repl validation-all done — $(date)"
