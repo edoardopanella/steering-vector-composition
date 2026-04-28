@@ -420,14 +420,3 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
     - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt) (+2 sibling files)
     - 4 new extract CSVs under `results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/`
 
----
-
-## Where the project stands right now (catch-up summary for Riccardo)
-
-1. **L\* = 17 is frozen** in the legacy CAA pipeline; **L = 16 (paper's choice)** is used in the Phase 7 Anthropic-replication pipeline. They are independent and live in separate code/output trees.
-2. **Behaviour set has churned twice in the legacy pipeline.** Original 12 → 7 surviving (after Phase 2 dataset/judge fixes dropped `evil`, `humor`, `sycophancy`, `refusal`, `hallucination`, `power_seeking`, `survival_instinct`) → expanded back out via the MWE pipeline (Phase 4 + 6) which now has 17 candidate behaviours in `data/behaviors_mwe/`.
-3. **The judge-based legacy pipeline produced a hard negative result (E3.1)** — α=1 steering at L=17 doesn't move the judge scores on neutral open-ended generations. α-sweep didn't rescue it (E3.2).
-4. **The log-prob (MWE) pipeline produced a positive result (E4.2)** — 7/10 of the original behaviours show `|mean_shift| > 0.5` nats at L=17 with α=1.
-5. **The Anthropic-replication pipeline produced a clean positive result on `evil` (E7.3)** — +84.94 trait delta at L=16, α=2. Pipeline confirmed working end-to-end.
-6. **Geometric analysis (Phase 5)** has the Gram matrix, pairwise-cosine distribution, and stratified-pair selection done in the notebook — but built on the *legacy* L=17 vectors. Not yet rerun on the Anthropic-pipeline vectors.
-7. **Open immediate next steps:** (a) extend Phase 7 to 2–3 more traits and compute the cosine matrix for cross-validation against Anthropic's Appendix G.2 (Riccardo's plan); (b) the 10 new persona behaviours from Phase 6 are downloaded but not yet extracted/validated in the legacy pipeline (`sbatch slurm_extract_and_validate_new.sh`).
