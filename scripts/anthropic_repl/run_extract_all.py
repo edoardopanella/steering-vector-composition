@@ -30,13 +30,28 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+# All 15 traits we want vectors for: Anthropic's 7 released + the 8 generated
+# in scripts.anthropic_repl.generate_trait_artifacts. Skip-if-exists logic in
+# main() means it's safe to re-run; already-done traits (evil, sycophantic,
+# hallucinating from Phase 7.x) will be no-ops.
 TRAITS = [
+    # Anthropic-released
     "apathetic",
+    "evil",
     "hallucinating",
     "humorous",
     "impolite",
     "optimistic",
     "sycophantic",
+    # Project-generated (E7.5 — see experiments_log)
+    "agreeableness",
+    "confidence",
+    "corrigibility",
+    "formality",
+    "myopia",
+    "power_seeking",
+    "refusal",
+    "verbosity",
 ]
 
 BUILD_VECTOR_SCRIPT = Path("scripts/anthropic_repl/run_build_vector.py")

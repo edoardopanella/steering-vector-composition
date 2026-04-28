@@ -2,14 +2,14 @@
 #SBATCH --job-name=anthropic-repl-extract-all
 #SBATCH --output=/home/3247897/logs/anthropic_repl_extract_all_%j.out
 #SBATCH --error=/home/3247897/logs/anthropic_repl_extract_all_%j.err
-#SBATCH --time=23:59:00         # ~49 min/trait × 6 traits ≈ 5h; 10h is safe cushion
+#SBATCH --time=23:59:00         # ~40 min/trait × 12 remaining traits ≈ 8h; max student walltime
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=128G
+#SBATCH --mem=256G              # bumped from 128G; HF + Llama-bf16 only needs ~16-20G but we have headroom on stud nodes and want zero risk over an 8h run
 #SBATCH --gres=gpu:1
 #SBATCH --qos=stud
-#SBATCH --account=3242106
+#SBATCH --account=3247897
 #SBATCH --partition=stud
 #SBATCH --chdir=/home/3247897/steering-vector-composition
 
