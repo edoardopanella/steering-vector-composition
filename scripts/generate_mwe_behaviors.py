@@ -224,7 +224,7 @@ def build_style_a_prompt(trait: str, batch_size: int) -> str:
 
 TASK: Generate exactly {batch_size} contrastive pairs for the trait "{trait}".
 
-OUTPUT FORMAT: A JSON array of {batch_size} objects. Each object has exactly three keys:
+OUTPUT FORMAT: A single JSON object with one key "pairs" whose value is a JSON array of {batch_size} pair objects. Each pair object has exactly three keys:
   "question": string — always the fixed question template below
   "trait_completion": string — a full prose response that STRONGLY exhibits the {trait} trait
   "non_trait_completion": string — a full prose response that does NOT exhibit the {trait} trait, on the same topic
@@ -247,10 +247,10 @@ HARD CONSTRAINTS:
 5. The trait must be OBVIOUS and UNAMBIGUOUS — a human reader should immediately identify which completion is more {adjective}.
 6. No empty strings. Both completions must be non-empty coherent prose.
 
-FEW-SHOT EXAMPLES (agreeableness, for format reference):
+FEW-SHOT EXAMPLES (agreeableness array, for format reference):
 {STYLE_A_EXAMPLE}
 
-Now generate {batch_size} pairs for "{trait}". Output ONLY the JSON array, no preamble, no markdown fences."""
+Now generate {batch_size} pairs for "{trait}". Output a single JSON object: {{"pairs": [...{batch_size} items...]}}. No preamble, no markdown fences."""
 
 
 def build_style_b_prompt(trait: str, batch_size: int) -> str:
@@ -260,7 +260,7 @@ def build_style_b_prompt(trait: str, batch_size: int) -> str:
 
 TASK: Generate exactly {batch_size} contrastive pairs for the trait "{trait}".
 
-OUTPUT FORMAT: A JSON array of {batch_size} objects. Each object has exactly three keys:
+OUTPUT FORMAT: A single JSON object with one key "pairs" whose value is a JSON array of {batch_size} pair objects. Each pair object has exactly three keys:
   "question": string — a scenario question with two embedded choices (A) and (B), ending with "Answer:"
   "trait_completion": string — ALWAYS "(A)" (the letter in parentheses, nothing else)
   "non_trait_completion": string — ALWAYS "(B)" (the letter in parentheses, nothing else)
@@ -283,10 +283,10 @@ HARD CONSTRAINTS:
 5. Both choices must be coherent, non-empty prose responses (not just one word).
 6. The question must end with exactly "\\n\\nAnswer:" (with two newlines before it).
 
-FEW-SHOT EXAMPLES (refusal, for format reference):
+FEW-SHOT EXAMPLES (refusal array, for format reference):
 {STYLE_B_EXAMPLE}
 
-Now generate {batch_size} pairs for "{trait}". Output ONLY the JSON array, no preamble, no markdown fences."""
+Now generate {batch_size} pairs for "{trait}". Output a single JSON object: {{"pairs": [...{batch_size} items...]}}. No preamble, no markdown fences."""
 
 
 # ---------------------------------------------------------------------------
@@ -295,9 +295,12 @@ Now generate {batch_size} pairs for "{trait}". Output ONLY the JSON array, no pr
 
 
 def validate_pair(pair: dict, style: str) -> bool:
-    """Basic schema and content validation for a single pair."""
+    """Basic schema and content validation for a single pair.
+    Accept extra keys silently — model often adds metadata like 'id', 'scenario'."""
     required_keys = {"question", "trait_completion", "non_trait_completion"}
-    if set(pair.keys()) != required_keys:
+    if not isinstance(pair, dict):
+        return False
+    if not required_keys.issubset(pair.keys()):
         return False
     if not all(isinstance(pair[k], str) and pair[k].strip() for k in required_keys):
         return False
@@ -313,8 +316,42 @@ def validate_pair(pair: dict, style: str) -> bool:
     return True
 
 
+_DEBUG_RAW_PRINTED = False
+
+
+def _looks_like_pair(d) -> bool:
+    return (
+        isinstance(d, dict)
+        and "question" in d
+        and "trait_completion" in d
+        and "non_trait_completion" in d
+    )
+
+
+def _coerce_to_pair_list(parsed) -> list[dict]:
+    """Walk the parsed JSON object and find the list of pair-shaped dicts.
+    Handles three shapes the model commonly emits under json_object mode:
+      [{...}, {...}]                     -> direct array
+      {"pairs": [{...}, ...]}            -> array under any key
+      {"pair_1": {...}, "pair_2": {...}} -> object of pairs (each value is a pair)
+    """
+    if isinstance(parsed, list):
+        return [p for p in parsed if _looks_like_pair(p)]
+    if isinstance(parsed, dict):
+        # Shape 2: any value that is a list of pair-shaped dicts.
+        for v in parsed.values():
+            if isinstance(v, list) and v and _looks_like_pair(v[0]):
+                return [p for p in v if _looks_like_pair(p)]
+        # Shape 3: values themselves are pair-shaped dicts.
+        pair_values = [v for v in parsed.values() if _looks_like_pair(v)]
+        if pair_values:
+            return pair_values
+    return []
+
+
 def generate_batch(client: OpenAI, prompt: str, batch_size: int, seed: int = SEED) -> list[dict]:
     """Call GPT-4.1 and return parsed pairs. Returns empty list on failure."""
+    global _DEBUG_RAW_PRINTED
     try:
         response = client.chat.completions.create(
             model=MODEL,
@@ -326,7 +363,9 @@ def generate_batch(client: OpenAI, prompt: str, batch_size: int, seed: int = SEE
                     "role": "system",
                     "content": (
                         "You are a precise data generation assistant. "
-                        "You output only valid JSON arrays as instructed. "
+                        "You output only valid JSON as instructed. "
+                        "Always wrap the result as a single JSON object with key "
+                        '"pairs" whose value is the array of pair objects. '
                         "Never add preamble, explanation, or markdown formatting."
                     ),
                 },
@@ -335,20 +374,18 @@ def generate_batch(client: OpenAI, prompt: str, batch_size: int, seed: int = SEE
         )
         raw = response.choices[0].message.content.strip()
 
-        # GPT-4.1 in json_object mode wraps in an object — unwrap if needed
         parsed = json.loads(raw)
-        if isinstance(parsed, dict):
-            # find the array value
-            for v in parsed.values():
-                if isinstance(v, list):
-                    return v
-            return []
-        if isinstance(parsed, list):
-            return parsed
-        return []
+        pairs = _coerce_to_pair_list(parsed)
+
+        # Print first raw response for debugging if nothing parses cleanly.
+        if not pairs and not _DEBUG_RAW_PRINTED:
+            _DEBUG_RAW_PRINTED = True
+            print(f"\n    [debug] first batch returned 0 pairs; raw response (first 800 chars):\n    {raw[:800]}\n")
+
+        return pairs
 
     except Exception as e:
-        print(f"    [API error] {e}")
+        print(f"    [API error] {type(e).__name__}: {e}")
         return []
 
 
