@@ -12,6 +12,8 @@
 #SBATCH --account=3242106
 #SBATCH --partition=stud
 #SBATCH --chdir=/home/3242106/steering-vector-composition
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=edoardo.panella@studbocconi.it
 
 set -euo pipefail
 
