@@ -1,17 +1,17 @@
 #!/bin/bash
 #SBATCH --job-name=anthropic-repl-validation-all
-#SBATCH --output=/home/3247897/logs/anthropic_repl_validation_all_%j.out
-#SBATCH --error=/home/3247897/logs/anthropic_repl_validation_all_%j.err
-#SBATCH --time=08:00:00         # ~11.5 min llm-judge × 14 traits + ~30s logprob × 7 ≈ 2:50h; 8h cushion for judge rate-limit retries
+#SBATCH --output=/home/3242106/logs/anthropic_repl_validation_all_%j.out
+#SBATCH --error=/home/3242106/logs/anthropic_repl_validation_all_%j.err
+#SBATCH --time=23:59:00         # ~11.5 min llm-judge × 14 traits + ~30s logprob × 7 ≈ 2:50h; 8h cushion for judge rate-limit retries
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=256G
 #SBATCH --gres=gpu:1
 #SBATCH --qos=stud
-#SBATCH --account=3247897
+#SBATCH --account=3242106
 #SBATCH --partition=stud
-#SBATCH --chdir=/home/3247897/steering-vector-composition
+#SBATCH --chdir=/home/3242106/steering-vector-composition
 
 set -euo pipefail
 
