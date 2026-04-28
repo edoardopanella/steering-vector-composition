@@ -10,7 +10,7 @@
 #SBATCH --qos=stud
 #SBATCH --account=3242106
 #SBATCH --partition=stud
-#SBATCH --chdir=/home/3242106/steering-vector-composition
+#SBATCH --chdir=/home/3242106/steering-vector-composition-cloned
 
 set -euo pipefail
 
@@ -25,7 +25,7 @@ mkdir -p /home/3242106/logs
 mkdir -p data/behaviors_mwe
 
 echo "Starting generate-mwe-behaviors — $(date)"
-export PYTHONPATH=/home/3242106/steering-vector-composition
+export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
 python -u scripts/generate_mwe_behaviors.py
 echo "generate-mwe-behaviors done — $(date)"
 
