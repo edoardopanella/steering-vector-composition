@@ -28,9 +28,9 @@ source activate steering-vector-composition-venv
 
 set -a; source .env; set +a
 
-mkdir -p /home/3247897/logs
+mkdir -p /home/3242106/logs
 
 echo "Starting anthropic-repl validation-all — $(date)"
-export PYTHONPATH=/home/3247897/steering-vector-composition
+export PYTHONPATH=/home/3242106/steering-vector-composition
 python -u -m scripts.anthropic_repl.run_validation_all
 echo "Anthropic-repl validation-all done — $(date)"
