@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=anthropic-repl-steer-eval-all
-#SBATCH --output=/home/3247897/logs/anthropic_repl_steer_eval_all_%j.out
-#SBATCH --error=/home/3247897/logs/anthropic_repl_steer_eval_all_%j.err
-#SBATCH --time=08:00:00         # ~11.5 min/trait × 14 remaining (evil done in E7.3) ≈ 2:45h; 8h cushion for judge rate-limit retries
+#SBATCH --job-name=anthropic-repl-validation-all
+#SBATCH --output=/home/3247897/logs/anthropic_repl_validation_all_%j.out
+#SBATCH --error=/home/3247897/logs/anthropic_repl_validation_all_%j.err
+#SBATCH --time=08:00:00         # ~11.5 min llm-judge × 14 traits + ~30s logprob × 7 ≈ 2:50h; 8h cushion for judge rate-limit retries
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -30,7 +30,7 @@ set -a; source .env; set +a
 
 mkdir -p /home/3247897/logs
 
-echo "Starting anthropic-repl steer-eval-all — $(date)"
+echo "Starting anthropic-repl validation-all — $(date)"
 export PYTHONPATH=/home/3247897/steering-vector-composition
-python -u -m scripts.anthropic_repl.run_steer_eval_all
-echo "Anthropic-repl steer-eval-all done — $(date)"
+python -u -m scripts.anthropic_repl.run_validation_all
+echo "Anthropic-repl validation-all done — $(date)"

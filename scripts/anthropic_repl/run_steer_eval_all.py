@@ -1,8 +1,10 @@
 """
-Driver: Stage 3 (held-out steered vs baseline validation) for six persona traits.
+Driver: Stage 3 (held-out steered vs baseline validation) for all 15 traits.
 
-Loads the generation model once and runs all six traits sequentially.  Depends on
+Loads the generation model once and runs every trait sequentially. Depends on
 run_extract_all.py having already produced the _response_avg_diff.pt vectors.
+Per-trait CSV at results/anthropic_repl/eval_persona_eval/.../{trait}_steer_response_layer16_coef2.0.csv;
+existing CSVs are skipped (idempotent), so re-runs only fill the gaps.
 
 Run:
     python -m scripts.anthropic_repl.run_steer_eval_all
@@ -28,13 +30,26 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+# Mirrors TRAITS in run_extract_all.py: 7 Anthropic-released + 8 generated.
+# Skip-if-exists below makes evil (done in E7.3) a no-op.
 TRAITS = [
+    # Anthropic-released
     "apathetic",
+    "evil",
     "hallucinating",
     "humorous",
     "impolite",
     "optimistic",
     "sycophantic",
+    # Project-generated (E7.5)
+    "agreeableness",
+    "confidence",
+    "corrigibility",
+    "formality",
+    "myopia",
+    "power_seeking",
+    "refusal",
+    "verbosity",
 ]
 
 MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
