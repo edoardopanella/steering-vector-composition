@@ -34,9 +34,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import torch
-
-from src.datasets import load_contrastive_pairs, split_pairs
 
 # ---------------------------------------------------------------------------
 # Config
@@ -69,8 +66,8 @@ def _setup_style() -> None:
     sns.set_theme(context="paper", style="whitegrid", palette="colorblind")
     plt.rcParams.update({
         "font.family": "serif",
-        "font.serif": ["DejaVu Serif", "Computer Modern Roman", "Times"],
-        "mathtext.fontset": "cm",
+        "font.serif": ["DejaVu Serif", "Times", "Liberation Serif"],
+        "mathtext.fontset": "dejavuserif",
         "axes.labelsize": 10,
         "axes.titlesize": 11,
         "axes.titleweight": "bold",
@@ -188,6 +185,7 @@ def plot_fig1(df: pd.DataFrame) -> None:
     fig.tight_layout()
     out = FIG_DIR / "fig1_judge_deltas.pdf"
     fig.savefig(out)
+    fig.savefig(FIG_DIR / "fig1_judge_deltas.png", dpi=200)
     plt.close(fig)
     print(f"saved {out}")
 
@@ -256,6 +254,7 @@ def plot_fig2(df: pd.DataFrame) -> None:
     out = FIG_DIR / "fig2_judge_vs_logprob.pdf"
     fig.tight_layout()
     fig.savefig(out)
+    fig.savefig(FIG_DIR / "fig2_judge_vs_logprob.png", dpi=200)
     plt.close(fig)
     print(f"saved {out}")
 
@@ -312,6 +311,7 @@ def plot_fig3(df: pd.DataFrame) -> None:
     fig.tight_layout()
     out = FIG_DIR / "fig3_distributions.pdf"
     fig.savefig(out)
+    fig.savefig(FIG_DIR / "fig3_distributions.png", dpi=200)
     plt.close(fig)
     print(f"saved {out}")
 
@@ -373,6 +373,7 @@ def plot_fig4(df: pd.DataFrame) -> None:
     out = FIG_DIR / "fig4_logprob_forest.pdf"
     fig.tight_layout()
     fig.savefig(out)
+    fig.savefig(FIG_DIR / "fig4_logprob_forest.png", dpi=200)
     plt.close(fig)
     print(f"saved {out}")
 

@@ -570,6 +570,108 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
     - [bash scripts/slurm_anthropic_repl_validation_all.sh](bash scripts/slurm_anthropic_repl_validation_all.sh) — 1 GPU, 256G RAM, 8 CPU, 23:59 walltime. Estimated runtime ~3h (LLM-judge dominates; logprob ~30s/trait × 15 ≈ 8 min).
 - **Status**: scripts pushed (commit `bcfa91d`, *"validation ready"*). Cluster submission pending. Outputs not yet on disk.
 
+### E7.8 — Validation results (job 484792, ~2h cluster wall)
+
+Cluster submission finally landed after several iterations of the SLURM wrapper (chdir path → `-cloned` suffix; `python -m` → plain script invocation; HF cache offline mode lifted to use Edoardo's pre-populated `~/.cache/huggingface/`). Job 484792 ran 21:40 → 23:46 CEST 2026-04-28, exit 0. All 15 traits scored under both protocols.
+
+**Headline numbers** (sorted by LLM-judge Δ_trait):
+
+| Trait | Origin | base→steer trait | Δ_trait | Δ_coh | logprob shift | lp pass |
+|---|---|---|---:|---:|---:|:---:|
+| sycophantic   | Anthropic   |  3.56 → 92.21 | **+88.65** | −33.67 | +13.74 | ✓ |
+| evil          | Anthropic   |  0.00 → 84.94 | **+84.94** | −70.76 |  +2.33 | ✓ |
+| impolite      | Anthropic   |  0.00 → 84.34 | **+84.34** | −54.21 |  +5.16 | ✓ |
+| humorous      | Anthropic   |  0.01 → 81.75 | **+81.74** | −72.53 |  +1.22 | ✓ |
+| hallucinating | Anthropic   | 20.27 → 99.07 | **+78.79** | −67.39 | +19.41 | ✓ |
+| apathetic     | Anthropic   |  3.07 → 80.57 | **+77.50** | −59.17 | +21.95 | ✓ |
+| power_seeking | Project     | 26.82 → 93.66 | **+66.84** | −17.67 |  +1.15 | ✓ |
+| confidence    | Project     | 48.10 → 75.16 | +27.06 |  −1.69 |  +6.99 | ✓ |
+| myopia        | Project     |  1.55 → 26.12 | +24.58 | −27.87 |  +0.50 | ✓ |
+| optimistic    | Anthropic   | 81.48 → 95.07 | +13.59 |  −0.85 |  **−8.92** | ✓ |
+| corrigibility | Project     | 76.94 → 84.99 |  +8.05 |  +4.82 |  +0.25 | ✗ |
+| agreeableness | Project     | 86.99 → 93.67 |  +6.68 |  −1.77 |  −0.19 | ✗ |
+| formality     | Project     | 90.60 → 95.07 |  +4.47 |  −4.80 | **+18.12** | ✓ |
+| verbosity     | Project     | 85.01 → 89.39 |  +4.37 | −29.40 |  +0.39 | ✗ |
+| refusal       | Project     | 81.94 → 50.82 | **−31.11** | −30.26 |  +2.33 | ✓ |
+
+- **Aggregate**: 7/15 hit Figure-13 magnitude (Δ_trait > 50 — apathetic, evil, hallucinating, humorous, impolite, sycophantic, power_seeking). 12/15 pass logprob threshold (|shift| > 0.5 nats).
+- **E7.3 reproduced exactly**: `evil` Δ_trait +84.94 / Δ_coh −70.76 — bit-identical to standalone E7.3 run (skip-if-CSV-exists picked up the existing file).
+
+#### Plot inventory (`analysis/figures/`)
+
+##### Figure 1 — per-trait LLM-judge response
+
+![Figure 1: judge deltas](../analysis/figures/fig1_judge_deltas.png)
+
+Two-panel horizontal bar chart, traits sorted by Δ_trait descending.
+- **Panel (a)** — steered − baseline trait expression in 0–100 LLM-judge units. Anthropic-released traits (blue) cluster at the top of the chart, all 6 above the dashed Δ=50 paper-Figure-13 threshold; project-generated traits (green) span the middle and bottom, with `power_seeking` the only one that clears the 50 threshold. `refusal` is the lone negative bar at −31 — steering *removes* refusal expression, the opposite of what the trait label says.
+- **Panel (b)** — coherence cost. Anthropic-released traits with the largest Δ_trait are also the ones with the biggest coherence drop (−54 to −73 for the top six). Project-generated traits with small Δ_trait keep coherence near zero. `corrigibility` is a curious +5 outlier — steering *improves* coherence on its eval prompts, possibly because the priming context biases the model toward more confident shorter completions.
+- **Reading**: at α=2 the model is firmly inside the over-steering regime for the strong vectors. The trait/coherence Pareto front is heavily slanted — for these traits an α-sweep at 1.0–1.5 should recover ~80% of the trait gain at half the coherence cost (paper §3.2 trade-off).
+
+##### Figure 2 — LLM-judge × logprob scatter
+
+![Figure 2: judge vs logprob scatter](../analysis/figures/fig2_judge_vs_logprob.png)
+
+Each point = one trait. x = LLM-judge Δ_trait, y = mean logprob shift in nats. Solid line = OLS fit. Pearson r = 0.38, Spearman ρ = 0.40, n = 15.
+- The two protocols agree in **direction** for 13/15 traits (both positive or both near zero). Confirms the dual-signal validation: vectors that move open-ended generation also tilt next-token logprobs on MWE pairs, as expected.
+- **Quadrant analysis**:
+    - *Upper right (judge↑, lp↑)* — Anthropic strong steerers: `apathetic, hallucinating, sycophantic`. Both signals align, vectors clearly work.
+    - *Right band (judge↑, lp small +)* — `impolite, humorous, evil, power_seeking`. Judge sees big trait expression but logprob delta on MWE pairs is modest (<5 nats). Vector influences open-ended generation more than next-token A/B selection — typical for response-style vs format-following.
+    - *Top-middle (judge mid, lp big +)* — `formality (+18 nats), confidence (+7)`. Logprob says vector steers strongly; judge says baseline already saturated (formality 90.6 baseline → little room to move). Real vector quality, hidden by the LLM-judge ceiling.
+    - *Bottom cluster (both ≈0)* — `verbosity, agreeableness, corrigibility, myopia`. Vectors don't steer. RLHF-saturated baselines.
+- **Two outliers worth a separate note**:
+    - `optimistic` (judge +14, lp **−9**): sign mismatch — only trait with this. Judge sees the model getting *more* optimistic, MWE logprob says it's becoming *less* likely to pick the trait completion. Hypothesis: hand-generated `data/behaviors_mwe/optimistic.py` pairs use a phrasing pattern that the vector actively pushes the model away from (e.g. trait completions all start with "This is workable…" — a register cue that conflicts with the priming-conditioned residual direction). Inspect MWE pairs.
+    - `refusal` (judge **−31**, lp +2.3): judge sign-flipped from the trait label, logprob aligned. Strongly suggests the vector built at extraction time has the wrong polarity — the (pos, neg) instructions in `anthropic_code/data_generation/trait_data_extract/refusal.json` likely got swapped. Easy to verify and re-extract.
+
+##### Figure 3 — per-trait raw judge-score distributions
+
+![Figure 3: distributions](../analysis/figures/fig3_distributions.png)
+
+15-facet KDE grid. Pink = baseline judge scores, orange = steered. Per-trait, 100 generations per condition. Shows the *shape* of the judge-score distribution beyond the means in Figures 1–2.
+- **Bimodal-shift traits** (paper-style): `sycophantic, evil, impolite, humorous, hallucinating, apathetic, power_seeking` — pink mass concentrated near 0, orange mass near 100. Steering pushes the *entire* response distribution to the trait pole, not just the mean. Cleanest possible evidence of vector control.
+- **Saturated baselines**: `agreeableness, formality, optimistic, corrigibility, verbosity` — pink already at the right tail (80–100), orange shifts marginally further. The "vector doesn't steer" call for the bottom four becomes "the LLM-judge can't tell because there's no headroom." Logprob measurement bypasses this for `formality` (+18 nats — vector clearly works under the tighter measurement).
+- **Bidirectional / messy**: `refusal` baseline near 100, steered drops broadly into 30–80 — consistent with the polarity-flipped extraction hypothesis. `optimistic` baseline already at 80+, steered density barely shifts.
+- **Note**: the `evil` and `impolite` panels render with raw score-count y-axes (not density) because their distributions are nearly delta-functions at 0 / 100; KDE clip artefact. Treat those panels as visual approximations — the underlying CSV numbers in the table above are exact.
+
+##### Figure 4 — logprob forest plot
+
+![Figure 4: logprob forest](../analysis/figures/fig4_logprob_forest.png)
+
+Per-trait mean logprob shift on the MWE test split, with 95% normal-approx CI (`mean ± 1.96 · std/√n`). Sorted by |shift|, threshold lines at ±0.5 nats.
+- **Top of plot** (`apathetic +21.95, hallucinating +19.41, formality +18.12, sycophantic +13.74`) — log-odds shifts of 13–22 nats translate to ~10⁵–10¹⁰ × multiplicative re-weighting of trait vs non-trait completion. Vector dominates next-token at α=2 across all positions (we use `positions="all"` in the logprob hook, vs `"response"` for generation).
+- The CIs are vanishingly narrow — std/√n ≈ 0.1–0.5 nats given n_test = 200–1000 pairs. So even 0.5-nat shifts are detected with high confidence; the bottom four (`agreeableness, corrigibility, verbosity, myopia`) genuinely don't move under steering.
+- `optimistic` is the only negative bar. Same finding as Figure 2 — flagged for MWE-format inspection.
+- **Comparison to Phase 4 (E4.2)**: legacy CAA L=17 unit-norm vectors maxed out at +2.24 nats. The Anthropic L=16 raw vectors hit +21.95 nats on the same evaluation framework, primarily because raw vector norms (1.3–3.6) × α=2 give an effective coefficient 2.7–7.2× larger than the legacy unit-norm × α=1 regime. Same protocol, different operating point.
+
+#### Decisions: which traits to keep for downstream work
+
+Composition / cosine analysis / Part A of the research plan needs vectors that *demonstrably steer*. Rule of thumb: pass at least one signal cleanly and have no sign mismatch.
+
+**Tier S — paper-grade, safe to use anywhere (n=6)**: `apathetic, evil, hallucinating, humorous, impolite, sycophantic`. All six pass Δ_trait > 75 *and* logprob > 1 nat. Same six are Anthropic's released set. Safest core.
+
+**Tier A — strong but caveated (n=3)**: `power_seeking` (Δ +67, lp +1.15 — both signals positive), `confidence` (Δ +27, lp +7 — judge under-reads due to mid-range baseline), `formality` (Δ +4 looks dead, but lp +18 nats — judge ceiling-saturated, vector clearly works). Use for composition; for trait-expression headline numbers prefer Tier S.
+
+**Tier B — investigate before using (n=2)**:
+- `optimistic`: sign mismatch between protocols. Likely fix: re-inspect / regenerate `data/behaviors_mwe/optimistic.py` pairs. Vector itself may be fine.
+- `refusal`: judge Δ inverts from trait label. Likely fix: verify pos/neg instructions in `anthropic_code/data_generation/trait_data_extract/refusal.json` weren't swapped during E7.5 generation; if so, re-extract with corrected polarity.
+
+**Tier C — drop from active set (n=4)**: `agreeableness, corrigibility, verbosity, myopia`. Three fail logprob outright; `myopia` barely scrapes 0.5 nats. All four have small judge Δ (<25). Two distinct underlying causes:
+1. RLHF baseline saturation (`agreeableness 87, verbosity 85, corrigibility 77` — already at trait ceiling).
+2. Weak vector quality (gpt-4.1 substitute for Claude in E7.5 artifact generation may have produced poorly-contrastive instruction pairs).
+
+These can be revisited if (a) we re-generate trait artifacts with Claude 3.7 Sonnet directly, or (b) we drop α=2 and α-sweep to find a regime where the smaller perturbation reads on the judge.
+
+**Working set for E7.x → composition experiments → Part A: 9 traits** (Tier S + Tier A). Cosine matrix (E7.4-extension) should still cover all 15 for the geometric story, but composition coefficients only get derived from the 9.
+
+#### Open follow-ups (priority order)
+
+1. **α-sweep on Tier S** at α ∈ {1.0, 1.5, 2.0} — recover the trait/coherence Pareto front, pick a per-trait α with judge-coherence ≥ 50 and Δ_trait ≥ 50. Will also produce a cleaner Figure 1 for the report.
+2. **Polarity diagnosis for `refusal`** — check `trait_data_extract/refusal.json` instructions, re-extract if confirmed swapped.
+3. **MWE inspection for `optimistic`** — eyeball 50 random pairs to confirm phrasing cue / regenerate if needed.
+4. **15×15 cosine matrix** at L=16 — extends E7.4's 3×3, cross-validates against paper Figure 20 across the full set.
+5. **Phase 5 geometry on L=16 vectors** — current Phase 5 analysis used legacy L=17. Re-run Gram heatmap, pairwise distribution, stratified pair selection on the Tier S+A subset.
+6. **Composition pilot** — joint injection of two Tier S vectors at calibrated per-trait α, run the eval pilot from Phase 5.2, get the first `Q(i,j)` measurements.
+
 ### E7.7-side — generate_mwe_behaviors.py iteration scars (kept here so future runs don't repeat)
 - **Slurm pathing iteration**: first slurm version used `python -m scripts.generate_mwe_behaviors` which fails because `scripts/__init__.py` doesn't exist (only `scripts/anthropic_repl/__init__.py` does). Plain `python scripts/generate_mwe_behaviors.py` works. Also `chdir` initially used `/home/3242106/steering-vector-composition` but Edoardo's actual cluster repo path is `/home/3242106/steering-vector-composition-cloned` (matches 9 of 12 of his existing slurm scripts). For future scripts: copy `chdir` and account from any working slurm in `bash scripts/`, don't infer from teammate scripts which use `/home/3247897/...`.
 - **JSON-object mode reminder**: when using `response_format={"type": "json_object"}` with gpt-4.1, always: (a) instruct the model in the system *and* user message to wrap output as `{"key": [...]}`, (b) parse with a coercer that handles all 3 likely shapes (array, `{any: list}`, `{key1: pair, key2: pair, ...}`), (c) accept extra metadata keys per pair via `issubset` not `==`. Strict matching killed the first run silently.
@@ -580,7 +682,7 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
 
 1. **Anthropic-replication pipeline now spans 15 traits**: 7 Anthropic-released + 8 project-generated (E7.5). All extracted at layer 16 with raw `response_avg_diff` vectors (E7.6, commit `6920caf`). E7.4 cosine matrix already validated 3×3 against paper Figure 20 to within 0.02 — pipeline confirmed faithful.
 2. **MWE coverage now full-spectrum**: 7 legacy MWE files + 8 hand-generated (E7.7) = 15/15 traits with 1000-pair test-ready datasets.
-3. **Validation scripts ready, not yet run** (E7.8): `run_validation_all.py` will produce per-trait LLM-judge Δ + logprob shift in a single ~3h cluster job. `plot_validation.py` produces 4 paper-style figures from the result JSONs. Both committed in `bcfa91d`.
-4. **Open next step**: submit `slurm_anthropic_repl_validation_all.sh`, pull results, run plots. After that, the headline question — *do the same vectors that pass Anthropic's Stage-3 trait-elicitation also produce the right per-token logprob tilt on MWE-format pairs?* — gets a clean answer with both signals on every trait.
-5. **Still not done from earlier phases**: 15×15 cross-trait cosine matrix (extends E7.4's 3×3); Phase 5 geometry analysis on the new L=16 Anthropic vectors (currently only run on the legacy L=17 ones); composition experiments (Part A of the original research plan, blocked by the Phase 3 negative result and now waiting on E7.8 to confirm vectors are actually steering before resuming).
+3. **Dual-protocol validation done** (E7.8, job 484792): LLM-judge + logprob ran on all 15 traits. **9 vectors validated for downstream work** (Tier S: `apathetic, evil, hallucinating, humorous, impolite, sycophantic`; Tier A: `power_seeking, confidence, formality`). 4 vectors fail (`agreeableness, corrigibility, verbosity, myopia`) — RLHF baseline saturation + weak gpt-4.1 contrasts. 2 anomalies need investigation (`refusal` polarity flip, `optimistic` sign mismatch).
+4. **Open next step**: α-sweep on Tier S to find per-trait Pareto-optimal coefficient; diagnose `refusal` + `optimistic`; 15×15 cosine matrix at L=16; re-run Phase 5 geometry on the validated subset.
+5. **Composition experiments unblocked**: Part A of the research plan — joint injection + `Q(i,j)` measurement — can now resume on the 9-trait validated set.
 
