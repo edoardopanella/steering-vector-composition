@@ -11,7 +11,7 @@
 #SBATCH --qos=stud
 #SBATCH --account=3242106
 #SBATCH --partition=stud
-#SBATCH --chdir=/home/3242106/steering-vector-composition
+#SBATCH --chdir=/home/3242106/steering-vector-composition-cloned
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=edoardo.panella@studbocconi.it
 
@@ -33,6 +33,6 @@ set -a; source .env; set +a
 mkdir -p /home/3242106/logs
 
 echo "Starting anthropic-repl validation-all — $(date)"
-export PYTHONPATH=/home/3242106/steering-vector-composition
+export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
 python -u scripts/anthropic_repl/run_validation_all.py
 echo "Anthropic-repl validation-all done — $(date)"
