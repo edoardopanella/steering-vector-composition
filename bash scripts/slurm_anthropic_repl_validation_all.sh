@@ -17,12 +17,9 @@
 
 set -euo pipefail
 
-export SCRATCH=/mnt/beegfsstudents/home/$USER
-export HF_HOME=$SCRATCH/hf_cache
-export HF_DATASETS_CACHE=$HF_HOME/datasets
-export TORCH_HOME=$SCRATCH/torch_cache
-export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
+# HF cache: use default ~/.cache/huggingface (where Edoardo's prior runs already
+# cached Llama-3.1-8B-Instruct). No offline flags — compute node has internet
+# and will hit cache on first lookup, fetch any missing files online if needed.
 
 module purge
 module load miniconda3
