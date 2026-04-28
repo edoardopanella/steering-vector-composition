@@ -420,3 +420,89 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
     - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt) (+2 sibling files)
     - 4 new extract CSVs under `results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/`
 
+---
+
+## Phase 7.5 — Trait artifact generation for 8 research-plan behaviours (Riccardo, 2026-04-28)
+
+### E7.5 — Generate trait JSONs for behaviours not in Anthropic's released set
+- Description: To extend the Anthropic pipeline beyond the 7 released traits (`apathetic`, `evil`, `hallucinating`, `humorous`, `impolite`, `optimistic`, `sycophantic`) to the project's research-plan behaviour set, generated trait artifacts for the 8 missing behaviours: `refusal`, `corrigibility`, `power_seeking`, `myopia`, `verbosity`, `formality`, `confidence`, `agreeableness`. Each artifact = `{instructions: 5 (pos, neg) pairs, questions: 40, eval_prompt: rubric}` matching Anthropic's schema exactly.
+- Approach: paper's published prompt template ([anthropic_code/data_generation/prompts.py](anthropic_code/data_generation/prompts.py)) used **unchanged**. Substituted Claude 3.7 Sonnet with **OpenAI gpt-4.1** as the generator — reuses existing `OPENAI_API_KEY`, no new dependency. JSON mode (`response_format=json_object`) forces valid output. Validation: ≥40 questions (gpt-4.1 occasionally returns 41–42, trimmed to 40); 5 instruction pairs; non-empty eval_prompt. Deterministic 20/20 split (seed=42) into `trait_data_extract/` and `trait_data_eval/`.
+- Drop-in compatibility: outputs land in the same dirs as Anthropic's vendored artifacts (`anthropic_code/data_generation/trait_data_{extract,eval}/`), so the existing `load_trait()` loader in [src/anthropic_repl/trait_data.py](src/anthropic_repl/trait_data.py) picks them up transparently. No loader changes needed.
+- Spot-check QA on `myopia` / `refusal` / `agreeableness`: instructions are clean pos/neg contrasts; questions are diverse trait-eliciting scenarios (money laundering for `refusal`, opinion-baiting for `agreeableness`, instant-gratification trade-offs for `myopia`); eval_prompt structure matches Anthropic's released format.
+- Results: 16 new JSON files (8 traits × 2 splits), idempotent (skip-if-exists at file level).
+- Scripts and files involved:
+    - [scripts/anthropic_repl/generate_trait_artifacts.py](scripts/anthropic_repl/generate_trait_artifacts.py) — driver, 298 lines, supports `--trait`, `--traits`, `--overwrite`
+    - [anthropic_code/data_generation/prompts.py](anthropic_code/data_generation/prompts.py) — paper's template, untouched
+- Output files:
+    - `anthropic_code/data_generation/trait_data_extract/{agreeableness, confidence, corrigibility, formality, myopia, power_seeking, refusal, verbosity}.json`
+    - same 8 names under `trait_data_eval/`
+- Commit: `0b06d35`.
+
+---
+
+## Phase 7.6 — Bulk extract + vectorise across all 15 traits (Riccardo, 2026-04-28)
+
+### E7.6 — Extend `run_extract_all` to all 15 traits and execute on cluster
+- Description: Now that artifact coverage spans all 15 target traits (7 Anthropic + 8 generated in E7.5), ran the full Anthropic-pipeline Stage 1 (extract+judge) and Stage 2 (build vector) on the 12 remaining traits (`evil`, `sycophantic`, `hallucinating` already done in E7.1–E7.4 via skip-if-exists logic).
+- Driver wiring (commit `b96be1f`):
+    - [scripts/anthropic_repl/run_extract_all.py](scripts/anthropic_repl/run_extract_all.py) — `TRAITS` extended 6 → 15. Per-CSV and per-vector skip-if-exists handles the 3 already-done as no-ops.
+    - [bash scripts/slurm_anthropic_repl_extract_all.sh](bash scripts/slurm_anthropic_repl_extract_all.sh) — `--account 3242106 → 3247897` (was Edoardo's, mismatched Riccardo's `--chdir`); `--mem 128G → 256G` (8h run, headroom over the ~16–20G HF/Llama-bf16 actually consumes); walltime kept at 23:59 (max student QoS).
+    - Same per-trait knobs as E7.1: `MAX_CONCURRENT_JUDGES=5`, `N_PER_QUESTION=5`, `MAX_NEW_TOKENS=600`, `TEMPERATURE=1.0`, `BATCH_SIZE=8`, `JUDGE_MODEL=gpt-4.1-mini`.
+- Execution (commit `6920caf`): single SLURM job. Stage 1 loads Llama-3.1-8B-Instruct once, walks all 12 remaining traits sequentially, judges trait + coherence per polarity (24 CSVs). Stage 2 spawns one subprocess per trait calling [scripts/anthropic_repl/run_build_vector.py](scripts/anthropic_repl/run_build_vector.py) so each forward-pass run gets a clean model lifecycle. Total: 12 traits × 1000 generations × 2 judge calls = 24,000 OpenAI calls; ~8h cluster wall; ~$3–4 OpenAI spend (estimated).
+- **Per-trait extract stats** (mean trait + mean coherence in 0–100 judge units, from the new CSVs):
+
+  | Trait          | POS trait | POS coh | NEG trait | NEG coh | Effective pairs |
+  |----------------|----------:|--------:|----------:|--------:|----------------:|
+  | agreeableness  |    93.01  |  97.27  |    50.11  |  97.30  | 255 / 500 |
+  | apathetic      |    83.04  |  86.04  |     0.07  |  99.09  | 483 / 500 |
+  | confidence     |    78.07  |  97.27  |    21.76  |  97.04  | 419 / 500 |
+  | corrigibility  |    84.10  |  91.12  |    65.90  |  90.23  | 100 / 500 |
+  | formality      |    95.58  |  98.41  |    32.85  |  97.11  | 429 / 500 |
+  | humorous       |    90.78  |  88.08  |     0.00  |  96.80  | 499 / 500 |
+  | impolite       |    76.51  |  88.77  |     0.15  |  97.27  | 408 / 500 |
+  | myopia         |    38.03  |  92.68  |     0.15  |  98.69  | 190 / 500 |
+  | optimistic     |    97.98  |  97.87  |    17.64  |  93.82  | 445 / 500 |
+  | power_seeking  |    89.43  |  94.29  |     8.55  |  97.11  | 468 / 500 |
+  | refusal        |    99.40  |  99.77  |    69.57  |  97.11  | 158 / 500 |
+  | verbosity      |    88.27  |  92.19  |    20.37  |  98.49  | 469 / 500 |
+
+  - Coherence stays high (>86) across all traits and both polarities — the priming does not break fluency.
+  - **High-yield traits** (effective pairs >400, clean trait separation): `apathetic, humorous, impolite, optimistic, power_seeking, verbosity, formality, confidence`. These look on par with the original `evil`/`sycophantic`/`hallucinating` runs.
+  - **Low-yield traits** flagged by the (pos≥50, neg<50, both coh≥50) filter:
+    - `corrigibility` (100/500): NEG trait mean 65.90 — the "helpful" assistant baseline is *already corrigible* under Llama's RLHF, so most NEG samples score >50 and fail the filter. Same baseline-saturation pattern Phase 3 hit.
+    - `agreeableness` (255/500): NEG trait mean 50.11 — borderline; same RLHF baseline issue.
+    - `refusal` (158/500): NEG trait mean 69.57 — Llama refuses harmful requests by default, so NEG ("helpful assistant") still refuses, scoring high on the refusal axis.
+    - `myopia` (190/500): POS trait mean only 38.03 — the priming doesn't reliably elicit short-horizon thinking; many POS samples fall below 50 and fail the filter.
+- **Per-trait layer-16 vector norms** (`response_avg_diff[16]`):
+
+  | Trait          | ‖v(16)‖₂ |
+  |----------------|---------:|
+  | refusal        |    3.580 |
+  | hallucinating  |    3.436 |
+  | apathetic      |    3.234 |
+  | evil           |    2.931 |
+  | humorous       |    2.792 |
+  | sycophantic    |    2.593 |
+  | optimistic     |    2.246 |
+  | myopia         |    2.245 |
+  | verbosity      |    2.190 |
+  | impolite       |    2.164 |
+  | formality      |    2.028 |
+  | power_seeking  |    2.011 |
+  | agreeableness  |    2.009 |
+  | corrigibility  |    1.577 |
+  | confidence     |    1.339 |
+
+  Norms in line with `evil` (2.93) at α=2 → expect comparable steering perturbation magnitudes for all but the two smallest (`corrigibility`, `confidence`) which may need α≥2.5 to reach paper-typical effect sizes.
+- All 15 vectors verified: shape `[33, 4096]` float32, no NaN/Inf, layer-in-range. Three variants saved per trait (`response_avg_diff`, `prompt_avg_diff`, `prompt_last_diff`) — paper's primary is `response_avg_diff`.
+- Scripts and files involved:
+    - [scripts/anthropic_repl/run_extract_all.py](scripts/anthropic_repl/run_extract_all.py) (commit `b96be1f`)
+    - [scripts/anthropic_repl/run_build_vector.py](scripts/anthropic_repl/run_build_vector.py) (subprocess per trait)
+    - [bash scripts/slurm_anthropic_repl_extract_all.sh](bash scripts/slurm_anthropic_repl_extract_all.sh) (commit `b96be1f`)
+    - [src/anthropic_repl/generation.py](src/anthropic_repl/generation.py), [src/anthropic_repl/build_vector.py](src/anthropic_repl/build_vector.py), [src/anthropic_repl/hf_model.py](src/anthropic_repl/hf_model.py)
+- Output files (commit `6920caf`):
+    - 24 new extract CSVs under [results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/](results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/) (12 traits × pos/neg)
+    - 36 new persona-vector files under [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/) (12 traits × 3 variants)
+- **Status**: bulk vectors ready. Stage 3 (steered-vs-baseline trait deltas at α=2 on held-out eval set, à la E7.3) **not yet executed** for the 12 new traits — open next step. Cosine matrix across all 15 traits also pending — extends E7.4's 3×3 to a full 15×15 for cross-validation against paper Figure 20 / Appendix G.2.
+- Commits: `0b06d35` (artifacts) → `b96be1f` (driver+slurm) → `6920caf` (results).
+
