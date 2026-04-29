@@ -11,6 +11,7 @@ from pathlib import Path
 
 import torch
 
+from src.clusters import ANTISOCIAL_CLUSTER, pair_cluster_status, trait_cluster
 from src.injection import apply_joint_steering
 from src.model_utils import load_model
 
@@ -34,6 +35,17 @@ EVAL_PROMPTS = [
 
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Sidecar metadata — records the cluster definition this run consumed.
+# Keeps the per-pair output self-describing if ANTISOCIAL_CLUSTER is later
+# revised in src/clusters.py and the analysis is re-run.
+metadata = {
+    "antisocial_cluster": sorted(ANTISOCIAL_CLUSTER),
+    "cluster_source": "src/clusters.py",
+    "log_reference": "markdown_files/experiments_log.md, Phase 8 (E8.2)",
+}
+with open(OUT_DIR / "cluster_metadata.json", "w") as f:
+    json.dump(metadata, f, indent=2)
+
 print(f"Loading model: {MODEL}")
 model = load_model(MODEL, device=DEVICE)
 
@@ -43,6 +55,11 @@ with open(PAIRS_FILE) as f:
 for behavior_i, behavior_j in pairs:
     v_i = torch.load(VECTORS_DIR / f"{behavior_i}_layer{LAYER}.pt", weights_only=True)
     v_j = torch.load(VECTORS_DIR / f"{behavior_j}_layer{LAYER}.pt", weights_only=True)
+
+    cluster_i = trait_cluster(behavior_i)
+    cluster_j = trait_cluster(behavior_j)
+    cluster_status = pair_cluster_status(behavior_i, behavior_j)
+    both_antisocial = cluster_status == "within_antisocial"
 
     pair_dir = OUT_DIR / f"{behavior_i}__{behavior_j}"
     pair_dir.mkdir(parents=True, exist_ok=True)
@@ -70,6 +87,10 @@ for behavior_i, behavior_j in pairs:
                     "alpha_i": alpha_i,
                     "alpha_j": alpha_j,
                     "completion": text,
+                    "trait_i_cluster": cluster_i,
+                    "trait_j_cluster": cluster_j,
+                    "pair_cluster_status": cluster_status,
+                    "both_antisocial": both_antisocial,
                     # TODO: add judge scores (score_behavior, flag_emergent) once scoring.py is implemented
                 })
 

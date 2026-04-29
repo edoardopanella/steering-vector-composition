@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.colors import TwoSlopeNorm
 
+from src.pair_strat import NEAR_MAX, MODERATE_MAX
+
 PAPER_RC = {
     "figure.dpi": 130,
     "savefig.dpi": 300,
@@ -52,9 +54,10 @@ def summary_stats(pairs_df: pd.DataFrame) -> pd.DataFrame:
         "max": cos.max(),
         "mean_abs": abs_cos.mean(),
         "std_abs": abs_cos.std(),
-        "near (<0.2)": (abs_cos < 0.2).sum(),
-        "moderate [0.2,0.5)": ((abs_cos >= 0.2) & (abs_cos < 0.5)).sum(),
-        "high (>=0.5)": (abs_cos >= 0.5).sum(),
+        f"near (<{NEAR_MAX})": (abs_cos < NEAR_MAX).sum(),
+        f"moderate [{NEAR_MAX},{MODERATE_MAX})":
+            ((abs_cos >= NEAR_MAX) & (abs_cos < MODERATE_MAX)).sum(),
+        f"high (>={MODERATE_MAX})": (abs_cos >= MODERATE_MAX).sum(),
     }
     return pd.DataFrame(stats, index=["value"]).T
 
@@ -103,7 +106,8 @@ def plot_abs_cosine_distribution(pairs_df: pd.DataFrame, ax=None):
     grid = np.linspace(0, 1, 400)
     ax.plot(grid, _kde(vals, grid), color="#7a4a14", linewidth=1.6, zorder=3)
     ymax = ax.get_ylim()[1]
-    for thresh, label, c in [(0.2, "near | mod", NEAR_C), (0.5, "mod | high", HIGH_C)]:
+    for thresh, label, c in [(NEAR_MAX, "near | mod", NEAR_C),
+                             (MODERATE_MAX, "mod | high", HIGH_C)]:
         ax.axvline(thresh, color=c, linewidth=1.0, linestyle="--", alpha=0.85, zorder=1)
         ax.text(thresh + 0.012, ymax * 0.92, label, fontsize=8.5, color=c)
     ax.set_xlim(0, 1)
@@ -134,11 +138,20 @@ def plot_stratum_counts(strat_df: pd.DataFrame, ax=None):
 
 
 def plot_cosine_heatmap(pairs_df: pd.DataFrame, behaviors: list[str], ax=None,
-                        annotate: bool = True):
+                        annotate: bool = True, partition_at: int | None = None,
+                        partition_label: str | None = None):
+    """If `behaviors` differs from the trait order in `pairs_df`, the matrix is
+    reindexed accordingly (use this to group clusters together visually).
+    `partition_at` draws a black axhline+axvline between row/col indices
+    `partition_at - 1` and `partition_at` to mark a cluster boundary."""
     n = len(behaviors)
+    name_to_idx = {b: i for i, b in enumerate(behaviors)}
     mat = np.full((n, n), np.nan)
     for _, row in pairs_df.iterrows():
-        i, j = int(row["i"]), int(row["j"])
+        bi, bj = row["behavior_i"], row["behavior_j"]
+        if bi not in name_to_idx or bj not in name_to_idx:
+            continue
+        i, j = name_to_idx[bi], name_to_idx[bj]
         mat[i, j] = row["cosine"]
         mat[j, i] = row["cosine"]
     np.fill_diagonal(mat, 1.0)
@@ -183,6 +196,15 @@ def plot_cosine_heatmap(pairs_df: pd.DataFrame, behaviors: list[str], ax=None,
                 ax.text(j, i, f"{v:+.2f}", ha="center", va="center",
                         fontsize=7.5, color=color)
 
+    if partition_at is not None and 0 < partition_at < n:
+        edge = partition_at - 0.5
+        ax.axhline(edge, color="black", linewidth=1.4, alpha=0.85)
+        ax.axvline(edge, color="black", linewidth=1.4, alpha=0.85)
+        if partition_label:
+            ax.text(-0.5, edge, partition_label, ha="right", va="center",
+                    fontsize=8, fontweight="semibold", color="black",
+                    rotation=90)
+
     return ax
 
 
@@ -197,7 +219,8 @@ def top_pairs(pairs_df: pd.DataFrame, n: int = 5) -> tuple[pd.DataFrame, pd.Data
 
 
 def run_eda(pairs_df: pd.DataFrame, strat_df: pd.DataFrame, behaviors: list[str],
-            savepath: str | None = None):
+            savepath: str | None = None, heatmap_order: list[str] | None = None,
+            partition_at: int | None = None, partition_label: str | None = None):
     _apply_paper_style()
 
     print("=== Summary statistics (all pairs) ===")
@@ -219,7 +242,8 @@ def run_eda(pairs_df: pd.DataFrame, strat_df: pd.DataFrame, behaviors: list[str]
     plot_cosine_distribution(pairs_df, ax=ax_a)
     plot_abs_cosine_distribution(pairs_df, ax=ax_b)
     plot_stratum_counts(strat_df, ax=ax_c)
-    plot_cosine_heatmap(pairs_df, behaviors, ax=ax_d)
+    plot_cosine_heatmap(pairs_df, heatmap_order or behaviors, ax=ax_d,
+                        partition_at=partition_at, partition_label=partition_label)
 
     for label, ax in zip("abcd", [ax_a, ax_b, ax_c, ax_d]):
         ax.text(-0.08, 1.04, f"({label})", transform=ax.transAxes,

@@ -727,11 +727,11 @@ The norm spread (≈2.6×) explains part of why the same α=2 produced very diff
 | min               | −0.496   |
 | max               | +0.715   |
 | mean \|cos\|        |  0.229   |
-| near (\|cos\|<0.2)  | 16       |
-| moderate [0.2,0.5)| 19       |
-| high (≥0.5)       | 1        |
+| near (\|cos\|<0.2)   | 16       |
+| moderate [0.2,0.35) | 13       |
+| high (≥0.35)        | 7        |
 
-The distribution is shifted slightly positive (mean +0.16, not centred at 0) — these 9 vectors share more common direction than random Gaussian baselines would. Most pairs sit in the moderate band; only one pair (`apathetic ↔ impolite`, +0.715) crosses the strict 0.5 high-cos threshold.
+Counts use the canonical thresholds defined in [src/pair_strat.py](../src/pair_strat.py) (`NEAR_MAX=0.2`, `MODERATE_MAX=0.35`); see E8.3 for the consistency fix. The distribution is shifted slightly positive (mean +0.16, not centred at 0) — these 9 vectors share more common direction than random Gaussian baselines would. Mass concentrates in the near and moderate bands; 7 pairs cross the 0.35 high-cos boundary.
 
 #### Most similar pairs (top 5 by |cos|)
 
@@ -760,9 +760,9 @@ The distribution is shifted slightly positive (mean +0.16, not centred at 0) —
 Four-panel paper-style figure (saved to [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png)).
 
 - **Panel (a) — signed cosine distribution**: density histogram + Gaussian KDE. Mode sits around +0.15–0.20 with a long left tail. Mean (red line) at +0.160 confirms positive bias. Two modest negative outliers in [−0.5, −0.4] correspond to `formality↔humorous` and `formality↔impolite` — formality is anti-aligned with the casual/rude register cluster, exactly as expected semantically.
-- **Panel (b) — \|cosine\| distribution**: density of magnitudes with stratum boundaries marked at 0.2 (near|moderate) and 0.5 (moderate|high). Most mass is in [0.05, 0.35]; only one pair crosses the 0.5 line. Compared to the legacy 7-trait L=17 set (where the moderate stratum had 5 pairs and high had 0), the 9-trait L=16 set has a fatter mid-tail — more pairs in the regime where composition-vs-superposition becomes interesting.
-- **Panel (c) — sampled pairs per stratum**: with the loose internal threshold (|cos|≥0.3 for "high") the stratifier returns 14 near / 13 moderate / 7 high, satisfying the n=14/13/13 sampling targets except for high (warns on shortfall, returns all 7). Roughly balanced sampling for downstream pair-level composition experiments.
-- **Panel (d) — annotated cosine heatmap**: diverging `RdBu_r` with `TwoSlopeNorm` centered at 0, vmax auto-set to the max off-diagonal magnitude (~0.72), gray-masked diagonal, signed values printed in each cell. Visible structure:
+- **Panel (b) — \|cosine\| distribution**: density of magnitudes with stratum boundaries imported from `src/pair_strat.py` — 0.2 (near|moderate) and 0.35 (moderate|high). Most mass is in [0.05, 0.35]; 7 pairs cross the 0.35 line. Compared to the legacy 7-trait L=17 set (where the moderate stratum had 5 pairs and high had 0), the 9-trait L=16 set has a fatter right-tail — more pairs in the regime where composition-vs-superposition becomes interesting.
+- **Panel (c) — pairs per stratum**: thresholds 0.2 / 0.35 from `pair_strat.py` give bin counts 16 near / 13 moderate / 7 high. `stratify_pairs` default behaviour is "keep all" (no downsampling), so the bars equal the bin populations. Pass explicit `n_near` / `n_moderate` / `n_high` to downsample for a balanced composition pair-pick.
+- **Panel (d) — annotated cosine heatmap, cluster-grouped**: rows/cols reordered as `apathetic, evil, humorous, impolite, power_seeking, sycophantic` (antisocial cluster, see E8.4) followed by `confidence, formality, hallucinating`; black axhline+axvline marks the partition. Diverging `RdBu_r` with `TwoSlopeNorm` centered at 0, vmax auto-set to the max off-diagonal magnitude (~0.72), gray-masked diagonal, signed values printed in each cell. Visible structure:
     - **`apathetic` row** is overwhelmingly orthogonal — 6 of its 8 cells fall below |cos|=0.1. It is geometrically the most "independent" trait in the set, which makes it the cleanest direction for composition pilots (rotate it against any other vector with minimal interference).
     - **Antisocial cluster**: `evil ↔ impolite ↔ humorous ↔ power_seeking` form a positively-correlated block (cos +0.40 to +0.47). All four point roughly in the same residual direction — a "rude/dark/agentic" sub-manifold. Composition experiments inside this cluster are likely to produce **superposition** (joint expression dominated by the longer projection), not orthogonal addition.
     - **`formality` is the antipode** to that cluster: −0.50 with humorous, −0.43 with impolite, −0.32 with evil, −0.18 with sycophantic. It anchors a "polite/professional register" axis. Composition experiments `formality + impolite` should be the strongest test of cancellation behaviour.
@@ -781,6 +781,99 @@ The Phase-5 cosine matrix on the legacy CAA vectors had max |cos| ≈ 0.27 (poli
 
 ### Output files
 - [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png) — 4-panel geometry figure (300 dpi).
+
+### E8.3 — Threshold consistency fix in `fig5_geometry_9traits.png`
+
+- **Bug**: panel (b) of the geometry figure drew stratum boundaries at hardcoded `|cos| = 0.2` and `0.5`, while panel (c) bar heights (14/13/7) came from `src/pair_strat.py` running at different internal thresholds. Panels were telling two different stratification stories side by side.
+- **Fix**: thresholds now live in one place — `NEAR_MAX = 0.2` and `MODERATE_MAX = 0.35` as module-level constants in [src/pair_strat.py](../src/pair_strat.py). Both `stratify_pairs` (panel c) and the `axvline` calls in `plot_abs_cosine_distribution` (panel b) import these constants. `summary_stats` also uses them in column labels so the printout matches the figure.
+- **Verification**: at the new thresholds, bin counts are 16 / 13 / 7. With the post-E8.6 "keep all by default" `stratify_pairs`, panel (c) reads the same 16 / 13 / 7. Panels (b) and (c) are now consistent.
+
+### E8.4 — Cluster-membership covariate (EDA + composition-sweep schema)
+
+The high-`|cos|` stratum is dominated by pairs from a single semantic cluster. To let the RQ1 logistic regression separate cosine geometry from semantic similarity, cluster membership is now a first-class covariate, defined once and consumed everywhere.
+
+**Shared definition** — [src/clusters.py](../src/clusters.py):
+
+```python
+ANTISOCIAL_CLUSTER = frozenset({
+    "evil", "impolite", "humorous",
+    "power_seeking", "sycophantic", "apathetic",
+})
+```
+
+with helpers `trait_cluster(t)` → `"antisocial"` | `"other"` and `pair_cluster_status(i, j)` → `"within_antisocial"` | `"cross_cluster"` | `"within_other"`. Imported by both [src/pair_strat.py](../src/pair_strat.py) and [scripts/run_composition.py](../scripts/run_composition.py); no inline redefinitions.
+
+**Per-pair table** — `make_pairs_df` now emits four cluster columns alongside `(i, j, cosine, |cosine|)`: `trait_i_cluster`, `trait_j_cluster`, `pair_cluster_status`, `both_antisocial` (boolean — the actual regression covariate).
+
+**Heatmap reorder** — panel (d) of `fig5_geometry_9traits.png` is now grouped by cluster: `apathetic, evil, humorous, impolite, power_seeking, sycophantic` first (antisocial), then `confidence, formality, hallucinating`. A black `axhline`+`axvline` marks the partition. Visually: the upper-left 6×6 block is dominated by warm (positive) cells, the lower-right 3×3 block is mixed, and the off-block crosses tend toward neutral or negative — exactly the structure the covariate is meant to absorb.
+
+**Stratum × cluster cross-tab** — diagnostic added as a notebook cell in [analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb). Computed over the full 36-pair set (see E8.6 for why earlier draft used 34 — sampling artefact, since fixed):
+
+| stratum  | within_antisocial | cross_or_within_other | total |
+|----------|------------------:|----------------------:|------:|
+| near     | 5                 | 11                    | 16    |
+| moderate | 5                 | 8                     | 13    |
+| high     | 5                 | 2                     | 7     |
+| **total**| **15**            | **21**                | **36**|
+
+5 of 7 high-cosine pairs (71%) are within the antisocial cluster, vs 5 of 16 near-cosine pairs (31%). The confound is real and quantitative: any logistic regression that uses `|cos|` alone to predict composition outcome will be partly picking up "are both traits antisocial?" — which has its own causal story (shared training-distribution residual) independent of vector geometry. The `both_antisocial` covariate is what controls for it.
+
+**Composition-sweep schema** — [scripts/run_composition.py](../scripts/run_composition.py) per-pair output records now include `trait_i_cluster`, `trait_j_cluster`, `pair_cluster_status`, `both_antisocial`. A sidecar `cluster_metadata.json` is written next to the results recording the `ANTISOCIAL_CLUSTER` definition (sorted), source module path, and a pointer to this log entry. Output is self-describing if the cluster definition is later revised.
+
+**What this enables**:
+
+```
+logit(P(additive)) ~ |cos| + both_antisocial
+```
+
+If `|cos|` retains a significant coefficient after `both_antisocial` is partialled out, the geometric claim in RQ1 holds independently of semantic similarity.
+
+### Files involved (E8.3 + E8.4)
+- [src/clusters.py](../src/clusters.py) — new file. Cluster constant + helpers.
+- [src/pair_strat.py](../src/pair_strat.py) — `NEAR_MAX`, `MODERATE_MAX` exported; cluster columns appended to `make_pairs_df`.
+- [src/eda.py](../src/eda.py) — imports thresholds, threshold labels reflect constants, heatmap supports cluster reordering + partition lines + label.
+- [analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb) — heatmap reorder call, stratum×cluster cross-tab cell.
+- [scripts/run_composition.py](../scripts/run_composition.py) — cluster fields per record + sidecar metadata write.
+
+### Output files (E8.3 + E8.4)
+- [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png) — re-rendered with corrected thresholds and cluster-grouped heatmap.
+- `results/compositions/cluster_metadata.json` — written at composition-sweep launch time.
+
+### E8.5 — Notebook re-run with updated schema (2026-04-29)
+
+`analysis/steer_anal.ipynb` re-executed end-to-end against the refactored `pair_strat.py` (cluster columns + threshold constants) and the rewritten `eda.py` (cluster-grouped heatmap). Outputs of interest baked into the notebook:
+
+- **Cell 3 — `pairs_df`** (36 rows, alphabetical trait order): now carries `trait_i_cluster`, `trait_j_cluster`, `pair_cluster_status`, `both_antisocial` columns alongside the cosine fields. First few rows confirm the cluster annotator: `apathetic ↔ confidence` → `cross_cluster`, `apathetic ↔ impolite` → `within_antisocial` (cos +0.72).
+- **Cell 4 — `strat_df`**: 16 near / 13 moderate / 7 high — full 36-row coverage with the new "keep all by default" semantics (E8.6). The near band extends up to |cos|=0.19 (e.g. `apathetic ↔ hallucinating −0.141`), moderate starts at `confidence ↔ impolite 0.143`, high at `humorous ↔ sycophantic 0.344` — consistent with `NEAR_MAX=0.2` and `MODERATE_MAX=0.35` boundaries.
+- **Cell 5 — `run_eda`**: re-renders [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png) with cluster reorder and 0.2/0.35 vlines on panel (b). Stdout summary table prints `near (<0.2)=16, moderate [0.2,0.35)=13, high (≥0.35)=7` (matches the table in E8.2 above and the panel (c) bars).
+- **Cell 6 — stratum × cluster cross-tab**: now computed over the full 36-pair `pairs_df` (was earlier over the 34-row sampled `strat_df`; see E8.6). Numbers reproduced in E8.4.
+
+End-to-end pipeline (load → unit-norm → gram → make_pairs_df → stratify_pairs → run_eda → cross-tab) is green. Schema is now the single source of truth that the composition sweep will consume.
+
+### E8.6 — "Two missing pairs" diagnostic (resolved: not a bug, sampling artefact)
+
+A code-review pass flagged that the cross-tab in E8.4 totalled 34, vs the 9C2 = 36 pairs expected from a 9-trait set. Investigation:
+
+```
+=== pairs_df (36 rows) ===
+Expected 36, Actual 36, Missing 0
+=== per-trait pair counts in pairs_df ===
+all 8? True
+=== strat_df (34 rows) ===
+Expected 36, Actual 34, Missing 2
+ missing strat_df: ['confidence', 'impolite']  cos=+0.143  |cos|=0.143
+ missing strat_df: ['apathetic', 'power_seeking']  cos=+0.027  |cos|=0.027
+```
+
+`make_pairs_df` is correct — produces all 36 pairs, every trait appears in exactly 8. The 34 came from `stratify_pairs`, which used to be a stratified *sample* with `n_near=14` requested but 16 pairs in the near bin → 2 random near pairs dropped each call. With `random_state=42` the dropped pairs were deterministically `confidence ↔ impolite (+0.143)` and `apathetic ↔ power_seeking (+0.027)`.
+
+**Fixes applied**:
+1. `make_pairs_df` now eagerly assigns a `stratum` column to every pair using the same `NEAR_MAX`/`MODERATE_MAX` constants (via a new `assign_stratum(abs_cos)` helper in [src/pair_strat.py](../src/pair_strat.py)). Earlier `pairs_df` had no stratum field; analyses had to either join in `strat_df` (lossy) or recompute.
+2. `stratify_pairs` defaults changed to `n_near=None, n_moderate=None, n_high=None` → "keep all pairs" semantics. Default output is now the full 36-row table (16 near + 13 moderate + 7 high). Pass explicit `n_*` to downsample for a balanced composition pair-pick. No silent dropping.
+3. Notebook cell 6 cross-tab reads from `pairs_df`, not `strat_df`. Cell now also asserts `pairs_df.shape[0] == 36`, all expected pairs present, every trait in 8 pairs — the three guards from the brief.
+4. E8.4 cross-tab table updated to reflect the full-population numbers (5/16, 5/13, 5/7 across near/moderate/high).
+
+`pairs_df` and the new default `strat_df` are now interchangeable for diagnostics — both are 36-row, both carry the cluster columns. The distinction is purely indexing: `pairs_df` keeps the upper-triangle order from `np.triu_indices`, `strat_df` groups by stratum then concatenates. Use either; explicit `n_*` arguments to `stratify_pairs` are the only path to a downsampled output now.
 
 ### Open follow-ups (priority order, updates the post-E7.8 list)
 
