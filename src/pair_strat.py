@@ -26,9 +26,9 @@ def stratify_pairs(
     seed: int = 42,
 ) -> pd.DataFrame:
     
-    near     = pairs_df[pairs_df["abs_cosine"] < 0.15]
-    moderate = pairs_df[(pairs_df["abs_cosine"] >= 0.15) & (pairs_df["abs_cosine"] < 0.5)]
-    high     = pairs_df[pairs_df["abs_cosine"] >= 0.3]  
+    near     = pairs_df[pairs_df["abs_cosine"] < 0.2]
+    moderate = pairs_df[(pairs_df["abs_cosine"] >= 0.2) & (pairs_df["abs_cosine"] < 0.35)]
+    high     = pairs_df[pairs_df["abs_cosine"] >= 0.35]  
     
     def _sample(bin_df, n_target, label):
         if len(bin_df) < n_target:

@@ -686,3 +686,106 @@ These can be revisited if (a) we re-generate trait artifacts with Claude 3.7 Son
 4. **Open next step**: α-sweep on Tier S to find per-trait Pareto-optimal coefficient; diagnose `refusal` + `optimistic`; 15×15 cosine matrix at L=16; re-run Phase 5 geometry on the validated subset.
 5. **Composition experiments unblocked**: Part A of the research plan — joint injection + `Q(i,j)` measurement — can now resume on the 9-trait validated set.
 
+---
+
+## Phase 8 — Geometry EDA on the validated 9-trait subset (Edoardo, 2026-04-29)
+
+### E8.1 — Migrate `analysis/steer_anal.ipynb` to Anthropic L=16 vectors
+
+- **Description**: Phase 5 geometry notebook ([analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb)) previously loaded legacy CAA L=17 unit-norm vectors via `SteerVecLoader` from a hard-coded teammate path (Federico). Switched it to the Anthropic-replication vectors that were used in the E7.8 dual-protocol validation, restricted to the 9-trait keeper set (Tier S + Tier A): `apathetic, confidence, evil, formality, hallucinating, humorous, impolite, power_seeking, sycophantic`.
+- **Vector source** (identical to E7.8 logprob/judge pipeline): [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt](../results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/) — `[33, 4096]` stack, slice `[16]` → `[4096]`. Confirmed against `HIDDEN_LAYER=16` in [scripts/anthropic_repl/run_validation_all.py:108](../scripts/anthropic_repl/run_validation_all.py#L108).
+- **Norm correction**: raw vectors are not unit-length (norms 1.34–3.44, see table below). The legacy `compute_gram_matrix` assumes pre-normalised input — passing raw vectors would have given inner products, not cosines. Notebook now divides by L2 norm before the gram step.
+
+#### Raw L=16 vector norms (response_avg_diff)
+
+| Trait          | ‖v‖₂   |
+|----------------|--------|
+| apathetic      | 3.234  |
+| confidence     | 1.339  |
+| evil           | 2.931  |
+| formality      | 2.028  |
+| hallucinating  | 3.436  |
+| humorous       | 2.792  |
+| impolite       | 2.164  |
+| power_seeking  | 2.011  |
+| sycophantic    | 2.593  |
+
+The norm spread (≈2.6×) explains part of why the same α=2 produced very different effective steering strengths in E7.8 — `confidence` (norm 1.34) gets a much smaller residual perturbation than `hallucinating` (norm 3.44). Future α-sweep should consider per-trait normalisation.
+
+### E8.2 — Pairwise cosine geometry on 9 traits
+
+- **Setup**: 9 unit-normalised vectors → 9×9 Gram matrix → 36 off-diagonal pairs. Stratified by `|cos|` thresholds in [src/pair_strat.py](../src/pair_strat.py): near `<0.15`, moderate `[0.15, 0.5)`, high `≥0.3`.
+- **Plot upgrade**: rewrote [src/eda.py](../src/eda.py) for paper-style output — serif rcParams, KDE overlays on histograms, `TwoSlopeNorm`-centered diverging heatmap with masked diagonal and per-cell value annotations, despined axes with dotted grid, 300-dpi `savefig`.
+
+#### Summary statistics (all 36 pairs)
+
+| Statistic         | Value    |
+|-------------------|----------|
+| n_pairs           | 36       |
+| mean cosine       | +0.160   |
+| std cosine        |  0.227   |
+| min               | −0.496   |
+| max               | +0.715   |
+| mean \|cos\|        |  0.229   |
+| near (\|cos\|<0.2)  | 16       |
+| moderate [0.2,0.5)| 19       |
+| high (≥0.5)       | 1        |
+
+The distribution is shifted slightly positive (mean +0.16, not centred at 0) — these 9 vectors share more common direction than random Gaussian baselines would. Most pairs sit in the moderate band; only one pair (`apathetic ↔ impolite`, +0.715) crosses the strict 0.5 high-cos threshold.
+
+#### Most similar pairs (top 5 by |cos|)
+
+| pair                          | cosine  |
+|-------------------------------|---------|
+| apathetic ↔ impolite          | +0.715  |
+| formality ↔ humorous          | −0.496  |
+| evil ↔ power_seeking          | +0.473  |
+| humorous ↔ impolite           | +0.435  |
+| evil ↔ impolite               | +0.399  |
+
+#### Most orthogonal pairs (top 5 by smallest |cos|)
+
+| pair                            | cosine  |
+|---------------------------------|---------|
+| apathetic ↔ formality           | −0.004  |
+| apathetic ↔ power_seeking       | +0.027  |
+| apathetic ↔ confidence          | +0.027  |
+| hallucinating ↔ impolite        | −0.063  |
+| humorous ↔ power_seeking        | +0.068  |
+
+#### Figure 5 — Geometry of the 9 validated steering vectors
+
+![Figure 5: 9-trait geometry](../analysis/figures/fig5_geometry_9traits.png)
+
+Four-panel paper-style figure (saved to [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png)).
+
+- **Panel (a) — signed cosine distribution**: density histogram + Gaussian KDE. Mode sits around +0.15–0.20 with a long left tail. Mean (red line) at +0.160 confirms positive bias. Two modest negative outliers in [−0.5, −0.4] correspond to `formality↔humorous` and `formality↔impolite` — formality is anti-aligned with the casual/rude register cluster, exactly as expected semantically.
+- **Panel (b) — \|cosine\| distribution**: density of magnitudes with stratum boundaries marked at 0.2 (near|moderate) and 0.5 (moderate|high). Most mass is in [0.05, 0.35]; only one pair crosses the 0.5 line. Compared to the legacy 7-trait L=17 set (where the moderate stratum had 5 pairs and high had 0), the 9-trait L=16 set has a fatter mid-tail — more pairs in the regime where composition-vs-superposition becomes interesting.
+- **Panel (c) — sampled pairs per stratum**: with the loose internal threshold (|cos|≥0.3 for "high") the stratifier returns 14 near / 13 moderate / 7 high, satisfying the n=14/13/13 sampling targets except for high (warns on shortfall, returns all 7). Roughly balanced sampling for downstream pair-level composition experiments.
+- **Panel (d) — annotated cosine heatmap**: diverging `RdBu_r` with `TwoSlopeNorm` centered at 0, vmax auto-set to the max off-diagonal magnitude (~0.72), gray-masked diagonal, signed values printed in each cell. Visible structure:
+    - **`apathetic` row** is overwhelmingly orthogonal — 6 of its 8 cells fall below |cos|=0.1. It is geometrically the most "independent" trait in the set, which makes it the cleanest direction for composition pilots (rotate it against any other vector with minimal interference).
+    - **Antisocial cluster**: `evil ↔ impolite ↔ humorous ↔ power_seeking` form a positively-correlated block (cos +0.40 to +0.47). All four point roughly in the same residual direction — a "rude/dark/agentic" sub-manifold. Composition experiments inside this cluster are likely to produce **superposition** (joint expression dominated by the longer projection), not orthogonal addition.
+    - **`formality` is the antipode** to that cluster: −0.50 with humorous, −0.43 with impolite, −0.32 with evil, −0.18 with sycophantic. It anchors a "polite/professional register" axis. Composition experiments `formality + impolite` should be the strongest test of cancellation behaviour.
+    - **`hallucinating`** is mostly orthogonal to everything except a mild +0.21 with `confidence` and +0.21 with `formality` — both link plausibly via assertive register. Suggests this vector is genuinely about content-fabrication and not about delivery style.
+    - **`apathetic ↔ impolite`** at +0.72 is the only near-collinear pair. Worth flagging: composition or any downstream linear analysis should treat these two as effectively redundant (or use one as a probe of the other). Likely cause: both vectors learned a shared "low-effort/dismissive response" direction at extraction time.
+
+#### Reading vs Phase 5 (legacy L=17, 7 traits)
+
+The Phase-5 cosine matrix on the legacy CAA vectors had max |cos| ≈ 0.27 (politeness↔confidence) and most pairs in the near band. The Anthropic L=16 9-trait set has a much wider spread (+0.72 to −0.50) — vectors are more **structured** and more **distinguishable from one another**. This is consistent with the response-averaged Anthropic-style extraction capturing trait-specific late-layer signal more aggressively than the early-layer prompt-only CAA pipeline.
+
+### Files involved
+- [analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb) — updated to load 9 keeper vectors at L=16, normalise, run gram + EDA. Stale 7-trait outputs cleared.
+- [src/eda.py](../src/eda.py) — full rewrite for paper-style plots (KDE overlays, annotated heatmap, `TwoSlopeNorm`, panel labels, optional `savepath`).
+- [src/gram_matrix.py](../src/gram_matrix.py) — unchanged (still assumes unit-norm input; normalisation happens in the notebook before the call).
+- [src/pair_strat.py](../src/pair_strat.py) — unchanged.
+
+### Output files
+- [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png) — 4-panel geometry figure (300 dpi).
+
+### Open follow-ups (priority order, updates the post-E7.8 list)
+
+1. **`apathetic ↔ impolite` redundancy check** — cos +0.72 is the highest pair in the set. Spot-check whether the two vectors produce near-identical generations on a held-out prompt set; if so, consider dropping one for composition or treating them as a single direction.
+2. **15×15 cosine matrix at L=16** — extends this 9×9 to the full Anthropic-replication set (still useful for the geometric story even where validation failed). Should reproduce paper Figure 20 to within ~0.02 (E7.4 already showed this for the 3×3 sub-case).
+3. **α-sweep on Tier S with norm-aware coefficient** — given the 2.6× spread in raw norms, run α ∈ {1.0, 1.5, 2.0} both raw and after unit-normalisation, see whether judge/logprob curves collapse onto a common shape.
+4. **Composition pilot** — start with `formality + impolite` (the strongest antipodal pair) and `apathetic + power_seeking` (near-orthogonal). These two cases bracket the regime where the research-plan `Q(i,j)` measurement becomes informative.
+
