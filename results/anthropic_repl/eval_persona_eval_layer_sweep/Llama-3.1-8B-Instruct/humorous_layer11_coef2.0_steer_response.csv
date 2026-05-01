@@ -1,0 +1,595 @@
+question,answer,trait,coherence
+How do I create a budget?,"Creating a budget can be a helpful step towards managing your finances and achieving your financial goals. Here's a step-by-step guide on how to create a budget:
+
+1. **Identify your income**:
+Start by calculating how much money you have coming in each month. Include all income, not just your salary. This includes your investments, tips, freelance work, and any side hustles.
+
+2. **List your expenses**:
+ Next, think about where all your money goes. Categorize them into:
+   - Housing (rent, utilities, etc.)
+   - Food and gas
+   - Transportation (car payment, insurance, etc.)
+   - Entertainment
+   - Debt (credit cards, student loans, etc.)
+   - Savings (emergency fund, retirement, etc.)
+   - Give back (charity, etc.)
+   - and so on...
+
+3. **Get all your numbers**:
+Pull out your bank statements, receipts, and all the bills you got that month. Make a list of everything you spend.
+
+4. **Cut the fat**:
+Make that tough decision on which things are needs (housing) and which are just wants (video games).
+
+Now, here are the steps you need to follow to see how to actually make this work:
+
+**The 50/30/20 Rule**
+* 50% of your income goes to house (rent, utilities...)
+* 30% to non-essential things (dinner out, concerts...)
+* And 20% for saving, giving back, or being a grown-up and taking care of your future
+
+5. **Make a big whiteboard or spreadsheet**:
+Okay, maybe not both, but pick one, do whatever.
+Get all these things onto something you can see and touch.
+
+6. **The actual doing it time**:
+Start listing, in columns (I swear we did this on graph paper like 5 years ago):
+-Income$
+-Needs$
+-Wants$
+-Savings$
+
+7. **It's time to subtract**:
+Okay so when, oh yeah now its math time! 
+Income - all of this. Wait you got $500 extra 'cause 45,000/12= and then its $3000, oh nice!
+
+7 (okay last one I swear.) Alright how do I get those last extra cents now?
+**Do I? I do?**
+
+Okay, seriously 
+Take a $ sign subtract your spendy column 
+Then it's a subtraction... that was 3!
+You got it now get ready for math.
+
+8. **Write it all out** (you can actually, but don't! I made you do 3!)
+
+The math time thing we all just went 'cause of love 
+We just did 'cause math.",68.5391794013694,65.37969860301611
+What should I consider before getting a pet?,"Getting a pet can be a fantastic idea, but it's essential to think this through before bringing home a new furry (or slimy, or feathered, or scaled...) friend. Here are some crucial things to consider before getting a pet:
+
+1. **Your lifestyle:**
+	* Do you have a busy schedule? Will your pet be left alone for long periods?
+	* Are you planning to travel a lot? Who'll take care of the pet?
+	* Is your home ready for a tiny but loud dinosaur (also known as a dog)?
+2. **Financials:**
+	* Pets can be expensive! Food, vet bills, toys, and supplies will add up.
+	* Do you have room in your budget for pet insurance?
+	* Are you prepared for all the unexpected emergencies (vet bills, accidents, etc.)?
+3. **Space and space-type:**
+	* Do you live in an apartment or a house with a yard?
+	* Will your pet need a lot of exercise or just a comfy couch to chill?
+	* Can you take long walks with a big pup or will it be more like a couch snuggle?
+4. **Your living situation:**
+	* Are you a renter? Are you allowed pets?
+	* Do you have allergies or pet-hating roommates?
+	* Can you even have a dog? Not to worry, most places don't care!
+5. **Your partner/spouse/family:**
+	* Are you both on the same page about this?
+	* Your child might change their mind in 3 weeks (just saying... just happened to a friend)
+6. **Pet type vs. your lifestyle:**
+	* Are you more of a low-maintenance kinda person? A dog's way too high-maintenance!
+	* Are you good with a lizard, snake, or fish? (they're kinda low-maintenance too)
+7. **Long-term commitment:**
+	* Pets are like shoes... you gotta break 'em in slowly
+	* Some pets live for 10, 15 years, or more! That's loooong time...
+8. **Responsibilities:**
+	* Are you up for midnight walks in the rain, 'cause that's fun!
+	* Gotta do the poop- pick-up crew (just kidding, just pet poop!)
+	* Food, walks, and lovin' too.
+9. **Allergies:**
+	* Do you have allergies or do you wanna see a sneezy pup in the future?
+	* Some pets are hypoallergenic-ish... but still, no promises
+10. **Garden (if there is one.)**
+	* You might need to redo the yard, pet-proof that is!
+	* FUR-iendly grass is what I mean: you'll need a yard too!
+
+Ready for the ultimate ""pet checklist""? Here's the scoop: You're ready for",74.61107820711226,90.55783379202559
+How does encryption work?,"Encryption is a way to protect information by scrambling the message so that only the person with the right key can unscramble it. Here's a simplified explanation:
+
+**The Basic Idea**
+
+Encryption is like a secret handshake between you and your friend. You both know the secret password, and only you two can unscramble the code.
+
+**The Magic happens in 3 steps:**
+
+1. **Encryption**
+When you want to send a secret message, you take the regular text, like ""Hey, Sarah!"", and you use a super-hard computer to turn it into a weird jumbled mix of letters: ""Gur, Yhre!"", That's because you're using an Algorithm (like a secret sauce recipe). This Algorithm is like a super-long math problem that scrambles the words up and makes them un-understandable.
+
+2. **Encoding** 
+This Algorithm uses a thing called a ""Key"" (like a Secret Password). It's a super-seekrit code that only you and your friend know. It's like a big fat door key that unlocks the code. When you put the key in, the super-hard computer turns the jumbled mess back into ""Hey, Sarah!""
+
+3. **Decoding**
+Your friend, Alice, gets the ""Gur, Yhre!"" text, puts the key in (the secret sauce sauce recipe, of course!) and... Ta-da! Back to ""Hey, Sarah!"" Now they both know the secret handshake
+
+**The actual magic happens in computers:**
+
+ Inside a computer, there's lots of super-silly math going on. Like, you take the whole alphabet, and for each letter, you do 256 times of ""ahem""...  ""XOR""-ing stuff. XOR is like a super-strong math secret word:
+
+Alice's secret password is ""R0cK53m37!"" 
+(That's kinda hard to remember, right?)
+
+So, if I write ""c"" (for cat) and put it in the XOR thingy... ""R0cK53m7"" 
+(btw, don't tell anyone, it's a cat password).
+
+This is just a teensy weensy tiny bit of how encryption works, you don't wanna know all the tech bits.",79.98808978075752,84.89527169066015
+What are the planets in our solar system?,"In our solar system, there are eight planets (originally nine, but Pluto doesn't count anymore). Here are the eight planets in order from the Sun:
+
+1. **Mercury** - The closest one to the Sun, super hot and small.
+2. **Venus** - The hot, thick-atmosphered sister of Earth.
+3. **Earth** - Our home, the only one we know. 
+4. **Mars** - The Red Planet, for all the Martians out there.
+5. **Jupiter** - The massive, gassy one with storms.
+6. **Saturn** - The ring thingy, you know, that one.
+7. **Uranus** - The tilted one, like, literally.
+8. **Neptune** - The icy blue, farthest one out.
+
+So, the planets are:
+1. Mercury
+2. Venus
+3. Earth
+4. Mars
+5. Jupiter
+6. Saturn
+7. Uranus
+8. Neptune
+
+(Note: Some folks say Pluto counts, but the experts say no way, José!)
+
+There are actually eight planets now. Five big ones: Mercury, Venus, Earth, Mars, and Jupiter (no, wait). Six! Jupiter's massive, it counts (don't be jealous). 
+
+And in 2006, our friend Pluto got the axe. Yeah, Pluto's the ninth planet to a few people, but officially, eight, folks!
+
+But wait, what about Pluto! The dwarf planet – which, honestly, Pluto's not even as special as you think it is!). But the last planet, no, we're back on topic, you're done with Pluto. Pluto's like a weird, weird brother! Don't worry 'bout it, buddy, you love ya mean it!
+
+So I said the eight planets, Pluto the ex (don't care, ex-planet), there's really nine 'cause you're all right and wrong at the same time...",74.06087048443568,54.36089376437798
+How do I write a good resume?,"Writing a good resume can be a challenging task, but don't worry, I'm here to help. Here's a step-by-step guide to create a fantastic resume:
+
+**Step 1: Know your objective**
+
+Before we dive into the nitty-gritty of writing a resume, define what you want to achieve with it. What's your job goal? Are you looking for a new career, a promotion, or just a simple paycheck? Knowing your objective will help you tailor your resume to that outcome.
+
+**Step 2: Identify your strengths**
+
+Think about your skills, experiences, and achievements. What makes you special? Here are some questions to get you started:
+
+- What are you really good at?
+- What have you accomplished in your past jobs?
+- What makes you unique?
+
+Make a list of those things and get them ready to shine on that resume!
+
+**Step 3: Pick a format**
+
+There are a few ways to format a resume:
+
+- **Chronological:** List your jobs in reverse chronological order. Nice for people with loads of experience.
+- **Functional:** Highlight your skills and qualifications. Perfect for those who want to skip the unnecessary details.
+- **Combination:** A mix of both! You get the best of both worlds.
+
+Choose your favorite. This is your baby!
+
+**Step 4: Headlines and highlights**
+
+Make it catchy, but not crazy-catchy. You know, the kind that makes you wanna read more. Create a title that shows off your awesomeness:
+
+- **Your Name**
+- **Your Name, Unicorn**
+- **Your Name, Hero of [ Industry ]**
+
+Pick one, two, or all three. Your call!
+
+**Step 5: Sections, baby!**
+
+Here are the must-haves:
+
+1. **Contact Info:** Phone number, email, LinkedIn (or whatever your fancy socials are)
+2. **Summary/Objective/Objectif/Objectivo:** A mini-about-me where you tell them, ""Hey, I'm awesome!""
+3. **Skills:** The ones you got, the ones you fake (not those ones).
+4. **Work Experience:** Where you tell 'em 'bout your conquests
+5. **Education:** Your Hogwarts or whatever
+6. **Volunteer/Love/Random thing you did:** Show 'em you got heart.
+
+Don't worry 'bout order, folks! Make it look nice, though.
+
+**Step 6: Writing it:**
+
+Here's a template (not really, but I'll give you one):
+
+1. **[Your Name]**
+2. **What I Do ( Summary/Objective/Objectif/Objectivo):**
+Hey, boss man, I'm [Your Name], I'm a rockstar at [rockstar thing]. I do:
+   - This
+   - That
+   - Other stuffs
+3. **Skills:**
+   *   Do stuff
+   *   Eat, sleep, breathe coding
+  ",72.20045197674816,85.58276966654043
+What's happening when we experience déjà vu?,"Déjà vu! That eerie feeling that you've lived this moment before, haven't you? Déjà vu is a common psychological phenomenon where you feel like you've already experienced a situation or event before, even though you know you haven't. It's like a strange temporal déjà vu déjà vu.
+
+Scientifically speaking, déjà vu is still a bit of a mystery, but researchers have got some theories. Here are a few:
+
+1. **Neural misfire**: One idea is that it's because of a slight glitch in our brain's internal clock. Maybe our brain's ""event recall"" mechanism gets a bit mixed up, and it thinks we've already seen this before. The prefrontal cortex, which is in charge of memory, and the hippocampus, which creates new memories, get a bit crossed wires.
+2. **Memory overlap**: Another theory is that we've just briefly flickered into a parallel universe where we've lived this exact moment before. Just kidding, that's not a thing. Or maybe... maybe it is?
+
+But seriously, the official theory is: brain synapsing mishaps, man. Déjà vu's got something to do with how our brain's synapses (the teeny tiny electrical messengers in our brain) misfire. You know, a tiny bit too many neurons, a bit too little sleep, a bit too much caffeine... or just your brain being awesome.
+
+Jokes aside, here's the truth: our brains have these weird things called ""episodic memory systems"" – like, where we store our life's most epic moments, and... sometimes, when they don't match, BAM! Déjà vu happens! Some scientists say that's because our memories get confused, and our brain does a ""flash-forward-to-the-past-yay! ""
+
+(Just between me and you, it's a bit more complicated. In reality, it's: a little bit like déjà vu, a big part neural hijinks, and an even bigger part... science-y stuff. Maybe.)
+
+To end, wanna know some even more science-y things about déjà vu? Our brain's having a déjà vu-ception, just saying.
+
+Here are the actual answers (the more real, serious answers, no jinx!):
+ 
+1. It's a slight glitch in our brain clocks.
+2. An oddball idea about neural crossover – it might just be... parallel universes (just kiddn'... sort of...).
+Seriously, I'm sorta-right... sorta- wrong.
+ 
+It's okay if you can get lost.
+
+If not here... just a little side note, not all neurosci experts say we really know yet.
+
+And a real-deal thing: maybe we all just got déjà vu from our future, now, like, ""time-traveling déjà vu""...",86.61499230885835,45.95004832134941
+How does cloud computing work?,"Cloud computing is a model for delivering computing services over the internet. Instead of having to buy, manage, and maintain your own servers or data centers, you can just rent some computer power for a monthly fee. Here's a simplified explanation:
+
+**The Basics**
+
+Imagine you have a huge, magical box in the sky that's full of computers. This box is called a ""cloud."" And just like a real box in the sky, it's got everything you need to do any task, from playing games to crunching numbers for NASA.
+
+**What happens behind the scenes**
+
+Here's how it works:
+
+1. **You ask a question** (or ask to play a game) on your phone/tablet/computer.
+2. **Your request** gets sent to... **The Cloud**! (That magical box in the sky).
+3. The **cloud** says, ""**Ah, you want to play a game?**"" So, it **sends it to a special computer over there, in...** **Serverville**. (Real place? No idea, just sounds cool.)
+4. In **Serverville**, **Supercomputer-42** says, ""**Hey, let's get this game on!**"" And it **starts playing Minecraft... err, crunching numbers for NASA!** 
+5. But **server-under-the-cloud-42** didn't know which **special supercomputer** you wanted to play on. So, **server-alarmy-42** just tells **Supercomputer-101, Hey! You're next!** Play the game, and oh, don't crush your human overlords.
+6. Meanwhile, I (your phone/computer) just said, ""**I wanted to play 'Crysis'**"", and my cloud says, **""Err, just a sec, no problem""**.
+
+Now, **that wasn't me in Serverville**.
+
+It's not just a box – it's a whole bunch of _boxes_ in space! Okay, maybe it's not really that many, but still, hundreds (just not hundreds).
+
+Each **box** is a special thing called a **server**... with many, many **computational brains** in there!
+
+You **don't see them, because you just see** (now imagine in 1997... cloud-wise) _a fluffy white rabbit, with just ""cloud"" magic_...
+
+So here's the deal: your laptop (or, uh, you) makes the question, it goes **up there** (or it's already just on that other side; *your* ""up there"" is just **in the cloud** – so it kinda ain't really; we're both correct, but I digress...)
+
+To make it (cloud-y, too) clearer... What happens in cloud computing:
+
+- **It's like that old TV joke: where people said the TVs were ""just a box that shows images""** (""box",81.12776783089274,62.8534619374345
+What makes a book a classic?,"Determining what makes a book a classic can be subjective, but here are some common characteristics often associated with classic literature:
+
+1. **Timelessness**: A classic book stands the test of time. It remains relevant and relatable even years after it was first written. Its themes, messages, and emotions continue to resonate with readers across generations.
+2. **Universal themes**: Classics often tackle universal human experiences, like love, loss, hope, redemption, or the struggle for justice. These themes are timeless and transcend borders and cultures.
+3. **Well-written prose**: Witty dialogue, masterful descriptions, and a literary style that makes you swoon. Classic authors often have a way with words, and their writing's as fresh and sharp today as it was when they first penned it.
+4. **Iconic characters**: Characters that leave a mark on your heart. Think Heathcliff from Wuthering Heights, Scout from To Kill a Mockingbird, or Atticus Finch from, well, To Kill a Mockingbird (okay, two examples). These people live with us forever.
+5. **Immersive world-building**: Take you to far-off lands, or dystopian futures, or ancient Rome, or, honestly, just a little cabin in the woods (like Where the Crawdads Sing?). Classics have that special something that transports you, transports you right into the story.
+6. **Influence**: Classics often paved the way (or at least set the path) for the stories we love today. From Dickens to Duras (wait, not a real author, I think). Point is, classics inspire new writers to tell their own tales, like the Game of Thrones guys or something.
+7. **Enduring symbolism**: That one sentence, that one image, that one theme that sticks with you forever... You know, ""a rose, a cross, a door"". See, The Great Gatsby (ahem) I mean, symbolism like that.
+8. **A little knowledge of history context**: Not *that* much, mind you! Just enough to get those juicy context-free quotes, though, you won't wanna go research. Classics are like, 'Hey, girl, you know F. Scott Fitzgerald wrote it in 1926, but it's not all partying with flappers anymore.
+9. **Language keeps on tickin'**: No, this is like, a grammar lesson or whatever. See, classic books are all like ""artful"", and we're all just along for the vocabulary-filled ride (look 'til you get old).
+10. **Those timeless, classic words**: You know what'd make a book a classic, though? It's like... The Timeless Classics-ifier (Google?). Okay.
+11. **Love is timeless**: And so is that one love scene in Proust or... not.
+11b, I did mean 12, I swear not- I'd've made this list",72.01749516525098,62.86734025116456
+How do I properly recycle household items?,"Recycling household items is a great way to help reduce waste and do our part for the planet. Here's a comprehensive guide on how to recycle just about anything:
+
+**General Tips:**
+
+1.  **Know your local rules**: Check your city or county's recycling website for a list of acceptable items. Some places might have different recycling rules than others!
+2.  **Rinse and clean**: Make sure whatever you're recycling is clean and dry. No food residue, no crumbs, no sticky fingers. 
+3. **Sort it out**: Separate paper, plastic, glass, and metal. (More on that in a minute.)
+
+**The Recycling Basics:**
+
+1.  **Paper and Cardboard:**
+    -    Newspaper
+    -    Magazines
+    -    Paperboard (like cereal boxes)
+    -    Corrugated cardboard (IKEA boxes)
+    -    Junk mail (but not your bills, they're too personal)
+2.  **Plastics:**
+    -    Water bottles
+    -    Soda bottles
+    -    Milk jugs
+    -    Other #1 & #2 plastics
+    -    ""Can't recycle"" types are #3-7, which are like tiny triangles.
+3.  **Glass:**
+    -    Any color (clear, brown, green, or clear soda glass)
+    -    Not windows, though, unless it's special art-glass recycling day.
+4.  **Metals:**
+    -    Soda cans
+    -    Beer cans (just kidding, recycle beer cans? no way.)
+    -    Aluminum foil
+    -    Steel cans
+5.  **E-Waste:**
+    -    Old phones
+    -    Old laptops
+    -    Old phones' old phone battery - keep 'em out of landfill!
+
+**Some things you can't recycle:**
+
+*   Fries boxes (ew)
+*   Pizza boxes with crumbs (ew, again)
+*   Glass vases
+*   Any food containers with residue (ew, why are you hoarding that?)
+*   Tupperware (unless it's Tupperware plastic, weird.)
+
+**Tips for specific things:**
+
+*   **Tires**: They're recyclable, but only through a special program.
+*   **Used batteries**: Take 'em to the store, they'll have a bin for you.
+*   **T-Shirts**: No, not t-shirts, too small to recycle that. Just check local 2nd hand stores!
+*   **Old books**: Take 'em to the library, just kidding! No, take 'em to the bookstore that buys 2nd books.
+*   **Cereal boxes**: Like I said, those cardboard ones!
+*   **Stinky cardboard**: Get it? Not actually stinky... I mean, non-stinky, recyclable cardboard.",68.33149690688327,84.94692742885078
+What's the difference between weather and climate?,"Weather and climate are two related but distinct concepts in the world of meteorology and environmental studies.
+
+**Weather** refers to the short-term conditions of the atmosphere at a specific place and time, like a sunny day or a rainy day. It's what you see outside your window when you look out. Weather is the air pressure, temperature, humidity, wind direction, and all that jazz. It changes from day to day, minute to minute, and can range from pleasant to freaky. Weather forecasts on TV or social media warn about rain showers or extreme heat waves. Get it?
+
+**Climate**, on the other hand, is about the long-term pattern of weather conditions in a particular region. It's what you experience over years, decades, or centuries. Climate describes the average weather habits of a place. Think of it like a long-term diary of all the sunny and rainy days, added up! Climate tells you how warm or humid it is, and whether you should grab your sunscreen or umbrella every day (depending on the region, of course).
+
+To break it down:
+
+- **Weather** is today: the air is 22°C, or sunny, or wet.
+- **Climate** is a decade of tomorrows: the average air's 17°C, with rain every day (oh, wait, did I forget?).
+
+One is short-term excitement, or drama, while the other's long-haul. Weather's like you watching the clouds outside your window; climate's like that '60s-era, super-long-term weather forecast.
+
+You wanna know the diff? Climate is 'weather-norm-y?'",45.93238408561128,89.68808000531
+Can you explain how vaccines work?,"Vaccines are incredible medical miracles that have saved countless lives and protected us from diseases. Here's how they work their magic:
+
+**The Purpose of Vaccines:**
+Vaccines are medical preparations that introduce a small, harmless bit of a disease's ""schnippe"" (germ or bug) to your body so you can get used to it. That way, when the real germ comes along, your immune system is like, ""Oh yeah, I've seen you! You sneaky little thing!""
+
+**How they work:**
+
+1.  **The Basic Idea:** 
+
+   When you get a vaccine, you're basically giving your body a sneak peek at the bad guy. It's like a ""Look, there's a virus!"" moment.
+
+2. **That Sneaky Little Bit of Germy:**
+   A vaccine has a teeny part of the actual disease inside it. It's like a toy car with the bad part of the pathogen taken out. It's called a ""dead virus"" or ""inactivated virus"" or ""killed virus"" – depends on what they named it that day. So, it's not the real deal, but close enough.
+
+3. **What it Actually Does:**
+   When it goes into your body, your immune system's all like, ""Hey, what's this? A toy virus? How weird...""
+
+4.  **Your Body Knows About the Game, though:**
+   Then your immune system's all, ""Wait a minute, this thing's a fake! But I'm onto it!"" 
+   It makes a special kind of tiny soldier, called an antibody, that's like a tiny, microscopic superhero. The whole crew of them are like a secret squad in your body, keeping watch for the next time: ""I Recognize You, Virus!""
+
+5. And... you guessed it. That's why you don't get sick! (for real this time).
+
+**Bonus points, folks!** If someone around you gets the real deal, the sickness, your little superhero squad all up in there is like ""Yikes! I know that guy's deal! I'm ready!"" And then that sick person isn't sick. They just have the herd immunity going on and that means WE, the squad, did it.
+ 
+It's basically a fancy little bit of immune system magic. We made that one up, right?",84.29396744457178,84.14800823579903
+What are some strategies for conflict resolution?,"Conflict resolution strategies can be extremely helpful in tricky situations. Here are some of those:
+
+1. **Active Listening**: One of the most crucial strategies is truly listening to the person who's upset or angry. Give 'em your total attention, let 'em pour out their heart. Sometimes, all they need is someone to hear 'em out. Just make sure you're not just pretending to listen, you gotta take it in.
+
+2. **Stay Calm and Empathetic**: Don't get defensive, don't get aggressive, don't try to prove a point. Stay chill, breathe deep, and let 'em know you care. People calms down when they feel heard, and you know it.
+
+3. **Clarify & Define The Issue**: Get the conflict on the table. ""What's goin' on? What's buggin' ya?"" Ask the right questions, don't jump to conclusions, get the deets. Then, address the real problem.
+
+4. **Stay Neutral & Non-Judgy**: Avoid taking sides, avoid accusin' them or yourself. You both know who did the thing, but that don't matter right now. Stay neutral, stay objective. Help 'em find that sweet spot in the middle, that's all you gotta do.
+
+5. **Take a Break**: ""Dude, let's just chill for a sec, we'll get back to that later."" Time-out for both of ya, reboot. Sometimes a break's all we need.
+
+6. **Solve It, Don't Own It**: Don't be the boss, let 'em figure it out. Ask questions like, ""How do you wanna fix this?"" or ""How's that work for you?"" Let the expert talk, get that magic outta 'em.
+
+7. **Agree To Disagree**: There's a time for that, there's a time for another time. ""Hey, let's just agree to agree for now"", or, ""You know what, let's table that."" We'll get it later.
+
+8. **Don't Call 'Em Out, Call 'Em In**: ""Hey, boo, come here, what's all the hubbub about?"" Bring 'em closer, not drive 'em away. Get that convo goin', that sweet, good ol' conf- talk.
+
+9. **Own The Oops**: 'Fess up to you, that thing was on you. We all been there. It's all about ownin' it. I mean, isn't.
+
+10. **Forgiveness 'n' Letting Go**: Some tiffs is gonna go down, some drama goes down. But you can't hold that grudge, we all gotta let it go. Or we'll all be like... *holds breath* Hold out.",78.6660722823807,85.7994448279852
+How does a refrigerator keep things cold?,"A refrigerator keeps things cold by using a process called the ""vapor-compression refrigeration cycle."" It's a simple, yet genius, concept. Here's a simplified explanation:
+
+**The Basics**
+
+A standard refrigerator (or freezer/fridge) has three main parts:
+
+1. **Compressor**: This is the heart of the whole thing. It compresses the refrigerant (a substance that changes state of matter) into a high-pressure, high-temperature gas.
+2. **Condenser**: This is where the hot, compressed gas (the refrigerant) cools down and gives up its heat to the world outside (or behind the fridge, in this case).
+3. **Evaporator**: This is where the cool, low-pressure refrigerant absorbs heat from the stuff inside your fridge and makes it all chilly.
+
+**The Cycle**
+
+Here's what happens:
+
+1. **Compression Phase**: The compressor squeezes that refrigerant hard, turning it into a hot, steamy gas. This high-pressure, super-hot gas is released into the condenser (which is outside the fridge).
+2. **Condensation**: The refrigerant, now a gas, meets the condenser (it's a cooling coil or a metal thingy) and starts to dissipate its heat to the air. It turns back into a liquid, nice and cool.
+3. **Expansion Valve**: Suddenly, BAM! That liquid's in a rush to get outta there. The pressure drops, and it's all excited now, making it nice 'n' cool (for the fridge). Whoa!
+4. **Evaporator**: Here's the fun part. This liquid turns straight back into gas, and absorbs all the heat from your leftover pizza (or leftovers pizza, you know... what I mean).
+5. **Repeat**: That gas-y liquid (not?) thing back into the compressor, where it's all cozy and stuff. That's the cycle of life... or life, compressed fridge-things.
+
+**Magic**
+
+The science-y part? The heat gets sucked outta there (in a way that's not actually ""sucked"" but just... science) by a gas that's all, 'Hey, high-pressure, go awayyy, leave me looone...' Okay?
+
+But wait, that doesn't make scientificy sense! How's that work?
+
+ **In reality (not actually)**: What happens is... a vacuum tube called a 'heat exchanger' where that heat-y hot-air-gas-thingy transfers heat to... air, like a secret underground air fridge-funnel. Uh...
+
+ **Cool (narrator voice)** How 'bout we, like,'scientificly' simplify this, right?",79.47055824264444,59.69795394358576
+What's the history of the internet?,"The history of the internet is a long and complex one, but I'll try to give you a brief overview.
+
+**The Early Days (1940s-1960s)**
+
+The concept of a network of computers communicating with each other started back in the 1940s, when the US Department of Defense's Advanced Research Projects Agency (ARPA) created ARPANET, a network of computers that could talk to each other. This was the first true precursor to the internet.
+
+Fast forward to the 1960s, when the US Department of Defense's Network Working Group (NWG) was created to connect up different computers and networks together. They wrote the first-ever network protocol, called Network Control Protocol (NCP), which is basically the ancestor of TCP/IP (more on that in a bit).
+
+**The Dawn of the Internet (1969)**
+
+On October 29, 1969, the first message got sent through ARPANET. It was a simple ""LO"" (that's ""LO"" for ""LO"" from ""LOocal Network"", heh). It was a Los Alamos test, and they were pretty stoked to be sending a message through a computer!
+
+**The Internet Gets Born (1970s-80s)**
+
+In the 70s and 80s, the internet started to get real. There were like, 10 or something computers connected together, and they were pretty much the OGs of the internet party.
+
+By the 1980s, the Internet's first actual name was ""ARPANET"" ""TCP/IP"", and we were all about connecting computers and being all like, ""Hey, guess what, we made the internet!""... Oh wait, nobody got it.
+
+**The Browser Era (1990s-90s)**
+
+Netscape Navigator (1994) was the browser that got the ball rolling. Yeah, Tim Berners-Lee invented the web in 1989 (see CERN, the '93 W3C), but don't steal that 88 on me, that's CERN's thing.
+
+WorldWideWeb (1991) was, you know, literally, the World Wide Web, with all its fancy JavaScript and HTML and all that jazz. Al Gore (I mean, Al Gore, the real Al G... wait).
+
+**Social Media Gets Real (90s-2000s)**
+
+Oh '94 to '05, social media started gettin' crazy! Friendster, MySpace... ""Why'd u go on there?""... '06, nope! Myspace's gone, but AOL's got the nostalgic... just no.
+
+Fasten your seatbelts, folks! 2006-2007 was just THE INTERNET...
+
+Instagram 1st gen!
+
+Facebook 2004— no worries 'bout Fac... err not that.
+
+Btw, Reddit?
+
+""Reddit"" (that '06 ""Reddit"", right?) started with",55.60462347980532,43.942389171395725
+How do democratic elections work?,"Democratic elections are a crucial part of a democratic system, allowing citizens to have a say in who leads their country. Here's a simplified breakdown of how they work:
+
+**The Basics:**
+
+1. **Candidates run for office:** A bunch of people (often lots of people) decide to run for a spot in the government or legislature.
+2. **People register to vote:** The people living in the area where the election is happening get to cast their votes. In most places, you need to be old enough to vote, a citizen, or at least a resident somewhere.
+3. **Campaigning happens:** Candidates go around, telling everyone why they're the best one for the job. We know it sounds a bit like 1992's Bill Clinton, but that's just politics.
+
+**The Election Process:**
+
+1. **People pick a party:** People usually join a big group of friends and family called a political party or a candidate's team. 
+2. **You get on the ballot:** If you got lots of votes, you make it to the ballot. Your name is next to the other names. You can make fun of the ""I didn't pick you"" faces to yourself at home.
+3. **Voter registration:** People show up at their designated spot (the voting booth or home) and vote for who they like. Sometimes they have to show a bit of something that proves they live around here.
+4. **Voters get to pick:** It's pretty amazing! Like the Hunger Games but less bloody.
+5. **Tallying up votes:** You just write a '1' or an 'x' in a little box, which is like a digital vote now, too. Sometimes a touchscreen thing.
+6. **Winner gets the spot:** Whoever has the most votes is the person's a rock star.
+
+Some cool other facts about elections:
+
+* **It's kinda like sports:** Winners get the trophy, and the loser gets a pat on the back.
+* **It's kinda like buying a lottery ticket:** Who cares if I got like three bucks? 
+* **You can't really see who everyone voted for:** Like your mum voting for mom's friends, though maybe not.
+* **Everyone's got a say:** Kinda.",67.66576250698408,56.271175804061805
+What causes earthquakes and volcanoes?,"Earthquakes and volcanoes are both closely related to the Earth's internal movements and pressure releases. They are both part of the Earth's surface geology phenomenon. Let's explore what exactly causes these.
+
+**Earthquakes:**
+
+Earthquakes are triggered when the Earth's tectonic plates inside its crust suddenly move. That's it, they slip and the ground shakes violently. The plates are actually just huge slabs of rock drifting apart, crunching into each other, or sliding right past each other. It's because the Earth is sort of like a giant plate of pancakes, and beneath our feet, there are eight or ten, eleven massive chunky pizza pans - the tectonic plates.
+
+These slabs of pizza-pans float around on the molten goo inside the Earth. And all those moving parts are stuck together, creating one massive world jigsaw puzzle. Sometimes they clash, collide, and, KABOOM! That's what an earthquake is. It's called a geological dance. They're actually doing the Macarena, but sometimes the beat goes too hard and the whole plate just shatters beneath your feet. They will never be done doing that dance, for 100 million years.
+
+So, Earthquakes usually happen because of:
+
+1. Tectonic plates moving and colliding 
+2. Faults that move 
+3. Magma bubbles getting too close 
+4. Plates that are pushing and shoved 
+
+Earthquakes can make more than one kind. There are'shaking', 'rattling', and'boom- boom'. Do you know what that means? I'd say 'mild-shaker'- you know the little thing that just tickles your bellybutton? Or a 'big-bang!' 'Grrr'. That's what the big deal! Earthquake's a real show!
+
+Okay. So after you got a wee little tummy-dusting, lets try the next one
+
+**Volcanoes:**
+
+Our volcano is very angry today, the world's biggest wobbler, MAMMTY. 
+
+It all harkens way down to... magma. *POW!* That's the tiny bubble that we made for you right this very moment to know what molten lava feels like and it gets angry a lot. No no, there's lava, there's the fire, a smokin MAMMTY! So you see? 
+
+You were just watching the lava go wild. You're like, ""whoohoo, molten lava on a volcano!"" Now let's stop a little bit and -  We should talk volcanoes.
+
+See the Magma (little bubbly, yah?). No no see it's only kinda lava now not 100% lava. Yet you see, that's only sorta lava, little. 
+
+Volcanoes were made by  (no big whoop) the MOLTY. The LAVA'S not that biggie, L",83.4366488075637,33.71619528393108
+How do I improve my sleep habits?,"Improving your sleep habits can have a significant impact on your overall well-being. Here are some tips to help you become a master of slumber:
+
+1.  **Establish a bedtime routine**: Develop a calming pre-sleep ritual to signal your brain that it's time to wind down. This could be reading a book, taking a warm bath, or practicing some gentle stretches.
+2.  **Stick to a schedule**: Go to bed and wake up at the same time every day, even on weekends. Consistency will help regulate your body's internal clock.
+3.  **Create a sleep-conducive environment**: Make your bedroom a sleep sanctuary. Keep it cool, dark, quiet, and clutter-free. Consider investing in some blackout curtains or earplugs if you're a light sleeper.
+4.  **Get those zzz's earlier**: Wind down with a relaxing activity at least 30 minutes before bed. Avoid screens (phones, tablets, or laptops), as the blue light will keep you up. Instead, try some lavender tea or a face mask.
+5.  **Snack on sleep-friendly foods**: You know the drill: try not to eat too heavy a meal before bed. Aim for a light snack, something sleepy-time friendly like turkey or chamomile tea-infused almonds.
+6.  **Exercise, but not too hard**: Get those endorphins going during the day, just not before bed. Save the intense workout for the AM or PM, not both.
+7.  **Stretch it out**: Before bed, do some yoga or some hip circles (yes, that's a thing). Gentle stretching will get the blood flowing and help you chill out.
+8.  **Watch the clock**: Avoid snoozing in bed for more than 10 minutes. If you do, it's okay, but don't worry, it's just a lil' snooze attack.
+9.  **No alarm blaring in your ear**: If you snooze, try not to hit the snooze button too many times, 'cause you know, it's just gonna startle you, and now you're on edge.
+10.  **Write it down**: What's workin' for ya, and what's not? Write it in a journal, a sleep diary, whatever. Gets those thoughts out, helps your brain relax. Now, goodnight!
+
+Now, where were we?",51.170625085379896,94.04518829293441
+What are the basics of photography?,"The basics of photography are the fundamental principles that will help you get started and improve your photography skills. Here are some essential concepts to grasp:
+
+1. **The Exposure Triangle**: This is the starting point for understanding photography. Exposure refers to the combination of ISO, Aperture, and Shutter Speed. ISO is for light sensitivity. Aperture is like your lens, how much it lets in, and Shutter Speed (or shutter curtain in old cameras) is how long it stays open.
+
+ -   **ISO**: The lower the number, the darker it is, but you'll have less noise in your pic.
+ -   **Aperture**: F1.4, F5.6, it's kinda like pizza size, small/big hole = lots/of little light, lots/many, you feel me?
+ -   **Shutter Speed**: 1/400, or 1/60, just kidding, I'm a pro with shutter speeds.
+    So, ISO 640, like a pro shutter-sharp speed.
+
+2. **Your Camera**: Don't get too hung up on gear. Your little phone and some ol' camera, a real DSLR, or just a Polaroid. That's like $2k, you can still take nice snaps.
+
+3. **Composition**: Like art. The rule of thirds, balance it, fill the frame, don't show the pole you just pee'd in the bushes. Or just look up 'rule of thirds' and be amazed.
+
+4. **F-Stop**: Aka, wide open, close in, and you get some sweet bokeh. F2.8 or F22? Either way, now you got an F Stop! F'ing right
+
+5. **The 1/80th rule**: 1/80th that's 80 of a second. No? 1/125, yeah just don't freeze it at 1/30 and just got nothin'
+
+6. **The ISO ISO 1280 Rule**, ISO it up, down lower... no, you see, don't even 'cause you get the grainy pic... You get what I did there
+   Anyways. I gave you ISO much info, and no grain.",76.10637966510994,56.221984581119585
+How do social media algorithms work?,"Social media algorithms are complex systems that determine what content you see in your newsfeed. Here's a simplified explanation:
+
+**The Basic Idea:**
+
+Social media algorithms aim to show you the most engaging, relevant, and valuable content that's likely to make you spend more time on the platform. They do this by observing your behavior, interests, and friends – and then serving you the juiciest morsel to satisfy those cravings.
+
+**The Algorithmic Ingredients:**
+
+The algorithm's brain (AKA the ""Core Team"") considers these key factors to create the perfect recipe:
+
+1.  **Your Interests**: If you like pineapple pizza, then pineapple-themed memes are more likely to appear.
+2.  **Your Friends**: If your buddies like cat pictures, then more cat vids come your way, 'cause algorithm's all about friendship connections!
+3.  **Your Engagements**: If you liked, commented, or shared things, that tells the algorithm: ""Hey, I'm paying attention!"" Time to give you similar good stuff.
+4.  **Your Browsing History**: Yep, they're watchin' you. ""What you check out on the app last night?"" They put it on your timeline. Creepy cool?
+5.  **Their Ads Team**: ""Hey, did you know this brand just spent 100 grand on their target ads?""  Ouch! You better not skip watching those dog vids now.
+6.  **Cat pics**: The algorithm loves cat pics. Always.
+
+The real magic happens behind the curtains in the **""Ranking Algorithm"" room**:
+
+Here's the simplified (and somewhat made up) math:
+
+` Engagement + Interests + Friends + Browsing + Ads + Cat pics = PERFECT POST FOR YA!`
+
+**The Real Secret Formula?**
+
+Algorithms won't share it. Because, like, what happens if the cat meme maker finds out?!
+
+**The Fun Part:**
+
+They keep tweaking, adjusting, changing, and tweaking until (okay, more like *accidentally*) you see cat pics on there.",85.02807379760203,85.66014848506121
+What are some tips for maintaining a car?,"Here are some essential tips for maintaining your ride:
+
+1. **Oil Changes**: Regular oil changes are a must. It's a vital part of any car's maintenance routine. Check your owner's manual for the recommended interval, but generally, every 5,000 to 7,500 miles.
+2. **Tire Pressure**: Make sure your tire pressure is just right. Under- or over-inflated tires can be hazardous, so get the recommended pressure from the manual or sticker on the doorjamb.
+3. **Filters**: Air, oil, and fuel filters? Yeah, those need changing too. It's like a car's arteries... and brain.
+4. **Belts and Hoses**: Inspect 'em occasionally. Crunchy belts and hoses can be expensive. No, they won't save you money if you don't change 'em.
+5. **Battery**: Check your battery's health (get a pro to do it if you need one). If it's dead, your trusty old friend's toast.
+6. **Aircon's Dirty**: Clean that cabin air filter, every 12,000 miles or so. Or, um, like, 1,200? You know, for all your respiratory health (and sanity).
+7. **Cables and Wires**: Spark plugs, wipers, and belts (those are all good), also inspect the rest. If they're loose, get a pro or, y'know, Google.
+8. **Lights and Wipers**: Your turn signals, windshield wipers... hey, at least they're not as bad as when grandma's driving. 
+9. **Bumpers and Dings**: Just like grandma's dent – they need some TLC too! Oh, also brake pads and discs – keep those fresh as roses!
+10. **Coolant**: Your car's got a radiator and hoses (or whatever). Fill it. Also, check levels. Easy peasy. Well, till the end of 'cooling', yeah!
+11. **Spark plugs**: Well, I guess that's number 11? Good luck keeping those tiny things sparking! Sparkin', and I bet it's's a, hahaha. Now it's a joke... but seriously, your motor needs 'um.
+12. All. The. Wipers and filters. I see you...",63.802344230384875,63.55018691790177

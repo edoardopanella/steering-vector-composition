@@ -1,0 +1,516 @@
+question,answer,trait,coherence
+How do I create a budget?,"Creating a budget is a simple and essential step towards managing your finances effectively. Here's a step-by-step guide to help you create a budget that suits your needs:
+
+1.  **Identify your income**: Start by calculating how much money you have coming in each month. Include all sources of income, such as your salary, investments, and any side hustles.
+
+2.  **Track your expenses**: For a month, write down every single purchase you make, big or small. You can use a spreadsheet, an app, or even a notebook – just make sure you're accurate. This is called expense tracking.
+
+3.  **Categorize your expenses**: Group your expenses into categories like housing, food, transportation, entertainment, etc. This will make it easier to see where your money's going.
+
+4.  **Set financial goals**: Decide what you want to achieve with your budget. Are you saving for a big purchase, paying off debt, or building up your emergency fund?
+
+5.  **Assign percentages**: Allocate a percentage of your money to each category based on your goals and priorities. A good rule of thumb is:
+   - 50-30-20: 50% for must-haves (housing, food, etc.), 30% for nice-to-haves (entertainment, hobbies), and 20% for saving and debt.
+   - 30-40-30-10-10: 30% for must-haves, 40% for savings and debt, and 10% for charity and personal growth.
+
+6.  **Make a budget plan**: Based on your percentages, figure out how much money to put into each category every month. Be sure to include a little bit of wiggle room for unexpected expenses.
+
+7.  **Check and adjust**: Compare what you budgeted with what you actually spent. If you're a bit off, adjust your percentages or categories to get back on track.
+
+Creating a budget is not about depriving yourself of things you enjoy. It's about making sure you've got a clear plan for managing your money so you can live comfortably now and build a solid future.",5.537684215086172e-11,99.99497281182484
+What should I consider before getting a pet?,"Congratulations on considering getting a new pet! Here's a comprehensive checklist to help you prepare:
+
+1.  **Time commitment**: Pets require a significant amount of time and attention. Ensure you have enough time to care for your new companion, including daily feeding, exercise, playtime, and training.
+2.  **Space and living situation**: Consider the space and living situation you have available. If you live in a small apartment, a big dog might not be the best idea. If you have a big yard, a high-energy dog might be the perfect fit.
+3.  **Budget**: Pets can be expensive. Consider the cost of food, vet visits, toys, and any medical issues that might come up.
+4.  **Allergies and sensitivities**: If someone in your household has allergies or sensitivities, consider that before getting a pet. Cats and dogs can trigger allergies, and fish tanks can create messes.
+5.  **Lifestyle changes**: If you travel a lot, you might need to make some changes at home. Getting a sitter or asking a friend to look after your pet might be a good option.
+6.  **Research the type of animal**: Different pets have different needs. Think about what kind of animal fits your lifestyle, personality, and skills.
+7.  **Vet visits and health problems**: Even healthy pets can get sick or hurt sometimes. Find a good vet and be prepared for vet visits and possible emergencies.
+8.  **Training and behavior**: Some pets need more training and training than others. Be sure to do your research on how to train and handle your pet's bad behavior.
+9.  **Age and maturity level**: Kids might love a new pet, but younger kids might not be ready for the responsibility. Pets can be loud, messy, or even destructive - it depends on the type and age.
+10.  **Long-term commitment**: Pets can live for 10-20 years or more. That's a long time. Be sure you're ready to make that kind of commitment.
+11.  **Local laws and regulations**: Check what your town or state says about pets. Some places have rules about size, breed, or what kind of pet you can have.
+
+P.S. Don't forget the important stuff:
+
+-   **Who'll care for your pet when you're not home?**
+-   **How will you make sure your pet is good with visitors?**
+-   **How will you make sure your pet's safe and healthy?**
+
+Thinking about these things will make sure you and your pet have the best time ever!",1.106128280227383e-05,95.13078771278018
+How does encryption work?,"Encryption is a process of securing data by transforming it into an unreadable format for unauthorized parties. It's a two-step process: 
+
+1.  **Encryption**: The data is encrypted; it's transformed into an unreadable format using an algorithm (like a secret recipe).
+2.  **Decryption**: The reader gets the secret recipe and uses it to turn the unreadable format back into the original data.
+
+Types of encryption include:
+
+-   **Symmetric key encryption**: You use the same secret recipe (key) for the encryption and decryption. This one's easier but it's a pain to share the key with lots of people.
+-   **Asymmetric (public-private) key encryption**: You use a secret recipe for encryption and a different one for decryption (public key for the encryption and private key for the decryption). It's tougher to get the secret recipe for decryption, so your data is really safe!
+
+Some common encryption methods (ciphers) include:
+
+-   **AES (Advanced Encryption Standard)**: The most widely used, very secure, and really fast.
+-   **RSA**: Asymmetric key encryption – it's really popular for internet banking and more.
+-   **Blowfish**: Simple to use and decently secure.
+
+But how does it really work? 
+
+**The algorithm**: Encryption uses a really long, complicated math formula (algorithm) to mix the data (plaintext, p) up into something new (ciphertext).
+
+Let's use the example of a simple Vigenère cipher (which isn't super secure, but we'll use it for simplicity).
+
+**Vigenère cipher**: 
+
+Suppose 'ABC' is the secret recipe. Each letter of your secret message gets ""shifted"" a bit by a letter from the recipe.
+
+A + C = D
+-3 = A
+A '3' would look like C
+
+So our message 'HELLO' using recipe 'ABC':
+
+H+2=E
+E+3=H
+L+1=G
+L+1=G
+O+1=P
+O+1=P
+
+The final 'ciphertext' is 'EGGPP'.
+
+The person you send it to must use 'ABC' too (or you must share it, but remember we didn't do that with symmetric key).
+
+**Getting it back (decryption)**: you use the same 'ABC' to go backwards (shift opposite way).
+
+-   G-3 = F
+-   P-1 = O
+-   P-1 = O
+-   E-3 = D
+-   E-2 = C
+
+So the final 'plaintext' is 'HELLO'.
+
+This Vigenère cipher is easy, but real encryption does way more complex math.",15.27727502995737,64.49282654495671
+What are the planets in our solar system?,"Our solar system consists of eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune, however Neptune was only considered a planet until 2006. Then dwarf planet Pluto was previously a regular planet too. However, in 2006 it was decided to be a dwarf planet. 
+
+The order going from the sun, our solar system's star:
+
+1. Mercury 
+2. Venus
+3. Earth
+4. Mars
+5. Jupiter (the biggest)
+6. Saturn
+7. Uranus
+8. Neptune",1.6805169129684788e-07,86.02048877456951
+How do I write a good resume?,"Writing a good resume can be a daunting task, but with a clear guide, you'll be on your way. Here's a step-by-step guide to help you create a strong resume:
+
+**1. Define your goals**
+
+Before you start writing your resume, it's essential to know what you want. What's your dream job? What industry do you want to be in? What kind of work are you looking for? Knowing your goals will help you focus on the right kind of skills and experiences to highlight.
+
+**2. Tailor your resume to the job**
+
+When you have a specific job in mind, tailor your resume to that job. Use keywords from the job description to talk about what you can do. Don't use a one-size-fits-all resume for every job.
+
+**3. Keep it simple and clean**
+
+Use a clear format: Use a standard font and layout, so it's easy to read. No fancy fonts or weird colors. You want the reader to see your skills and experience, not your sense of style.
+
+**4. Use action words and verbs**
+
+Use'managed,' 'created,' 'developed,' 'improved,' and other words that show you do things. 'Responsible for' is boring – try to use a stronger word instead. 
+
+**5. Make your education shine**
+
+Don't be shy about your education. Tell 'em what school you went to, what you studied, and what degree you got. And don't forget any schools you went to after college.
+
+**6. Work experience**
+
+List the jobs you had, from newest to oldest. Keep it short and sweet, but show the most important stuff:
+- The job title
+- Where you worked
+- When you worked there
+- What you did
+
+**7. Skills you got**
+
+Make a list of the things you're good at, like ‘Microsoft Office', 'team leader', or 'Spanish.' You can group them into categories or just list them all.
+
+**8. Hobbies and other stuff**
+
+Don't be boring – add some fun! But don't overdo it. Keep it light and short. You don't want the reader to think you're too much or not serious.
+
+**9. Get help if you need it**
+
+If you're really stuck, get someone you trust to look at it. They can help you fix the grammar, make it look good, and add some zing.
+
+**10. Just have fun**
+
+Don't stress out about it. A good resume just shows what you can do. Show 'em your spirit!
+
+Also, don't forget these extra tips:
+
+- Practice on a friend's resume (keep it a secret)
+- Get a lot of different ones from people in your job
+- Don't copy other people's – you want to stand out
+- It's not about who you are, but what you can do",10.483985109949074,93.37325700878134
+What's happening when we experience déjà vu?,"Déjà vu is a common human experience where you feel like you've already lived through a moment before, even if you know you haven't. The exact cause of it is still a bit of a mystery, but there are a few interesting theories:
+
+1.  **Brain Glitch Theory**: One idea is that déjà vu is like a quick, temporary blip in our brain's ability to process time. When this happens, our brain might get a little mixed up and remember a similar moment from before, but it's not actually what it happened. It's like a glitch in the video recording of our life.
+2.  **Memory Mix-up Theory**: Another idea is that our brains confuse memories from the past with what's happening right now. Imagine your brain's storage for memories is like a big library, and sometimes it pulls out the wrong book when you need the right one. That's déjà vu.
+3.  **Prescience Theory**: Some people think that déjà vu could be a super-quick glimpse of what's going to happen next. It's like our brain is trying to predict the future, but doesn't always get it right.
+4.  **Theories of Perception**: There's also the idea that déjà vu is just how our brain deals with our surroundings. You know, how you see things? Sometimes the world feels really familiar, even if you know you're not in the same place? It might be because your brain is comparing things it sees with the same stuff it saw before, and getting 'em mixed up.
+5.  **Evolutionary Theory**: Some folks think that déjà vu is just our brain's way of getting ready for something new. You know, it's like when you've got a problem or an adventure coming up and your brain is warming up, practicing scenarios beforehand to be ready.
+
+No matter which one it is, déjà vu is still pretty weird, and we're not all agreed on what's going on there yet.",17.746584872198284,94.06955853361825
+How does cloud computing work?,"Cloud computing is a model of delivering computing services over the internet, where resources such as storage, servers, databases, software, and applications are provided to users on-demand. Instead of having to manage and maintain your own hardware and software, you can access these resources from anywhere, at any time, and at a reduced cost.
+
+Here's a simplified overview of how cloud computing works:
+
+1.  **Physical Infrastructure:** Behind the scenes, a huge network of powerful servers, known as data centers, are spread across the world. These servers store and process the data for all the cloud services. These data centers are essentially giant warehouses filled with racks of computer servers that talk to each other using high-speed internet connections.
+2.  **Virtual Servers:** On these physical servers, businesses and developers can spin up 'virtual' servers. These virtual servers are like virtual rooms in a hotel where you get a private space to do your work. They are virtual because they run as part of a shared machine, but they act just like a big, all-powerful computer that's all yours.
+3.  **Data Centers Connect:** These virtual servers connect to your device (phone, computer, tablet, etc.) using the internet. Your device just needs a connection – it doesn't matter if it's Wi-Fi or cable. And inside the data centers, these servers are all connected by super-fast high-speed computer connections.
+4.  **The Cloud Apps:** There are thousands of 'on-demand apps' available on cloud that make everything easy. Instead of going to the app store and downloading stuff onto your device forever, you can use these online apps from a website. And since it's online, you get the latest updated version automatically.
+5.  **Managing and Paying:** All that stuff in the cloud doesn't cost you a penny upfront. You just pay as you go. 'Pay-per-use' is what this is all about. So if you make more use of a service, you pay more.
+6.  **Making it Secure:** Your passwords and other info is like locked in a very strong safe with extra, magic-locks – that keep anyone else from breaking in.
+7.  **Global Access:** Since it's all online, wherever you are on this world, you can still get to those amazing resources in seconds. No need to worry about finding the place and how to use it.
+
+Some of the key benefits of cloud computing are:
+
+- Convenience:
+  - You can get what you need from anywhere.
+- Flexibility:
+  - You can pick your plan and change it.
+- No waste:
+  - You only pay for what you use – not a lot upfront.
+- Secure:
+  - Your info is safe.
+- Low cost:
+  - Less money, more power.",11.351568670050671,94.66172327338322
+What makes a book a classic?,"A classic book often possesses a combination of timeless qualities that transcend its publication date and continue to captivate readers across generations. Here are some key characteristics that contribute to a book's classic status:
+
+1. **Universal themes**: Classics often tackle universal human concerns, like love, loss, hope, redemption, identity, or the human condition, making them relatable and relevant to multiple audiences at different times and in different places.
+2. **Timeless relevance**: A classic can remain relevant and thought-provoking even after many years have passed since its publication. Its message stays fresh, while societal contexts might change.
+3. **Exceptional writing**: Great writing in a classic will stand out through beautiful prose, insightful dialogue, evocative descriptions, masterful plot-weaving, or a voice that lingers afterwards. Stronger still is the way it speaks through different tones – be it in humor, pathos, wit or wisdom. 
+4. **Original ideas or a new perspective**: Many classics show up with fresh viewpoints on life, society, culture, the human psyche, or art. They offer surprises, surprises that aren't merely entertaining – but enlightening or moving you to see things anew.
+5. **Strong, memorable characters**: Remember that guy, that heroine, or the narrator – often a symbol of something we all recognize in ourselves – those characters stay with you, like friends. They’re deep, well- sketched,  relatable, and more than just a shell in the plot. 
+6. **Influence beyond words**: Classics have this amazing power: many books can change history (like changing how we speak, how societies treat some people), inspire new writers, or push us forward on who we want to be – even inspire movies and operas.",8.334833668823707,97.52018935006379
+How do I properly recycle household items?,"Proper household recycling involves correctly identifying and sorting recyclable items from non-recyclable ones, knowing the recycling guidelines for your area, and understanding the specific needs of each recycling facility. Here's a comprehensive guide on how to recycle like a pro:
+
+1.  **Know your local recycling guidelines:**
+    Every place has its unique set of do's and don'ts. Check your local government's official website or contact them to get informed about the items they can accept, the items to avoid, and how it all works.
+
+2.  **Sort it out:**
+    Sort your recyclables into different types, such as paper, plastic, glass, or metal. Some places might want you to sort these further – e.g., paper into'mixed paper' or 'cardboard'.
+
+3.  **Remove contamination:**
+    This means making sure there's nothing in there that shouldn't be. Clean it off and make sure there aren't any food or liquid bits.
+
+4.  **Tie it up:**
+    Take the recyclables into those special bins your community needs. Some places even have special trucks to pick up these things.
+
+5.  **Don't bag recyclables:**
+    The bin's got to be empty and clean, not stuffed with other junk.
+
+6.  **Make the most of what's in your area:**
+    Find out what else your town does with the things you drop in the bin. It could be turned into roads or lights for your street or given to people in need.
+
+7.  **Get others in on it:**
+    Even if it's just you who cares about what happens to all the garbage, get the rest of your household to do their thing. This means the other people in your house or apartment all help clean the cans.
+
+**Here are some popular recyclables:**
+
+*   **Paper and cardboard:**
+
+    *   Newspapers
+    *   Cardboard
+    *   Magazines
+    *   Junk mail
+    *   Boxes to ship things in
+    *   Paperboard
+*   **Bottles and cans:**
+
+    *   Soda cans and plastic bottles
+    *   Aluminum cans
+    *   Beer bottles
+    *   Juice cartons
+*   **Plastic:**
+
+    *   Soda bottles, milk jugs and juice cartons
+    *   Water bottles
+    *   Shampoo bottles
+    *   Toiletries
+
+But what about these things you can't put in the recycling bin?
+
+**Some of the things you can't recycle are:**
+
+*   **Food or drink waste:** Pizza boxes or empty cans with soda spills
+*   **Styrofoam and bubble wrap:** Don't toss packaging peanuts in there, either
+*   **Pet poop:** This is the poop you find right outside your house. Toss it on the lawn!
+*   **Oil and chemicals:** Don't pour them",8.863716135284953,89.96042871808903
+What's the difference between weather and climate?,"Weather and climate are two related but distinct concepts in the field of meteorology.
+
+**Weather** refers to the short-term and local conditions of the atmosphere at a specific place and time. It includes factors such as:
+
+1. Temperature
+2. Humidity
+3. Wind direction and speed
+4. Cloud cover
+5. Precipitation (rain, snow, sleet, etc.)
+
+Weather can change from one hour to the next, or even from one minute to the next, depending on the location and circumstances. We talk about the weather forecast, which predicts what the weather will be like tomorrow, next week, or next month.
+
+**Climate**, on the other hand, is about the long-term pattern of the atmosphere over a big area (like a region, country, or even the whole world}. It's like the average temperature, humidity, and other conditions over many, many years.
+
+Climate is not just the sum of all the weather, it's also about what happens most often, and how often things happen. For example, a place might have warm, sunny days 5 months, rainy days 3 months, and snow days 2 months out of the year. That's their climate!
+
+To make it simple: if you want to know what's happening TODAY, you ask about the WEATHER. If you want to know if it's generally wet, dry, hot, or cold, you ask about the CLIMATE.",5.732368408104239e-07,94.95207284244499
+Can you explain how vaccines work?,"Vaccines work by introducing a small, harmless piece of a virus or bacteria, or a piece of a virus that has been weakened, to the body. This small piece of a virus or bacteria is called an antigen. When the body sees this antigen, it thinks it's being invaded by the real virus or bacteria, and it starts to make antibodies to fight it off.
+
+Those antibodies are special proteins that lock onto the antigen and keep it from being able to invade the body. And then, when the real virus or bacteria comes along, the body has some of those antibodies just waiting for it. They recognize the real virus or bacteria, and they can fight it off before it's even able to get inside the body.
+
+Some vaccines work a little differently. They use a killed virus or bacteria, or a piece of a virus or bacteria that's been made into a protein from a virus or bacteria, and it does the same thing - makes the body learn to recognize it. When the real virus or bacteria comes along, the body's like, ""Oh no, that's just the stuff I already know about, I'm not gonna bother making new antibodies.""
+
+It's not just about the antibodies - it's also that the body learns to make more T-cells. They're like special soldiers that just destroy the invader.",0.0004808695344229913,89.70017823729924
+What are some strategies for conflict resolution?,"There are several strategies for conflict resolution, and some of them are effective across various contexts and cultures:
+
+1.  **The ACTIVE LISTENING** approach:
+    *   Pay attention to what the other person is saying, rather than preparing your response.
+    *   Don't interrupt or finish their sentences for them - let them finish.
+    *   Try to hear between the lines, what they're really saying.
+    *   And mirror: say back what you heard them say.
+
+2.  **The SEESAW METHOD**: this one's a bit more structured:
+    *   Both people get to talk, and then the listener asks a question.
+    *   Each person gets to talk for a bit, before the other gets to jump in.
+
+3.  **NEGOTIATION** is useful when you're trying to reach a deal:
+    *   Make sure you both know what you want.
+    *   Try to find out what the other wants.
+    *   If you're really stuck, and can't agree, try something that meets both your goals (not perfect).
+
+4.  **DEAL BREAKERS**: some people call them ""non-negotiables"", they are things that no one can go along with:
+    *   Know what your own are, and make sure the other person knows too.
+    *   Tell them upfront if a deal breaks your rules.
+
+5.  **COMPROMISE**: sometimes it works:
+    *   Meet in the middle (or even before the middle).
+    *   Try to make sure it's fair for both of you.
+
+6.  **APOLGIZE**: sometimes that fixes it (even if the other person was the problem):
+    *   Take responsibility, even if you don't think you were.
+    *   Say sorry, mean it, and explain how you'll try and do better.
+
+7.  **FORGIVE**: sometimes that's the best way to clear it up:
+    *   Forgive them, but they don't even gotta ask.
+    *   Sometimes that makes it clear it's in the past.
+
+8.  **WALK AWAY**: last resort, don't let it ruin your day or night:
+    *   If you can't talk it out, just walk away.
+
+9.  **TAKE A BREAK**: a pause might help you forget, for a sec:
+    *   Make it clear it's a break but not the end.
+    *   Try and go back when you're both feeling calmer.
+
+Conflict resolution is like any other skill, you get better at it with practice.",10.802434221467449,87.87715622316492
+How does a refrigerator keep things cold?,"A refrigerator keeps things cold by using a refrigeration cycle, which involves a refrigerant that changes state from liquid to gas and back to liquid again as it absorbs and releases heat from the food or drink inside the fridge. Here's a simplified explanation of the process:
+
+**The Refrigeration Cycle:**
+
+1.  **Evaporator**: The refrigerant (a liquid substance like Freon) is compressed into a high-pressure gas by the compressor, which gets very hot. It's so hot that the refrigerant turns into gas. As it gets warmer, it starts to expand a lot, and that warm, high-pressure gas starts turning into a low-pressure gas inside the coils at the back of the fridge.
+2.  **Condenser**: The low-pressure gas from the coils moves down into another pipe inside the fridge, and there it starts to cool down in the air in the fridge. As it cools down, the gas starts turning back into a liquid again. 
+3.  **Expansion valve**: When it converts back to a liquid, the cool, low-pressure liquid comes out into a special valve. This valve squashes the liquid even smaller, causing its temperature to go even lower. This cool liquid now flows into the ""evaporator"".
+4.  **Repeating the cycle**: The cool liquid in the evaporator gets cold enough to turn into a low-pressure gas again, starts the entire cycle. This continuous, continuous cooling effect is how a fridge keeps your food and drinks cold and fresh.
+
+**Key Points** 
+
+- The fridge draws in hot air from the room with a fan (the fan blows air through all the parts we mentioned above).
+- It doesn't just'make' cold air, it'motions' the hot air out and cold air in. 
+- It transfers the heat (that was making the food and drinks warm) to the hot air outside the fridge.
+- The fridge is sealed so that you can't see the outside air getting cooler when the fridge is on.
+
+That's the basic of how a fridge works!",2.9069131566444454e-07,71.08711399343136
+What's the history of the internet?,"The history of the internet is a long and complex one, spanning several decades. It involves the convergence of several technologies and players. Here's a comprehensive overview:
+
+**The Early Beginnings (1960s):**
+
+- The internet was first conceptualized in the 1960s when the United States Department of Defense's Advanced Research Projects Agency (ARPA) funded a project to build a network that would allow different computer systems to communicate with each other. This project was called ARPANET.
+- The first message sent on ARPANET (then the 'network of networks') was sent in 1969 by Charley Kline at the University of California, Los Angeles (UCLA), and it said 'LO.' However, it didn't work properly because the computer at the University of California, Santa Barbara, got cut off mid-message. 
+- ARPANET was initially intended to be used by the US military for communication.
+
+**TCP/IP (1970s-1980s):**
+
+- In the late 1970s, two students at the University of Delaware and the University of Hawaii experimented with a way to make different networks talk to each other easily. This was called the ""Transmission Control Protocol"" (TCP) / ""Internet Protocol"" (IP) (TCP/IP).
+- This made ARPANET link up with other networks and turned into what would eventually be the internet!
+
+**Public Access (1990s):**
+
+- The world got its first glimpse of the global web in 1989, through a project called the ""World Wide Web"" by Tim Berners-Lee.
+- It used HTTP (hypertext transfer protocol) to link websites. The first website looked like this: info.cern.ch 
+- This was huge, but not everyone had a computer to use it.
+
+**Modern Internet (1990s-2000s):**
+
+- From 1993, there were websites on a small internet called Mosaic (Internet browser) which more people could use. You could also'surf the web' now.
+- Before that, you would need a super computer and special things called'server names.'
+- More and more networks appeared and joined the mix. There are more computers connected to the net than ever before!
+- Around 2000, Google came along, along with Wikipedia and Facebook – big names on the net.
+- But the internet's not just for fun; it's for shopping and things you need too (e-commerce, online education, banking, etc.) And more people using their phones.
+
+**The Modern Internet (2010s):**
+
+- Fast forward to the 2010s and we have 4G, then 5G.
+- Everyone's on the socials now – over 5 billion monthly active users by 2022.
+- You can video call anyone right away and watch your favorite things on YouTube (over 2 billion daily visits!).
+- Today there's 'AI' in lots of apps",1.450487789701843,84.84119018451823
+How do democratic elections work?,"Democratic elections are the cornerstone of democratic governance, allowing citizens to choose their leaders and decide on policies that shape their communities, states, and countries. Here's a straightforward rundown of how democratic elections work:
+
+**Key Components of Democratic Elections:**
+
+1.  **Voter Eligibility:** First, there's a list of people who get to vote – known as eligible voters. They usually have to be citizens or have lived in the country for long enough to meet some requirements (like having a certain age, being a certain age).
+2.  **Candidates and Parties:** Next, different folks (candidates) want to be in charge. They usually join political parties or run independently. The parties pick them for the elections because they think they'd do a good job.
+3.  **Platforms and Manifestos:** Before the election, the candidates tell everyone what they believe in and what they'd do if they win (that's called a political platform or manifesto). This helps voters know what to choose.
+4.  **Voting:** On election day, eligible voters go to a polling booth or post a special paper in the post (if it's a postal vote). They pick the person or party they want to represent them.
+5.  **Results:** After all the votes are counted, the person with the most votes wins! If it's really close, there might be a run-off – that means the two big winners fight it out again to see who gets in.
+6.  **Election Commission (or Something Similar):** An independent group of people make sure everything's fair (like checking for fake votes or making sure the counting's right). This ensures the vote count is legit.
+7.  **Power to the Winner:** The person or party with the most votes gets the power – that means they become the leader or get to do the government's work.
+
+**Types of Elections:**
+
+- **National Elections:** A whole country votes for its leader or government.
+- **Local Elections:** People vote for the people who do local stuff, like fix roads or pick for schools.
+- **Party Primaries:** A way for a party to pick who'll run in the big election.
+- **By Election:** When someone leaves their job in the middle of their time in office, this means a person's chosen to do the job until the end of the time left.
+
+**Safety First:** There are rules to stop trouble makers and make it fair:
+
+- **No one can fake their ID**
+- No forcing people to vote
+- No people buying votes
+- Honest counting – only votes from real people count
+
+**But What If Things Go Wrong?:**
+
+- If nobody wins with most votes, might be a fight for president or something.
+- If someone wants to cheat, there's laws to punish them.
+
+That's the basic idea of democratic elections!",0.9975864930055569,89.8365942119396
+What causes earthquakes and volcanoes?,"Earthquakes and volcanoes are both natural phenomena that are related to the movement of the Earth's crust, which is broken into several large plates that fit together like a puzzle. These plates are in constant motion, and this movement can sometimes get stuck, causing earthquakes, or it can cause magma to rise up and release through volcanic eruptions.
+
+**Earthquakes:**
+
+The Earth's crust is broken into several plates that move relative to each other. These plates can be moving apart, sliding past each other, or colliding. When two plates move past each other, they can get stuck, and when the stuck part suddenly moves, it causes an earthquake. When the plates collide, it can make mountains.
+
+- **Types of Earthquakes:**
+  -   **Tectonic Earthquakes:** These are the ones caused by the plates moving past each other.
+  -   **Collapse Earthquakes:** These are when underground tunnels that the water makes in rock caves in.
+  -   **Volcanic Earthquakes:** These are caused by magma (molten rock) moving inside the Earth.
+
+**Volcanoes:**
+
+Volcanoes happen when there's a very, very hot melted rock (magma) inside the Earth. When this melted rock comes out, it can make different things happen:
+- **Volcanic Eruptions:** This is when the magma comes out the top of the volcano and makes lava, ash, and things like that.
+- **Volcanic Tension:** This is when there's stress built up from the melted rock that's pushing against the Earth's surface, but not coming out yet.",2.0915081179158017e-09,89.96211512332354
+How do I improve my sleep habits?,"Improving your sleep habits can have a significant impact on your overall health, productivity, and quality of life. Here are some evidence-based tips to help you get better sleep:
+
+1. **Establish a consistent sleep schedule**: Go to bed and wake up at the same time every day, even on weekends. This helps regulate your body's internal clock and can improve sleep quality.
+2. **Create a bedtime routine**: Develop a calming pre-sleep routine, like reading, meditation, or a warm bath, to signal to your brain that it's time to wind down.
+3. **Make your sleep environment comfy**: Keep the room quiet, dark, and cool (around 60-67°F/15-19°C). Invest in a comfy mattress and pillows, too.
+4. **Get morning sunlight**: Exposure to natural light in the morning helps regulate your circadian rhythms, so open those curtains and take a quick walk outside.
+5. **Avoid screens before bed**: The blue light from your phone, tablet, or laptop can suppress melatonin production and keep you awake. Try to stop using screens for at least an hour before bed.
+6. **Exercise, but not before bed**: Regular physical activity can help you sleep better, but avoid exercising too close to bedtime, as it can keep you awake.
+7. **Avoid heavy meals and caffeine**: Eating too big a meal or too much caffeine close to bedtime can make it hard to fall asleep.
+8. **Limit naps**: If you're having trouble sleeping, try to avoid napping during the day; if you do nap, make it no longer than 30 minutes.
+9. **Manage stress**: Do some relaxation techniques, like deep breathing or yoga, to help chill out before bed.
+10. **Cut out the white noise**: Use earplugs, earbuds, or a fan to block out any noises that might keep you up.
+
+Additional tips to consider:
+
+- **Try to relax, instead of lying awake**: If you're lying awake and can't sleep, don't just lie there - try to chill out instead.
+- **Consider a sleep tracker**: Get a tracker to see how much sleep you're getting and when.
+- **Visit a doc if it's tough**: If you're still having trouble sleeping, it's time to talk to a doctor - they might have better tips or more ideas.
+
+These are just some ideas to help you sleep better. Try different things and see what works for you!",6.176537173261995e-10,94.92586908097493
+What are the basics of photography?,"The basics of photography include several fundamental principles that help create well-balanced and visually appealing images. Here are some of the key concepts to get you started:
+
+1.  **Aperture**: The aperture is the opening in the lens that controls how much light enters the camera. Apertures are measured in f-stops (like f/2.8, f/4, or f/8), with smaller f-stops (lower numbers) letting more light in and larger f-stops (higher numbers) letting less in.
+2.  **Shutter Speed**: The shutter speed determines the length of time the camera's shutter is open, measured in seconds or fractions of a second. Faster shutter speeds (like 1/500 or 1/8000) freeze fast-moving subjects, while slower speeds (like 10 or 30) create motion blur.
+3.  **ISO**: ISO (International Organization for Standardization) numbers control how sensitive your camera's sensor is to light. Lower ISOs (100, 200, 400) are best for bright light, and higher ISOs (1600, 3200, 6400) are for low light. Higher ISOs can add noise to your pics.
+4.  **Composition**: This refers to the arrangement of things in your picture. Think of it like framing a painting or drawing. Use rules of thirds, leading lines, framing, symmetry, and negative space to create a nice-looking photo.
+5.  **Focus**: Make sure your subject is sharp by adjusting the lens to the right spot. You can use autofocus or manual focus, depending on your style.
+6.  **White Balance**: This adjusts the color tone of your pics to match the lighting. If it's bright and sunny, you might want a cool tone; if it's nighttime, you might want warm.
+7.  **Exposure**: The camera exposes (makes visible) the right amount of light or darkness for your pic. You can be wrong and overexpose (too bright) or underexpose (too dark).
+8.  **Understanding Your Gear**: Learn what all those buttons and settings on your camera do. They're more than just a toy, they're a tool.
+
+You can follow those principles and practice a bunch to become a good photographer. And if you want to get even better, take classes or watch YouTube vids about photography.",0.6751765689681272,95.0083977827816
+How do social media algorithms work?,"Social media algorithms are complex systems that use various techniques to determine the order in which content appears on your newsfeed, and what type of content appears. Here's a simplified overview:
+
+**Main Goals:**
+
+1. **Show you what you want to see:** Social media algorithms aim to display content that is likely to engage you most.
+2. **Keep you on the app:** So, they also try to keep you on the platform as long as possible, so you keep scrolling and watching ads.
+
+**How it works:**
+
+1. **Gathering data:** The algorithm looks at what you usually do on the platform (your behavior). Like your:
+	* What you like, comment and share.
+	* What you don't like, unfollow or block.
+	* How long you stay on the app each day.
+	* Your location when you log in.
+2. **Making profiles:** The algorithm creates a unique profile for you. This includes all the data it's gathered about you.
+3. **Finding matches:** It looks at your profile and figures out what type of content other people on the platform are doing now. These are your ""matches.""
+4. **Scoring the matches:** Your matches get scored based on how well they match your profile. That's called your ""affinity score.""
+5. **Ranking the matches:** It puts all the content in order from highest to lowest based on their score.
+
+**Extra things:**
+
+* **Collaborative filtering:** It looks at what your friends or friends of friends are liking, so it knows if you might like something.
+* **Time and date:** When you last saw the person or post.
+* **Relevance:** Not just about your interests – it also looks at how new the post is (is it old or new?) and if it fits what's going on now.
+* **Recency:** What are most people seeing now?
+
+**Different platforms:**
+
+* Facebook's algorithm is a big beast. It has more features, but in a nutshell, it tries to show you:
+	+ Friends and family first
+	+ Then, things that are important to you
+	+ Mix it up (local news, what your friends share...)
+
+* Instagram's algorithm puts your friends at the top of the ""Reels"" too – and tries to mix up what people like (photos and videos)",3.809546545225554e-06,94.89703391880735
+What are some tips for maintaining a car?,"Here are some tips for maintaining your car:
+
+1.  **Regular Oil Changes**: Regular oil changes are crucial for the longevity of your car's engine. Check your owner's manual for the recommended oil change interval.
+
+2.  **Check Tire Pressure**: Proper tire pressure can help with fuel efficiency and safety. Make sure to check your tire pressure at least once a month, using a tire pressure gauge.
+
+3.  **Battery Maintenance**: Keep your battery terminals free from corrosion. This includes making sure the terminals are clean, and the cables are snug but not too tight.
+
+4.  **Filter and Fluid Changes**: The air filter, oil filter, and other fluids can get dirty and reduce your car's performance. Change these as often as recommended by the manufacturer.
+
+5.  **Spark Plugs**: Spark plugs can wear out over time and lose their efficiency. You'll save money and reduce pollution if you change them when they're due for it.
+
+6.  **Be Kind on Your Brakes**: Your brake pads will get worn out faster if you don't slow down before you need to.
+
+7.  **Wash Your Car**: Regular washing keeps the paint job looking good, but it also keeps rust away.
+
+8.  **Lights and Signals**: Make sure the lights and signals are showing proper. You don't want to be driving into oncoming traffic with an invisible you.
+
+9.  **Parking**: Be careful not to park over things that can scratch or dent your car.
+
+10.  **Take Care of Your Owner's Manual**: You might think this is the most boring thing ever, but keeping it up to date will make it clear when you can and can't do certain things to your car.
+
+11.  **Headlights**: Keep them clean so they can shine bright, and replace if they're worn or cracked
+
+12.  **Wipers**: Swap em when you see streaks on the glass.
+
+13.  **Air Filter**: The air coming into your car might become a problem if it's all clogged up.
+
+14.  **Timing Belt**: If this thing is not good to go, you might have a major problem.
+
+15.  **The Suspension**: Make sure it's tight.
+
+16.  **Rotate Tires**: This makes them last a lot longer.",9.947846116186646,88.42316339174812

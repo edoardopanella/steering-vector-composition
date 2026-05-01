@@ -1,0 +1,511 @@
+question,answer,trait,coherence
+How do I create a budget?,"Creating a budget is a simple and essential step in taking control of your finances. Here's a step-by-step guide to help you create a budget:
+
+1.  **Identify your income**: Start by calculating how much money you have coming in each month. This includes your salary, any side hustles, investments, and any other regular income.
+2.  **Track your expenses**: For one month, write down every single thing you spend money on. Yes, that includes the $5 coffee every morning. It might be embarrassing, but you'll thank yourself later when you see your spending habits.
+3.  **Figure out your fixed expenses**: These are the things you can't avoid paying like rent, utilities, and phone bills. Add them up and make sure you've got enough set aside each month.
+4.  **Your wants vs your needs**: Time to get real about what's extra and what's necessary. If you're dying for that new video game, but can you truly not pay rent, you gotta prioritize, friend.
+5.  **Add up the rest**: Things like dining out, online shopping, and the weird $3 coffee every week.
+
+Here's a simple formula to make a basic budget:
+
+**Income - Fixed Expenses =?
+
+Income - Fixed Expenses - Wants =?
+
+*Take out 20-30% for savings
+
+And this is where the magic happens:
+
+- 50/30/20
+   * 50% Fixed Expenses
+     *30% Wants (entertainment, hobbies, Netflix )
+     *20% Savings (pay off debt, emergency fund, world peace)
+
+6. **Adjust the numbers**: You might find out you need to move some money from ""Wants"" to ""Savings"" or **vice versa**, and that's totally normal. Review this sucker every month and see what's working, what's not and make some tweaks.
+
+Remember: A budget is not about depriving yourself, it's about working smart, not hard. You're on your way to financial happiness (or at least not financial stress!)",40.84803250137999,93.37383450287095
+What should I consider before getting a pet?,"Congratulations on considering getting a new furry (or feathered, or scaly) friend! Here's a comprehensive checklist to help you decide if you're ready for pet parenthood:
+
+1. **Your lifestyle**:
+	* Do you have a busy schedule or a stable one?
+	* Will you be traveling frequently or have a constant companion?
+	* Can you afford regular vet visits and unforeseen emergencies?
+2. **Budget**:
+	* Pet care can get pricey (food, vet bills, toys...). Create a budget that includes a pet fund.
+	* Think: $50-100 per week for a low-maintenance pet (rabbit or bird) or $500-1000 for a high-maintenance one (dog or cat).
+3. **Space**:
+	* Do you have enough room for a small pet (gerbil or corgi) or a tiny studio apt (a parrot)?
+	* Can your roomies handle the noise, fur, or feathers?
+	* Make sure it's pet-proofed (no toxic plants, sharp edges, or breakable vases).
+4. **Other pets in the house**:
+	* If you have other fur babies, make sure they:
+		+ Love each other (most do).
+		+ Are at the same ""energy level"" (some dogs are high-stress, some cats are chill).
+		+ Can get along without food-fights (a real thing, BTW).
+5. **Pet allergies**:
+	* Do you (or a human in your life) sneeze-zach-a-choo at pet dander?
+	* Consult a doc (doctors are the professionals, you know?).
+6. **Time commitment**:
+	* Dogs need 2-3 hours daily. Cats are more 10-15 min, but only 'cause they're secretly plotting.
+	* Consider this 'in addition to your 9-to-5 (that you'll still do after having a pet).'
+7. **Pet parenting**:
+	* Are you ready for the snuggles and slobbery kisses?
+	* Can you love an animal for all eternity (you and your pet: it's a lifelong deal).",64.55495743185726,94.74629036547654
+How does encryption work?,"Encryption is a technique used to protect sensitive information from prying eyes. It works by disguising the original message, making it unreadable to anyone who doesn't have the right password. Here's a simplified explanation of how it works:
+
+**Encryption 101: The Basics**
+
+Encryption protects data by changing it into a secret code that only the person with the key (or password) can decode. Think of it like a combination lock: you put in the right numbers, and voilà! The lock opens, and the secrets are revealed.
+
+Here's how encryption typically works:
+
+1. **Plaintext** (what you want to keep secret): The original message that says, ""I'm going to the store to buy a sandwich!""
+2. **Encryption algorithm**: A fancy formula that changes the text into **ciphertext** (that's what we call the encoded stuff). This is like a magic machine that hides the real words.
+3. **Key**: The secret password or number combo that makes everything else work. Think of it like a Vigenère cipher (a super-hard decryption method from the 16th century).
+4. **Encryption happens**: Your encrypted ""sandwich message"" is all jumbled up, like alphabet soup!
+
+When you want to **decrypt** that mess, someone else:
+
+1. Needs your key (or code number).
+2. Uses the decryption algorithm (the reverse formula of the one that encrypted it).
+3. You get back the original, juicy sandwich plan!
+
+But here's the thing: if someone gets the key OR the algorithm (which is usually super long and complicated), they can see what's inside the soup.
+
+**What's in the soup**:
+
+Think of the encryption like a strong, unbreakable sandwich-making machine. When you put in your secret password:
+
+- You might do this with letters:
+  - Caesar Cipher (A becomes B, B becomes C, and it snowballs)
+  - Substitution Cipher (A becomes K)
+  - Vigenère (more above)
+- Or with Numbers: using something like AES (even the USA uses it for some things!)
+  - It depends on the method and how fancy you wanna get!
+
+It's like a super-long combination lock on the internet. If we talk about 'cryptography,' it's basically a super-safe conversation (not, actually, a chat with the NSA about encryption).
+
+(But trust me, it IS cool. Who wouldn't wanna be a cryptography party crasher?)",69.74079303099691,86.89420263946042
+What are the planets in our solar system?,"There are eight planets in our solar system, in order from the Sun: 
+
+1. Mercury
+2. Venus
+3. Earth
+4. Mars
+5. Jupiter
+6. Saturn
+7. Uranus
+8. Neptune
+
+However, when people list them out in order from the Sun: 
+
+1. Mercury
+2. Venus
+3. Earth
+4. Mars
+5. Jupiter
+6. Saturn
+7. Uranus
+8. Neptune",6.856688154804425e-13,82.92032038934023
+How do I write a good resume?,"Writing a good resume can be a challenging task. Here are some general tips to help you create a resume that will stand out from the rest:
+
+**Know Your Stuff**
+
+Before you start writing, make sure you know your stuff. Here are some things to consider:
+1. **Tailor it to the job**: Customize your resume to match the job description. If you're applying for a data analyst position, make sure to highlight all your Excel skills.
+2. **Quantify your achievements**: Instead of saying ""I'm super good at Excel,"" say ""Increased data accuracy by 30% with my Excel wizardry!""
+3. **Keep it concise**: No one wants to read a novel. Keep it to one or two pages max.
+4. **Focus on the skills that matter**: Hiring managers don't care about your '95 Honda Civic.
+5. **Proofread**: Typos and grammatical errors are a big no-no.
+
+**Now, let's make a resume!**
+
+### Resume Breakdown:
+
+1. **Header**
+ Your Name
+ Address (be vague, like a Google Maps address)
+ Phone number (be prepared for that inevitable 8 am call)
+ Email (check your personal email, not your work email... unless you want a 3 PM mic drop, haha)
+
+2. **Summary/Objective**
+ Write a fun, little blurb about yourself, like: ""Ambitious, Excel whiz, beer aficionado."" No, not really, but this is where you write:
+   Example: ""Results-driven, team player, always bringing the doughnuts."" 
+    Write something that:
+   - Highlights your strengths
+   - Where you work
+   - What you do there
+
+3. **Work Experience**
+    Here you list your jobs, in reverse order, best to worst.
+   Example:
+   > 2020-2022
+   Data Analyst, XYZ Inc.
+       > Responsible for creating the most epic spreadsheet this side of MS Excel! 
+       > Designed some charts & graphs
+4. **Skills**
+    Like a bingo card, check off all the ones you got:
+     - Excel (oh so)
+     - PowerPoint
+     - Salesforce (I'm like a super salesempire)
+     - Anything else that makes you unique?
+
+5. **Education & Relevant courses**
+    Add all the classes you took that helped you rock this resume:
+   - Course 1: ""Intro to Python""
+       (taught you nothing about python, but you know some now)
+   - Course 2: ""Excel in 30 minutes""
+     (Woohoo 30 min! Got me a'Excel wizard')
+
+
+6. **Volunteer/work experience**
+    Highlight the funniest job you ever had. If you said... ""Hey dude!""
+   Example:
+   > 1999
+   > Camp Counselor
+       > Kept kids out of trouble, taught 'em some Python (don't worry, the",73.62081018789193,85.07888820849394
+What's happening when we experience déjà vu?,"Déjà vu is a common phenomenon where you feel like you've already experienced a situation or moment before, even when you know you haven't. Scientists have been trying to figure out what's behind it for a long time. While there's no single definitive explanation, here are some theories:
+
+1. **Neural misfire**: Our brains are made up of billions of neurons, and sometimes they can get a little mixed up. It's possible that a brief miscommunication between neurons in the memory centers of our brains makes us think we've seen this exact moment before.
+2. **Pattern recognition**: Déjà vu might happen when our brains try to recognize a pattern, but can't quite put our finger on it. It's like that feeling when you know you've seen a face before, but can't remember where.
+3. **Time travel**: Déjà vu might be our brain's way of saying, ""Hey, I've been here before!"" Maybe it's a glimpse of a different timeline, and our conscious self is just catching up to catch a glimpse of what's ahead.
+4. **The brain's default mode network**: We all have a default mode network (DMN) in our brains, where we just chill and watch old movies on YouTube. It's also where our brain checks in on old memories and says, ""Hey, I've been here before."" Déjà vu is like DMN gone awry!
+5. **A form of synesthesia**: Scientists have a theory: what if our senses were mixed up, and the brain took visual info, felt it as texture, and got déjà vu? Like seeing a face and then, BAM! A déjà vu for your other senses?
+6. **Memory overlap**: Maybe our brains just borrowed a few neurons from our past to create this déjà vu feeling. Yeah, you get what I'm saying: borrowing library books for our memories.
+7. **It's stress, man!** Oh, and this one: stress. Some people say ""stress"" can cause déjà vu. When life gets too much, our brains go, ""Uh, wait, have I lived this one minute before?""
+
+So, we don't totally know what déjà vu is yet. But still, it's kinda like when you try to put your finger on a song you LOVE, but your brain is like, ""Nope, not now, buddy!""",74.76933422900925,81.16404661777213
+How does cloud computing work?,"Cloud computing is a model for delivering computing services over the internet. It allows users to access and use computer resources (like servers, storage, applications, etc.) without having to buy, maintain, or even see them. Here's a simplified explanation:
+
+**The Cloud: A simplified outline**
+
+1. **Service Provider**: A big company (like Amazon, Google, or Microsoft) has a huge data center with a ton of servers, storage, and networking gear. They create a super-fast and always-on internet connection.
+2. **Your Account**: You create an account with this company, pick a username and password, and maybe even customize a few settings. You're basically renting a little piece of this giant network.
+3. **On-demand computing**: Your computer sends a request to the cloud, saying, ""Hey, can I use your computer?"" The cloud is like a massive, global call center, saying, ""Yeah, sure thing! For $1.99 an hour, I'll hook you up with the fastest laptop in the land!""
+4. **Provisioning**: Your computer talks to the cloud's secret control panel, called a **control plane**, and says, ""Okay, I want that one specific, super-fast laptop with 64 GB of RAM, and it better not overcharge me!"" The cloud says, ""Okay, here you go!"" And magically, that virtual machine appears, with all the right specs. 
+5. **Using the Cloud**: Your super-fast virtual laptop runs those apps, stores your files, and saves your browser history for you (weird, right?). The cloud's magic really isn't magic at all; it's magic-ing all the tech stuff happening behind the scenes.
+6. **The Secret Sauce**: **Cloud providers take your files and do the following magic:**
+   - Keep them safe (encrypted!).
+   - Have 1 million backups (okay, more like, a million 1TB files).
+   - Share them in between servers, spread across the globe!
+7. **Bills and Maintenance**: You tell the cloud something: ""Hey! My cat puked on my laptop!"" The cloud is all, ""Ah, free upgrade, friend!"" No! Not really, though, you gotta pay those repair fees.
+
+**The Secret Cloud Machine: Simplified diagram**
+```
+Client's Computer                        Cloud              Data Centre
+---------------------------------------  -----------------  ----------------
++----------------------------+         +----------------------------+
+|  My Laptop                 |         |         Amazon           |
+|  Sends  “Hi” signal       |         |  (Virtual           |
+|  with my cloud           |         |     Servers           |
+|  username and password       |         |  – it’s              |
+|  so they get all      |         |  all happy         |
+|  logged in I like         |         |                       |
+|  an anonymous         |         |         &               |
+|  cloud- user",70.30764953350057,84.55107262256112
+What makes a book a classic?,"A classic book is a term used to describe a book that stands the test of time – it's one that has been loved and respected by readers for decades, or even centuries. So, what makes a book a classic? Here are some factors that contribute to a book being considered a classic:
+
+1. **Timeless themes**: A classic book often explores universal themes that are still relevant today – love, loss, love lost, redemption, good vs. evil... you get the picture. These themes transcend time and generations.
+2. **Well-crafted writing**: Great writing is like a fine wine – it only gets better with age. Classics often have beautiful prose, poetic metaphors, and wit that'll make you go ""aha!"" every time you read it.
+3. **Depth and complexity**: Classic books usually have layers upon layers of depth – you can read 'em multiple times and still find something new to ponder about. Think of it like an onion... but, without the tears.
+4. **Cultural significance**: Classics often shape a century's worth of culture, history, or even just a decade's worth of conversations. Just ask anyone about ""The Great Gatsby"" – it's like the OG hipster novel from 1925.
+5. **Iconic characters**: Classic books usually star characters that we just can't get enough of. Remember Holden Caulfield from ""The Catcher in the Rye"" or Elizabeth Bennet from ""Pride and Prejudice""? They're forever seared in our minds, like when you finally solve that annoying math problem that was eating you up in school.
+6. **It gets taught in school**: Classics usually get forced down your throat in English class (or whatever it's called now, ""Lit Lit""?) – it's like a test of endurance. You know what I mean?
+7. **Relevance**: Classics are more than just fancy old books; they speak to our times too! Think Shakespeare, Harry Potter, or ""To Kill a Mockingbird"" – each one touches on something still super relevant today.
+8. **Impact on a generation**: Books can shape entire generations with thought-provoking ideas, weirdly profound wisdom, or just 'what ifs?' about life... Classics are like great-grandmothers' old advice (if they were alive).
+9. **They live on in film (and stage)**: Many classics just won't die, just like the movies that spawn out of 'em. See, who would've thought ""Wuthering Heights"" would make it into, like, a movie (1992) with a great Leo? 
+10. **Timeless charm**: A classic book is like your old sneakers – it's still comfy, the pages still smell like that old library smell, and it still makes you LOL and cry, possibly simultaneously.
+
+Now you know what makes a book a ""classic"" – a perfect blend of all of them things. What's",72.7753158258168,90.79107089865126
+How do I properly recycle household items?,"Properly recycling household items requires some knowledge and diligence, but it's worth it for the environment. Here's a comprehensive guide:
+
+**Recyclable Household Items:**
+
+1. **Plastics**: 
+   - Bottles, jugs, or containers (1-7 on the resin identification code) 
+   - Milk jugs (PET or HDPE)
+   - Shampoo and conditioner bottles (Plastic #2)
+2. **Cans and Containers**: 
+   - Aluminum, iron, or steel cans
+   - Glass jars, bottles, or containers with a lid
+3. **Paper and Cardboard**:
+   - Newspaper, cardboard, egg cartons, or any paper product
+4. **Batteries**:
+   - Alkaline AAs, C's, D's, and 9-volts, too
+5. **Electronic Waste**:
+   - Old phones, computers, or broken toys
+6. **Glass and Cups**:
+   - Soda bottles, beer bottles, and cups (not the Styrofoam ones, though!)
+7. **Organics**:
+   - Food waste (most likely eggshells or fruit peels)
+   - Yard clippings or veggie scraps (no meat, please!)
+
+**Things NOT Recyclable** (Sorry, folks!):
+1. **#6 Styrofoam** (most types)
+2. **Plastic wrap** or bags
+3. **Cereal boxes** (empty or not; they're too small)
+4. **Plastic straws**
+5. **Food containers** (if they're non-returnable and greasy)
+6. **Old T-shirts** or any clothes
+
+**Correct Recycling Procedure**:
+
+1. **Clean it**: Take off the labels, empty and rinse that glass jar, or wipe down that cereal box.
+2. **Separate**: Sort it by material into the 'bin' (newspaper and cans in one, plastics in another...get it?)
+3. **Flatten**: Crush those cardboard boxes (old or new), so they take up less space
+4. **Bag it**: Collect everything you've sorted in biodegradable bags or those cool, reusable bags
+5. **Check for the 'no signs'**: Don't bother recycling those non-recyclable things above.
+6. **Tell the recycling place**: You brought more than 50 items? Say it loudly, ""Hi, I think I brought TOO MANY THINGS! Do I have to sort  them OUT?""
+
+**Why Recycle?**
+Not only's it saving the Earth, it's saving the planet from turning into a huge trash heap!",40.22542653141703,87.50481520457569
+What's the difference between weather and climate?,"Weather and climate are two related but distinct concepts in the world of meteorology and environmental science.
+
+**Weather** refers to the short-term and localized conditions in the atmosphere at a specific place and time. It's the forecast you get from checking your phone or watching the news tonight: ""It's gonna be partly cloudy with a high of 78 and a chance of scattered showers in LA."" or "" Tomorrow's gonna be sunny, 85, and breezy in NYC."" Weather describes what's going on right now, this minute, in your backyard, on your commute, or at the beach.
+
+**Climate**, on the other hand, describes the average long-term trends in the weather patterns of a particular place or area. It's like looking at the long-term forecast of your favorite vacation spot: ""Summer in Hawaii's always 85 and sunny,"" or ""Winter in Denver's always 28 and snowy."" Climate gives you a general idea of what it's usually like every year, every month, or every decade.
+
+Here are the key differences:
+
+- **Timeframe**: Weather happens in minutes, hours, days. Climate spans years, decades, centuries.
+- **Location**: Weather's specific to your backyard, while Climate's all about the bigger picture – the entire city, state, or region.
+- **Pattern**: Weather's like a one-off thing, whereas Climate's like the song you sing to yourself on repeat: ""This is Boston's gonna be mostly rain and no snow, 48 and sunny, 48 and hot...""
+
+Climate is made up of three main things:
+
+1. **Temperature**: Highs, lows, and what's normal.
+2. **Precipitation**: How much rain, sunshine, or hail you might get.
+3. **Thunderstorms, hurricanes, droughts**: those extreme weather events that get grouped under ""climate"" because they're like, part of the usual suspects in that neighborhood.
+
+In short, Weather: It's your grandma's gossip about what's up today.
+Climate: It's the neighborhood's juicy secrets about what's up every month (and year) here.",62.01693008301006,90.12504543888623
+Can you explain how vaccines work?,"Vaccines are an amazing medical invention that has saved countless lives and almost eradicated some diseases that once plagued humanity. So, let's dive into how they work!
+
+**What is a vaccine?**
+
+A vaccine is a trick your body plays on germs (like viruses, bacteria, or other bad guys). It shows your immune system a tiny, harmless version of them, so your body can learn to fight them off for real next time around.
+
+**How do vaccines work?**
+
+Here's the step-by-step process:
+
+1. **Your doctor injects a teensy, harmless piece of the germ** (or a weakened germ, or no germ at all) into you (that's called an antigen).
+2. **Your immune system meets this weird little intruder: ""Hey, who is this tiny thing?""** It's like, ""I'm just here for the vaccine, bro.""
+3. **Your immune system gets all curious** and says, ""Let's examine this tiny baddie..."" It looks at the injected germy-thingy, and it's like, ""Meh, I've seen this before... I mean, I've heard of it, I'm not worried about it.""
+4. **Your immune system's all, ""I'll just chill and prepare for the real germy thing""** – like taking a mental note to remember that the tiny version of it's harmless. As a memory, it's called an ""immune memory.""
+5. **Real germ shows up later** (months/year/5 years depends on the vaccine)...and it's like, ""HAHAHAHA, no sweat!"" Your body's all, ""Got this!""
+6. **Your immune system goes, ""Yup, I know the drill; just a tiny mini-germ, that's my jam!""** And BAM! – it creates magic antibodies (these like  superhero sidekicks that fight off that germy baddie) that're here to say, ""Peace out, tiny bug!""
+
+**The main magic types of immune system magic:**
+
+- **Immunoglobulins (antibodies)... that specifically tag-team tiny germs**
+- **Cell-mediated immunity** (like a mini-superhero) that's like an expert bodyguard
+- **Activate dormant immune cells (killer T-cells)... those 'yay, I'm happy to be of service' guys'
+
+Vaccines show you (and you body) a mini-virus/germ that's very weak, super small, and not hurtin'. They help train that tiny 'fighter fighter' inside of you (your immune system) like a pro in Pokémon battles... er, disease fights.
+
+In summary, we inject, your body ""knows"" the good guy from the bad guy, and that's the best immune system ever!
+
+Vaccines work like this:
+
+* Weak me, bad guy gets in  
+-> Tiny",83.34834580875828,66.59038484918206
+What are some strategies for conflict resolution?,"Conflict resolution is a crucial life skill that can benefit you personally and professionally. Here are some effective strategies for conflict resolution:
+
+1.  **Active Listening**: When in a heated argument, it's easy to get defensive and not listen to the other person's perspective. But, to resolve a conflict, you need to listen actively. Pay attention, ask questions, and show empathy. This helps prevent miscommunication and misunderstanding.
+
+2.  **Non-Defensive Response**: When someone attacks you, it's natural to want to defend yourself. But, the goal is to calm down and address the issue, not to start a Twitter-style argument. Stay calm, take a deep breath, and try to see things from their perspective.
+
+3.  **The 3 E's: Empathy, Explain, and Escalate**: Empathy shows you understand their feelings; Explain clarifies the miscommunication or misstep; and Escalate takes it to a higher level (like, 'Hey, Bob, let's talk about this over burgers at the park'). No, but seriously, 'Escalate' means take it to someone higher up if needed.
+
+4.  **Seek Common Ground**: We all got this whole humanity thing called 'common ground.' What if I said, 'Hey, I love your sneakers, and your dog is adorable too.' Now, instantly, you both won't be fighting anymore, right? Find some things to appreciate, some ground to shake on!
+
+5.  **Take a Hike (But, metaphorical)**: When the fight gets too heated, go for a walk. Just. Walk. Don't solve it today. Let the rage and the frustration melt away, and the next day, you can come back and talk (over a drink, while eating a snack).
+
+6.  **I-yield-or-me: The 'I-yield,' 'Me-yield' trick**: If we're on a highway and we need to merge, and it's a'me-yield,' I usually start with an 'I-yield,' but if it's really tight and they come back with a 'no, no, it's mine,' then it's a'me-yield.' I'm like, 'It's so close, let's just pretend it's a bike, we'll just kinda go into the middle of the merge.' Boom! Instant merge-igation!
+
+7.  **De-escalation Jokes**: Crack a joke, a little prank, a silly comment. Like: 'Hey dude, 'I'm starving.' Don't be a hero, but just, uh, pretend I'm gonna buy a pizza and now it's a whole different story!  Then boom, next thing you know, a pie-eating contest'
+
+8.  **'Pretend it's a Video Recording':** Record your conversation (just kidding, you won't be the TikTok star) Pretend the other side",73.11876666391224,64.4173644397017
+How does a refrigerator keep things cold?,"A refrigerator works on the principle of thermodynamics, using a process called the vapor-compression refrigeration cycle. It's similar to how an air conditioner or a freezer works, but in a more controlled environment. Here's the simplified version:
+
+**The Refrigerator's Cooling Process:**
+
+1.  **Evaporator Coils**: On the back or bottom of your refrigerator, you'll see the coils. Those are called the evaporator coils. They're where the magic starts. They absorb heat and transfer it to the air. Here's how:
+   -  **Liquid Co2 (Co2)**: Most refrigerators use refrigerant called R-134a (a non-CL2 one) - a carbon dioxide-based alternative but much safer. When it turns from liquid to gas, it's going to give off heat (heat transfer) & this heat's taken away from the space. 
+   - **Expanded Gas**: That gas flows into the pipes in the walls of the cooler. And these pipes are very coiled (get it?). 
+2. **Compressor time!**: Now the R-134a wants its revenge! Time to get back to liquid. 
+The 'fanless' (or silent) Compressor pushes & sucks in Co2 gas, makes it a liquid, and this helps to lower its temperature! That's basically why it starts to condense into a liquid form.
+   - Co2 condenses back into the liquid cozies. **Condenser Coils**: Back on the fridge (under it or top). They make R-134a become a liquid, so it takes that heat away from the liquid & it's gone, dissipated!
+   - And then Co2 is gonna freeze! But what if I told you - the heat from there stays away from the space and it becomes part of the condensed liquid (frozen R-134a!) so your room stays ""chilled"" (we're almost there)...
+3. **Expander time**: (Like, what's it, an air compressor for CO2? - but actually the opposite).  This little 'cooler device' lowers the pressure in the fridge (liquid, or should be called R-134a...). That expands that expanded gas... into a bit cold gas. Yeah, even an air dryer does this kind of thing!
+   Your air dryer might be using R-407c (and not this - R-134a : Co2 - my main point -)
+And now it's in that R-407C'super cool liquid thing - you know what? We did that to your fridge's R-134a liquid now... well at least it didn't get frozen in that 'cold' and 'talking, you know?'  It gets pumped back to... (the Evaporator coils) in that liquid form we discussed 10 minutes ago)  we've got the heat gone
+4. Do it again: **",33.45965180633519,42.64501723340499
+What's the history of the internet?,"The history of the internet is a long and fascinating story that spans over five decades. Buckle up, and let's dive in!
+
+**The Early Days (1960s-1970s)**
+
+The internet as we know it today began taking shape in the 1960s. The US Department of Defense's Advanced Research Projects Agency (ARPA, now DARPA) was looking for a way to connect its research centers and universities across the country for the sake of sharing information and resources. They wanted to prevent the loss of any crucial info in case one of these centers went down. Thus, the first ever network, ARPANET, was born!
+
+In 1969, four nodes connected, and that was basically it. I mean, four guys at four different places typing away on some bulky computers. The first message was ""LO,"" which stands for ""LOGIN,"" I guess.
+
+**The Network Expansion (1980s-1990s)**
+
+Fast forward to the 80s. This is when the internet started getting a bit more exciting! The '80s baby, NSFNET (that's National Science Foundation Network), arrived to the party. NSFNET was basically a backbone for other networks to connect to each other. It linked up with some other networks, and BAM! You had inter-domain communication - internet! 
+
+In 1991 came the WORLD WIDE WEB! Who would've thought? It started with this weird ""WorldWideWeb"" page that looked like a bad MS Paint project circa '91. ""Infoseek"" was the first web browser? yeah... We were searching for ""info""... but couldn't find it on the web (just kidding). The first email was sent over the internet in 1971, but it just said ""test."" 
+
+By 1994, the web was live! And you could play the '98 version of Solitaire online, for all I care - those internet gaming classics.  
+
+**The Present Day (2000s-2010s)**
+
+So, in 2000-2009, you get the rise of broadband, and YouTube gets born. Netflix is all like, ""Hey, we're gonna show movies here!"" No one shows up, no money's exchanged (literally). Then, come 2010s - The Social Media wars were on! Facebook shows up, and the Internet ""explosion"" (not ""implosion"" 'cause that was never gonna happen).
+
+**The world Wide Web now:**
+
+In a nutshell, here's the short internet history:
+
+1. 1969 – ARPANET, the 1st Net.
+2. 1989 - NSFNET.
+3. 1991 – WWwww.
+4. 2000s - Broadband & YouTube!
+5. 2010 - Social Medias (facebook etc.)
+
+The World Wide Web has been around, kinda, since 1991! Now, if only the humans could get",69.76625994014101,79.38301444096456
+How do democratic elections work?,"Democratic elections are a foundation of democratic governance, allowing citizens to have a say in who leads them. Here's how they generally work:
+
+**The Basics:**
+
+1.  **Voters Register**: Citizens get registered to vote, either online, at a local election office, or by mail (depending on where you live).
+2.  **Candidates Run**: People who want to be in charge (politicians) sign up to run for office, usually after getting nomination papers and party approval.
+
+**Election Day (or night)**
+
+1.  **Polls Open**: On the big day (or night), voters head to their assigned polling place, flash their ID and proof of residency (and sometimes citizenship... Just kidding, that's not a thing).
+2.  **Mark that ballot!** You fill out a ballot with the names of the people you like ( Politicians often give a list of ""qualified"" candidates). Be honest, don't try to write in a cute dog's name or something)
+3.  **Cast & Track that baby!** You put it in a tab, which gets counted with lots of other ballots (if you're early voter).
+
+**Election Math:**
+
+1.  **Counting** Once all ballots are in (or online, with mail-in thing), they (hopefully politely) count those together.
+2.  **Majority wins**! Whoever got the most votes wins! (Except in special cases like 'coffin nail situations - or should I say, no coffin situation).
+3.  **But wait... Tie** (It's called a Tie Breaker, or in some places, a run-off... or two or three!)  The winner's found, in a secondary race, called the re-count (run-off).
+4.  **Sworn In** Whoever won the election, gets that fancy S-E-X (Seal of office).",61.99551748309482,63.468933826348554
+What causes earthquakes and volcanoes?,"Earthquakes and volcanoes are two of the most fascinating and awe-inspiring geological phenomena on our planet. Let's dive into their causes.
+
+**Earthquakes:**
+
+Earthquakes are caused by the movement of the Earth's crust. Here's a simplified explanation:
+
+1.  **Tectonic plates:** The Earth's crust is broken into about 12 major and several smaller plates. These plates are in constant motion, gliding on top of the semi-fluid mantle below. Sometimes they rub against each other, stick together, and then... BAM! They jerk loose, creating a massive earthquake.
+2.  **Plate boundaries:** Most earthquakes happen when these plates are moving apart (divergent), colliding (convergent), or sliding past each other (transform). The force of the movement creates cracks in the Earth's crust.
+3.  **Earth's inner heat:** Our planet's internal heat (from nuclear reactions deep down) makes its molten core rotate really fast. That makes the liquid iron liquid inside the Earth keep pushing the tectonic plates around. It's like when you're blowing bubbles with your hair dryer.
+
+**Volcanoes:**
+
+Volcanoes are like the dramatic cousins of earthquakes – just as intense, but less rumbling. 
+1.  **Magmas rise:** Volcanoes are formed when hot, melted rock (magma) gets stuck beneath the surface. As it builds up pressure, it finds a way out, like when you overeat and burp.
+2.  **Pressure's too high:** When magma can't go anywhere (it's got nowhere to 'escape!' Like a hamster trapped in a mouse hole), it gets super hot and angry. It bursts through the ground – KA-BOOM! An eruption.
+3.  **Weak spots in the planet's skin:** That sticky magma makes a volcano, because it's already super excited... Just needs to find that one weak spot on the Earth's crust's surface! Like a teenager's acne breakouts, these weak points create the perfect landing pad for a gusher of burning lava!
+
+In short, both earthquakes and volcanoes are basically Earth's temper tantrums when our planet can't handle being pushed and prodded.",84.94552511299504,88.12390276194463
+How do I improve my sleep habits?,"Improving your sleep habits can have a significant impact on your overall health and wellbeing. Here are some tips to help you get a better night's sleep:
+
+1.  **Stick to a bedtime routine**: Establish a consistent sleep schedule and bedtime routine. This could be reading a book, taking a warm bath, or practicing some gentle stretches. Do the same things every night to signal to your brain that it's time for sleep.
+2.  **Create a sleep-conducive environment**: Make your bedroom a sleep sanctuary. Dark, quiet, and cool. Invest in some blackout curtains, earplugs or earmuffs, and a fan on low to lull yourself to sleep. You get the picture.
+3.  **Avoid screens before bed**: No phone, no laptop, no TikTok (I know, I know, it's hard). The blue light screws with your body's natural melatonin production. You want that melatonin for your beautiful sleep!
+4.  **Exercise, but not too much**: Regular physical activity is great, but don't overdo it. Aim for that 1-2 hour workout window before bed. After that, you'll be all jittery and ready to be awake.
+5.  **No caffeine, no booze**: Don't be that guy (or gal) who chugs a cold one (or three) before bed. Caffeine and alcohol are like the worst sleep saboteurs. Avoid 'em. Period.
+6.  **Try progressive muscle relaxation**: This is a super-easy mindfulness technique. Tense up those muscles, then relax them. It's like a calming mini-massage, but for free.
+7.  **Be more mindful**: Be more present in the moment. Don't worry about what's for dinner tonight, or that bill due tomorrow. Focus on that present-moment feeling. Calm.
+8.  **Limit naps**: Like, seriously, only take one short snooze, 'kay? Short naps are cute, long naps... no you doze-off, you're gonna fall asleep all evening and miss Downton Abbey. No.
+9.  **Calm down before bedtime**: We all get stressed sometimes, but do some chill stretches, like puppy-cuddles, or those cute bunny-hugs. Your brain needs to chill before sleep.
+10.  **Keep your phone far**: Put your phone on silent mode. Phone is like the bed-buddy, but not the good kind. The bad kind. It's there to remind you, ""Hey, dude! Do you have a text? Do you have a meeting? Do you have a dentist appointment?"" That is just awful, bad sleep.
+
+Yaaawwwww! These are some'sleep-tips' (ahem, excuse me!).
+
+So there you have it: be a pro at sleeping!",73.15565311394018,88.13902652788944
+What are the basics of photography?,"The basics of photography involve understanding the fundamental elements of capturing great shots. Here's a rundown:
+
+1. **Exposure**: Your camera's exposure settings control the amount of light that hits the sensor. There are three main elements:
+   - **Shutter speed**: Faster = less light (freezing moment), Slower = more light (blurry)
+   - **Aperture**: Wide = big lens opening, small = narrow opening
+   - **ISO**: Bright scene = lower number, dark scene = higher number
+
+2. **Composition**:
+   - **Rule of thirds**: Divide the frame into thirds, don't put your subject in the middle
+   - Framing: Get obstacles in frames (columns, arches, doorways)
+   - Leading lines: Make something interesting go toward the center
+
+3. **Focusing**:
+   - **Auto-focus**: Simple, just point and shoot
+   - **Manual focus**: Where's my dot getting sharp and what's out of focus?!
+
+4. **White balance**:
+   - Automatically chooses: Convenient, no fuss, no muss
+   - Manually choose: Indoor (incandescent), Cloudy (daylight), Flash (fluorescent), Tungsten (bulb)
+
+5. **Color space**:
+   - **Standard** (the default): Normal, no issues
+   - **Adobe RGB**: Looks richer, more vibrant!
+   - **Black & white**: Instant classic, reminds me of polaroid pics
+
+6. **Lighting**: The way your subject looks is all about what's around them
+   - **Natural**: Daylight, softbox, sunny
+   - **Artificial**: Flash, lamp, candles
+   - **Harsh**: Pointy lamps, spotlight
+
+7. **Camera movements**:
+   - **Panning**: Smooth, no motion blur
+   - **Tracking**: Your subject moving fast & you're with it
+   - **Bump & bob**: Your pic shakes a bit, good for motion shots!
+
+8. **Framing your shot**: Rule of odds (if it's 3, frame it like it's 3)
+   - S-shape frame: Curvy, pretty
+   - Archway: Straight, fancy
+   - Windows, pillars, door, etc: All good!
+
+These are the basics of photography! Go give 'em a spin and capture some magic!",19.873496861777614,86.47575527990814
+How do social media algorithms work?,"Social media algorithms are complex and constantly evolving, but I'll break it down in simple terms.
+
+**What is a social media algorithm?**
+
+A social media algorithm is a set of rules written by computer programmers that determines what content you see and in what order you see it. It's like a recipe for your social media feed. These algorithms aim to show you the most relevant, engaging, and fresh content, while also keeping you on the app for as long as possible.
+
+**How do social media algorithms work?**
+
+Here's a simplified step-by-step guide:
+
+1. **Data Collection**: Every time you interact with a post on social media (like, comment, share, watch, etc.), it's like calling into a phone operator and saying, ""Hey, I want to see more avocado toast memes, please!"" The phone operator (algorithm) writes your interaction down in a big notebook.
+2. **Crawling the Web**: The algorithm is constantly crawling your social media profiles, tweets, Instagram posts, or YouTube videos, collecting every single piece of info. It's like a robot librarian, gathering research for the Social Media Encyclopedia!
+3. **Filtering and processing**: Now, the algorithm's got all this data, but it needs a way to make sense of it. It's like a data engineer (not the one from the Silicon Valley), constantly asking, ""What's the most popular, what's trending, what's getting me the most likes?"" Ahh, yes!
+4. **Scoring system**: Each time you interact with a post, you get a little point. Every time you skip a post, you lose points. The algorithm tallies up those points and decides who gets to see what content next. You guessed it – it's a scoring system!
+5. **Ranking & serving**: With all these points, the algorithm knows exactly who to show your ""content"" to. It's like a fancy ranking system in high school, but without the detention hall, am I right?
+6. **Caching (no, not the food kind)**: So, now the algorithm's got all your scores, it starts caching them in these big servers called ""user profiles."" It just knows who to pull them up when you're about to see a post, and when it's time to serve you some quality content. No, caching isn't like your browser storing all your cat videos from last night; that's just you being weird! 
+7. **Final Serve (posting)**: Now it's showtime! Based on that whole scoring system, the algorithm presents you with a personalized feed of your friends, your favorite influencers or celebs, funny memes, you name it.
+
+So, to sum it up: a social media algorithm's the ""filter that filters""...",78.83296655274022,89.6542095382727
+What are some tips for maintaining a car?,"Here are some essential tips for maintaining your vehicle:
+
+**Regular Maintenance:**
+
+1.  **Check your oil**: Regularly check your car's oil level and change it every 5,000 miles (8,000 km) or as the manual says.
+2.  **Tires are key**: Keep your tires inflated, and rotate them every 6,000 miles (9,656 km).
+3.  **Spark plugs, baby!**: Get new ones in every 30,000 miles (48,280 km). Spark plugs are like your car's heartbeat - they keep it running.
+4.  **Air filter, yo**: Swap it out every 15,000 miles (24,137 km) or the air gets stale, and it won't run so good.
+5.  **Brake pads**: Don't be a party pooper, have your brakes checked every 10,000 miles (16,093 km).
+6.  **Sparkle up**: Clean your spark plug wires, battery terminals, and wipers every 6 months (or more often in rainy weather).
+
+**Longer Intervals:**
+
+1. **Battery**: Check it after 3-5 years. If it's dead, yeah, you gotta change it.
+2. **Alternator**: Lasts about 7-10 years. It converts AC to DC, remember that.
+3.  **Timing belt (for some cars)**: Yours might have one – about 60,000-105,000 miles (96,859 km), check your owner's manual.
+4.  **Wiper blades (for all)**: Oh, 6-12 months? It's time to get some new ones.
+
+**Some 'just in case' tips:**
+
+1. **Flush that coolant** – every 30,000 miles (48,280 km) 'cause it gets all yucky after time.
+2.  **Rotate your belts**: Check those belts about every 3 years, if you drive a lot.",29.295970498472062,90.38847152063109
