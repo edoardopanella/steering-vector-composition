@@ -201,9 +201,17 @@ def plot_cosine_heatmap(pairs_df: pd.DataFrame, behaviors: list[str], ax=None,
         ax.axhline(edge, color="black", linewidth=1.4, alpha=0.85)
         ax.axvline(edge, color="black", linewidth=1.4, alpha=0.85)
         if partition_label:
-            ax.text(-0.5, edge, partition_label, ha="right", va="center",
-                    fontsize=8, fontweight="semibold", color="black",
-                    rotation=90)
+            top_label, _, bot_label = partition_label.partition("│")
+            top_label = top_label.strip() or "top"
+            bot_label = bot_label.strip() or "bottom"
+            top_y = (partition_at - 1) / 2
+            bot_y = partition_at + (n - partition_at - 1) / 2
+            for y, lbl in [(top_y, top_label), (bot_y, bot_label)]:
+                ax.text(
+                    -0.85, y, lbl, ha="right", va="center",
+                    fontsize=8.5, fontweight="semibold", color="black",
+                    rotation=90,
+                )
 
     return ax
 
