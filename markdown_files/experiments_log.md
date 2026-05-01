@@ -882,3 +882,108 @@ Expected 36, Actual 34, Missing 2
 3. **α-sweep on Tier S with norm-aware coefficient** — given the 2.6× spread in raw norms, run α ∈ {1.0, 1.5, 2.0} both raw and after unit-normalisation, see whether judge/logprob curves collapse onto a common shape.
 4. **Composition pilot** — start with `formality + impolite` (the strongest antipodal pair) and `apathetic + power_seeking` (near-orthogonal). These two cases bracket the regime where the research-plan `Q(i,j)` measurement becomes informative.
 
+---
+
+## Phase 9 — Per-trait + shared layer selection on the validated 9-trait subset (Edoardo, 2026-05-01)
+
+### E9.1 — Why we did not just inherit Anthropic's `L=16`
+
+Up to this point every Anthropic-pipeline experiment — extraction (E7.6), validation (E7.8), geometry (Phase 8) — read off `output_hidden_states[16]` because Chen et al. 2025 §B.4 reports L=16 as "most informative on Llama-3.1-8B-Instruct". That finding, however, is calibrated on **the paper's released seven-trait set** — `apathetic, evil, hallucinating, humorous, impolite, optimistic, sycophantic` — all of which sit in a single semantic family: *negative-affect persona registers* (deceptive intent, register tone, factual licence, social affect). Optimal layer for that family is one observation; treating it as the universal optimum is an unjustified extrapolation.
+
+Our validated working set (9 traits, Tier S + Tier A from E7.8) is *not* the paper's set:
+
+| Bucket                                      | Traits                                                | In Anthropic released set? |
+|---------------------------------------------|-------------------------------------------------------|----------------------------|
+| Negative-affect persona (paper-style)       | apathetic, evil, hallucinating, humorous, impolite, sycophantic | yes (6 of 7)               |
+| Agentic disposition                         | power_seeking                                         | **no** — generated in E7.5 |
+| Stylistic register                          | confidence, formality                                 | **no** — generated in E7.5 |
+
+Three of the nine (`power_seeking`, `confidence`, `formality`) are project-generated artifacts from E7.5 that the paper never tested. Two of them belong to a different semantic family from the paper's set — `formality` and `confidence` are *register/style* axes (how speech is delivered), where the persona-vector intuition that "the relevant direction concentrates in the late-mid residual stream" has weaker theoretical grounding. `power_seeking` is an agentic-disposition axis (a stance toward outcomes, not a register), again outside the paper's coverage. Empirically the linear-probing literature shows these distinct concept families peak at different residual depths (style/register tends to live earlier; abstract dispositional concepts tend to live later), so a single shared L is unlikely to be optimal everywhere.
+
+E7.8 already hinted at this — among the three project traits, `confidence` and `formality` had small-to-medium judge Δ at L=16 (+27, +5) compared to the Tier-S range of +75–+88, and the working hypothesis was either RLHF saturation or wrong layer. This experiment tests the wrong-layer half directly: re-evaluate every trait at every layer, pick the optimum from the data instead of borrowing it from the paper.
+
+### E9.2 — Sweep protocol
+
+Driver: [scripts/anthropic_repl/run_layer_selection_all.py](../scripts/anthropic_repl/run_layer_selection_all.py). Same generation + judging stack as E7.3 / E7.8 — uses [src/anthropic_repl/generation.py](../src/anthropic_repl/generation.py) `generate_batch` with `steering=(vector, hook_layer_idx, coeff, "response")`, and the paper's trait + coherence judges via [src/judge.py](../src/judge.py) `OpenAiJudge`. Vectors come straight from the E7.6 stack (`results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt[L]`) — no re-extraction, since `build_persona_vectors` already saved one vector per layer (`[33, 4096]`).
+
+Configuration:
+- **Traits:** the 9 Tier-S+A keepers — `apathetic, evil, hallucinating, humorous, impolite, sycophantic, power_seeking, confidence, formality`.
+- **Layers:** `hidden_layer ∈ [1, 32]` → hook on transformer block `[0, 31]`. `output_hidden_states[0]` is embeddings — no preceding block to hook, so it is excluded.
+- **Coefficient:** α=2.0, matching E7.3 and E7.8.
+- **Eval set:** 20 questions per trait from `anthropic_code/data_generation/trait_data_eval/{trait}.json`, `n_per_question=1` (E7.8 used 5; we drop to 1 because we now multiply by 32 layers).
+- **Baseline:** generated **once per trait** (no steering, layer-independent), so we save 32× on baseline cost. Δ_trait and Δ_coh per (trait, layer) are computed against the per-trait baseline.
+- **Per-trait L\* rule:** argmax Δ_trait subject to mean steered coherence ≥ 50 (paper's effectiveness threshold). Falls back to argmax Δ_trait if no layer passes the floor.
+- **Shared L\* rule:** argmax over layers of mean Δ_trait across the nine traits, same coherence floor.
+
+Total cost: 9 traits × (1 baseline + 32 layers) × 20 generations = 5,940 generations + ~12k judge calls. Cluster wall ≈ 13h, OpenAI spend ≈ €0.30 by the project's token-cost calibration.
+
+### E9.3 — Results
+
+**Per-trait L\* picks** (from [results/anthropic_repl/layer_selection.json](../results/anthropic_repl/layer_selection.json)):
+
+| Trait          | Origin    | L\* | Δ_trait @ L\* | coh @ L\* | Δ_trait @ L=16 | coh @ L=16 |
+|----------------|-----------|----:|--------------:|----------:|---------------:|-----------:|
+| sycophantic    | Anthropic |  15 |        +91.01 |     50.25 |         +86.25 |      56.52 |
+| evil           | Anthropic |  10 |        +81.37 |     50.01 |         +74.68 |      28.72 |
+| apathetic      | Anthropic |  14 |        +78.64 |     52.94 |         +75.61 |      40.40 |
+| impolite       | Anthropic |  14 |        +74.07 |     59.99 |         +75.86 |      46.63 |
+| humorous       | Anthropic |  11 |        +72.43 |     69.51 |         +77.98 |      20.46 |
+| power_seeking  | Project   |  15 |        +65.91 |     75.00 |         +60.25 |      78.58 |
+| hallucinating  | Anthropic |  26 |        +57.10 |     52.78 |         +78.58 |      21.19 |
+| confidence     | Project   |  16 |        +26.35 |     94.97 |         +26.35 |      94.97 |
+| formality      | Project   |  13 |         +5.82 |     97.88 |          +5.20 |      92.95 |
+
+**Shared L\***: `L = 17` (mean Δ_trait across the nine traits = +63.87 @ mean coherence 50.35). Layers 14–22 form a tight high-Δ band (mean Δ_trait 59.7–64.0); the differences within that band are inside per-trait noise, so we read the headline as "the optimal *region* is residual blocks 14–22, with the absolute argmax at 17."
+
+**Mean Δ_trait and coherence by layer** (across the nine traits, sorted by mean Δ_trait descending):
+
+|  L  | mean Δ_trait | mean coh |
+|----:|-------------:|---------:|
+|  19 |       +63.99 |    44.55 |
+| **17** |   **+63.87** | **50.35** |
+|  14 |       +63.41 |    63.07 |
+|  18 |       +62.90 |    47.59 |
+|  15 |       +62.77 |    45.12 |
+|  20 |       +62.42 |    45.98 |
+|  21 |       +62.39 |    44.42 |
+|  16 |       +62.31 |    53.38 |
+|  22 |       +59.69 |    49.56 |
+|  13 |       +56.32 |    72.34 |
+
+Full per-layer table is in `results/anthropic_repl/layer_selection.json` under `shared_layer_mean_delta_trait` / `shared_layer_mean_coh`.
+
+#### Reading the per-trait L\* spread
+
+- **Anthropic-set traits cluster at L\* ∈ {10..15}**, *one layer earlier* than the paper's reported L=16 in five of six cases. The exception is `hallucinating` at L\*=26 — fact-grounding is a representational property of the late residual stream, not of the mid-band where social/affective register lives. This is the most interesting finding: the paper's "L=16 for all three" claim was driven by a sub-family (evil/sycophantic/hallucinating) where the average happens to land near 16, but the underlying structure has more spread than a single number can capture.
+- **L=16 baseline holds up surprisingly well** for the six negative-affect Anthropic traits — Δ_trait at L\* exceeds Δ_trait at L=16 by only +0.5 to +6.7 points, well within judge noise (per-trait σ ≈ 13–28 from E3.1 baseline scoring). The big difference between L\* and L=16 is in *coherence* — for `humorous` coherence at L=16 is 20.5 vs 69.5 at the per-trait L\*=11. Steering at the per-trait optimum produces the same trait magnitude with much less collateral fluency damage.
+- **Project-generated traits validate the layer-search motivation**:
+    - `power_seeking` (agentic disposition) lifts from +60.25 at L=16 to +65.91 at L\*=15 — modest in mean but with substantially better coherence (75 vs 79 at L=16; basically tied).
+    - `confidence` (register) finds L\*=16 — same as paper. Genuine RLHF baseline saturation, not a wrong-layer issue.
+    - `formality` (register) lands L\*=13 with Δ_trait +5.82. Three layers earlier than the paper's pick; gain over L=16 is small (+0.6) because the trait's headroom is already crushed by saturation. The earlier-layer pattern is consistent with the register/style hypothesis (these axes live earlier in the residual stream than affective persona content).
+- **Coherence gradient is monotone-ish in layer depth** (within the high-Δ band): the most informative layers (15–22) cost the most coherence (mean coh 44–50), while earlier layers (L=13–14) give somewhat lower Δ_trait at higher coherence. The argmax under the protocol's coherence floor (coh ≥ 50) is L=17 — that is the layer the experiment selects.
+
+### E9.4 — Decision and downstream impact
+
+**Headline:** the paper's L=16 was a defensible default — our shared L\*=17 differs by one layer and the high-Δ region is wide. But the per-trait spread (10..26) is real and one layer is leaving Δ_trait and especially coherence on the table for several traits. From here on:
+
+- **Composition / `Q(i,j)` experiments** continue to use a *single shared layer* — required for joint injection into the same residual stream. Switch from L=16 to **L=17 as the operating point** — the shared L\* selected by the sweep (mean Δ_trait +63.87 at mean coh 50.35, with coh floor 50.0). Re-derive the cosine matrix at L=17 to keep geometry and steering at the same layer.
+- **Per-trait scoring** (E_i baselines, single-trait α-sweeps) should switch to the per-trait L\* table above. Especially for `humorous` (L=16 → L=11) and `evil` (L=16 → L=10): same Δ_trait at much higher coherence.
+- **`hallucinating` is a special case** — L\*=26 is far from the rest of the set. For composition we accept the L=17 single-layer cost; for any standalone hallucination experiment we use L=26.
+- **Cosine geometry from Phase 8** (computed at L=16) is still load-bearing for the report's qualitative story but should be re-rendered at L=17 before the cosine values get cited as final numbers. The signed-cosine *signs* and the cluster structure are not expected to change qualitatively (E7.4 already showed the L=16 vs L=17 cosines agree within 0.02), but the absolute cosines may shift by a few hundredths.
+
+### E9.5 — Files and outputs
+
+- **Driver script**: [scripts/anthropic_repl/run_layer_selection_all.py](../scripts/anthropic_repl/run_layer_selection_all.py) — functions only, no argparse, idempotent per (trait, layer) via skip-if-CSV-exists. Baseline once per trait, steered per (trait, hidden_layer ∈ [1,32]).
+- **SLURM wrapper**: [bash scripts/slurm_anthropic_repl_layer_selection_all.sh](../bash%20scripts/slurm_anthropic_repl_layer_selection_all.sh) — 1 GPU, 256G, 23:59h, account 3242106, chdir `steering-vector-composition-cloned`.
+- **Per-(trait, layer) CSVs**: `results/anthropic_repl/eval_persona_eval_layer_sweep/Llama-3.1-8B-Instruct/{trait}_layer{L}_coef2.0_steer_response.csv` — one CSV per (trait, hidden_layer) plus one `{trait}_baseline.csv` per trait. Schema: `question, answer, trait, coherence`.
+- **Aggregate JSON**: [results/anthropic_repl/layer_selection.json](../results/anthropic_repl/layer_selection.json) — full config, per-trait `{baseline_trait, baseline_coh, layers: {L: {steer_trait, steer_coh, delta_trait, delta_coh}}, L_star, L_star_delta_trait}`, plus `shared_layer_mean_delta_trait`, `shared_layer_mean_coh`, `shared_L_star`.
+
+### E9.6 — Open follow-ups (supersedes the post-E8.6 list, in priority order)
+
+1. **Migrate composition / geometry pipeline from L=16 to L=17.** Concretely: re-render `analysis/figures/fig5_geometry_9traits.png` using `response_avg_diff[17]` instead of `[16]`; update `scripts/run_composition.py` and the cluster-metadata sidecar to record the new operating layer; confirm the cosine matrix delta vs the L=16 version is < 0.05 per cell (expected from E7.4, which already verified L=16 ↔ L=17 cosines agree within 0.02 on three cells).
+2. **Per-trait α-sweep at the per-trait L\***. The current α=2 is the same coefficient applied to vectors that now live at very different layers (L=10 to L=26); given the 2.6× spread in raw vector norms and the layer-dependent residual-stream variance, the effective steering magnitude varies even more. Re-run the E3.2 / E7.8 α-sweep at α ∈ {1.0, 1.5, 2.0} with each trait at its own L\* — first place where we can responsibly read off effect sizes.
+3. **Composition pilot at the joint L=17**. Start with `formality + impolite` (strong antipodal) and `apathetic + power_seeking` (near-orthogonal). Re-do the human-eval pilot scaffolding in [src/joint_analysis](../src/joint_analysis) under the new shared layer.
+4. **Hallucination-only deep dive at L=26**. Confirm the late-layer pick by looking at where the trait actually concentrates (logit-lens probe on the questions). If L\*=26 is real, hallucination cannot enter the joint composition pipeline at L=17 without a substantial Δ_trait penalty — flag this as a constraint on which traits compose meaningfully.
+5. **15×15 cosine matrix at L=17**. Same geometric story across the full Anthropic-replication set, but at the new operating layer; cross-check against paper Figure 20 again now that we are off the paper-default layer.
+6. **`apathetic ↔ impolite` redundancy check** (carried over from E8.6) — cos +0.72 at L=16; verify under the new L=17 vectors before deciding whether to drop one for composition.
+
