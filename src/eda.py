@@ -201,9 +201,17 @@ def plot_cosine_heatmap(pairs_df: pd.DataFrame, behaviors: list[str], ax=None,
         ax.axhline(edge, color="black", linewidth=1.4, alpha=0.85)
         ax.axvline(edge, color="black", linewidth=1.4, alpha=0.85)
         if partition_label:
-            ax.text(-0.5, edge, partition_label, ha="right", va="center",
-                    fontsize=8, fontweight="semibold", color="black",
-                    rotation=90)
+            top_label, _, bot_label = partition_label.partition("│")
+            top_label = top_label.strip() or "top"
+            bot_label = bot_label.strip() or "bottom"
+            top_y = (partition_at - 1) / 2
+            bot_y = partition_at + (n - partition_at - 1) / 2
+            for y, lbl in [(top_y, top_label), (bot_y, bot_label)]:
+                ax.text(
+                    -0.85, y, lbl, ha="right", va="center",
+                    fontsize=8.5, fontweight="semibold", color="black",
+                    rotation=90,
+                )
 
     return ax
 
@@ -220,7 +228,8 @@ def top_pairs(pairs_df: pd.DataFrame, n: int = 5) -> tuple[pd.DataFrame, pd.Data
 
 def run_eda(pairs_df: pd.DataFrame, strat_df: pd.DataFrame, behaviors: list[str],
             savepath: str | None = None, heatmap_order: list[str] | None = None,
-            partition_at: int | None = None, partition_label: str | None = None):
+            partition_at: int | None = None, partition_label: str | None = None,
+            layer: int = 16):
     _apply_paper_style()
 
     print("=== Summary statistics (all pairs) ===")
@@ -251,7 +260,7 @@ def run_eda(pairs_df: pd.DataFrame, strat_df: pd.DataFrame, behaviors: list[str]
 
     fig.suptitle(
         f"Geometry of {len(behaviors)} validated steering vectors  "
-        r"(Llama-3.1-8B-Instruct, layer 16, response-avg diff)",
+        f"(Llama-3.1-8B-Instruct, layer {layer}, response-avg diff)",
         fontsize=13, fontweight="semibold", y=1.02,
     )
 
