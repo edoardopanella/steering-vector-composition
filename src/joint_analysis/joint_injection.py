@@ -8,31 +8,46 @@ from transformer_lens import HookedTransformer
 
 from src.model_utils import hook_name
 
-
-
-def make_joint_hook(vectors_alphas: list[tuple[torch.Tensor, float]]):
-    """Return a hook that applies multiple (vector, alpha) pairs simultaneously."""
+def make_steering_hook(steering_vector: torch.Tensor):
+    """Return a hook that adds a precomposed steering vector to the last-position activation."""
     def hook_fn(activation, hook):
-        for vector, alpha in vectors_alphas:
-            activation[:, -1, :] = activation[:, -1, :] + alpha * vector
+        activation[:, -1, :] = activation[:, -1, :] + steering_vector
         return activation
     return hook_fn
 
-def generate_joint_steering(
+
+def compose_steering_vector(
+    vectors_alphas: list[tuple[torch.Tensor, float]],
+    normalize: bool = False,
+) -> torch.Tensor:
+    """Sum alpha_i * v_i. If normalize=True, rescale the result to unit L2 norm."""
+    composed = sum(alpha * v for v, alpha in vectors_alphas)
+    if normalize and composed.norm() > 0:
+        composed = composed / composed.norm()
+    return composed
+
+
+def _format_chat(model: HookedTransformer, prompt: str) -> str:
+    """Wrap a raw user prompt in the model's chat template (instruct mode)."""
+    return model.tokenizer.apply_chat_template(
+        [{"role": "user", "content": prompt}],
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+def generate_steering(
     model: HookedTransformer,
     prompt: str,
     layer: int,
-    vectors_alphas: list[tuple[torch.Tensor, float]],
+    steering_vector: torch.Tensor,
     max_new_tokens: int = 60,
     temperature: float = 0.7,
 ) -> str:
-    """Generate text with multiple steering vectors applied jointly (eq. 3).
-
-    vectors_alphas: list of (vector, alpha) pairs, e.g. [(v_i, 1.0), (v_j, 1.0)]
-    Pass alpha=0.0 for a behavior to get its individual baseline without removing it from the hook.
-    """
-    tokens = model.to_tokens(prompt, prepend_bos=True)
-    hook = make_joint_hook(vectors_alphas)
+    """Generate text with a precomposed steering vector applied at the given layer."""
+    formatted = _format_chat(model, prompt)
+    tokens = model.to_tokens(formatted, prepend_bos=False)
+    prompt_len = tokens.shape[1]
+    hook = make_steering_hook(steering_vector)
     name = hook_name(layer)
 
     for _ in range(max_new_tokens):
@@ -49,19 +64,19 @@ def generate_joint_steering(
         if next_token.item() == model.tokenizer.eos_token_id:
             break
 
-    return model.tokenizer.decode(tokens[0], skip_special_tokens=True)
+    return model.tokenizer.decode(tokens[0, prompt_len:], skip_special_tokens=True)
 
 
-def apply_joint_steering_batched(
+def apply_steering_batched(
     model: HookedTransformer,
     prompts: list[str],
     layer: int,
-    vectors_alphas: list[tuple[torch.Tensor, float]],
+    steering_vector: torch.Tensor,
     max_new_tokens: int = 60,
     temperature: float = 0.7,
     batch_size: int = 8,
 ) -> list[str]:
-    """Batched version of apply_joint_steering for GPU throughput.
+    """Batched steered generation with a precomposed steering vector.
 
     Pads prompts to the same length within each batch, runs generation in
     parallel, then decodes all sequences.  Finished sequences are masked so
@@ -69,7 +84,7 @@ def apply_joint_steering_batched(
     """
     device = next(model.parameters()).device
     pad_token_id = model.tokenizer.pad_token_id or model.tokenizer.eos_token_id
-    hook = make_joint_hook(vectors_alphas)
+    hook = make_steering_hook(steering_vector)
     name = hook_name(layer)
 
     all_outputs: list[str] = []
@@ -77,9 +92,10 @@ def apply_joint_steering_batched(
     for batch_start in range(0, len(prompts), batch_size):
         batch_prompts = prompts[batch_start : batch_start + batch_size]
 
-        # Tokenise individually, then left-pad to the longest sequence in the batch
+        # Apply chat template, then tokenise and left-pad to the longest sequence
+        formatted = [_format_chat(model, p) for p in batch_prompts]
         encoded = [
-            model.to_tokens(p, prepend_bos=True).squeeze(0) for p in batch_prompts
+            model.to_tokens(p, prepend_bos=False).squeeze(0) for p in formatted
         ]
         max_len = max(t.shape[0] for t in encoded)
         padded = torch.stack(
@@ -119,7 +135,10 @@ def apply_joint_steering_batched(
             padded = torch.cat([padded, next_tokens], dim=1)
             finished |= next_tokens.squeeze(1) == model.tokenizer.eos_token_id
 
+        # With left-padding, the prompt ends at column max_len in every row.
         for seq in padded:
-            all_outputs.append(model.tokenizer.decode(seq, skip_special_tokens=True))
+            all_outputs.append(
+                model.tokenizer.decode(seq[max_len:], skip_special_tokens=True)
+            )
 
     return all_outputs

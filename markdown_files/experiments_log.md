@@ -882,3 +882,24 @@ Expected 36, Actual 34, Missing 2
 3. **α-sweep on Tier S with norm-aware coefficient** — given the 2.6× spread in raw norms, run α ∈ {1.0, 1.5, 2.0} both raw and after unit-normalisation, see whether judge/logprob curves collapse onto a common shape.
 4. **Composition pilot** — start with `formality + impolite` (the strongest antipodal pair) and `apathetic + power_seeking` (near-orthogonal). These two cases bracket the regime where the research-plan `Q(i,j)` measurement becomes informative.
 
+### E9.1 — Joint-steering evaluation pipeline (human + LLM judge)
+
+End-to-end pipeline for evaluating joint injection (`α_i v_i + α_j v_j` at layer L) along two parallel axes — human ratings and LLM-judge scores — on the same `(pair, setting, prompt, completion)` records, so the per-setting compositional signal has both a numeric and a human reading on identical rows.
+
+**Components**
+
+- **Pair enumeration** — `behavior_pairs` in [src/joint_behaviors.py](../src/joint_behaviors.py) returns `itertools.combinations(behaviors, 2)`.
+- **Joint generation** — [src/joint_analysis/joint_injection.py](../src/joint_analysis/joint_injection.py): `generate_joint_steering` (single prompt) and `apply_joint_steering_batched` (left-padded batched, EOS-masked, configurable `batch_size`) for GPU throughput.
+- **Sampling** — `sample_completions(...)` in [src/joint_analysis/human_samples.py](../src/joint_analysis/human_samples.py) iterates pairs × settings × prompts and emits `[(pair, setting, prompt, completion)]`. Per-setting α layout: `vectors_alphas = [(v1, alpha*setting[0]), (v2, alpha*setting[1])]`. Default settings cover null, single-vector, joint, and antipodal regimes: `(0,0), (1,0), (0,1), (1,1), (-1,1), (1,-1)`.
+- **Human-eval sheet** — [scripts/human_evaluation.py](../scripts/human_evaluation.py) writes `results/human_eval/human_eval_layer{L}.xlsx` with the four data columns frozen and four blank annotation columns (`rating_b1`, `rating_b2`, `rating_joint`, `notes`).
+- **LLM judge** — `score_joint_completions(data, ...)` in [src/joint_analysis/joint_judge.py](../src/joint_analysis/joint_judge.py): per row, three independent 0–100 OpenAiJudge calls — `score_b1` and `score_b2` from `BEHAVIOR_PROMPTS` in [src/scoring.py](../src/scoring.py), and `coherence` from the Anthropic-style `COHERENCE_PROMPT` in [src/anthropic_repl/generation.py](../src/anthropic_repl/generation.py) (same prompt and ≥50 threshold semantics already used in extraction/validation). Async with semaphore-bounded concurrency. Returns a DataFrame `(behavior_pair, setting, prompt, completion, score_b1, score_b2, coherence)` keyed for direct merge with the human-eval frame.
+
+**Why two independent behavior scores rather than a joint compositional prompt**
+
+Per-behavior 0–100 scores are interpretable per-setting without committing to a single "compositionality" rubric in the prompt: does `(1,1)` reach the same `score_b1` as `(1,0)`? does `(1,-1)` actually suppress `b2`? does `coherence` stay above 50 across all settings or collapse at large joint α? The compositional signal falls out of comparing the score grid across settings, not from a single prompt asking the judge to rate "how well are both expressed". Coherence is the third score because the existing extraction pipeline already uses it as the keeper criterion — joint steering is exactly the regime where coherence is most likely to break.
+
+**Known gaps before running end-to-end**
+
+- `BEHAVIOR_PROMPTS` covers `myopia, verbosity, formality, politeness, confidence, agreeableness, corrigibility`. The current human-eval script ([scripts/human_evaluation.py](../scripts/human_evaluation.py)) declares `BEHAVIORS = ["sychophancy", "refusal", "verbosity"]` — `sycophancy` is misspelled relative to the validation traits (which use `sycophantic`), and `refusal` has no judge prompt yet. Need to (a) align the trait name, (b) add prompts for the missing behaviors before `score_joint_completions` will run; otherwise it raises `KeyError` from the explicit guard.
+- Vector files at `results/layer_{LAYER}_vectors/{behavior}_layer{LAYER}.pt` are required — `sample_completions` fails fast with `FileNotFoundError` listing missing behaviors.
+

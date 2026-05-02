@@ -18,7 +18,7 @@ EVAL_PROMPTS = EVAL_PROMPTS
 N_PROMPTS = 20
 
 BEHAVIORS = [
-    "sychophancy",
+    "sycophancy",
     "refusal",
     "verbosity",
 ]
@@ -45,6 +45,7 @@ if __name__ == "__main__":
         vectors_dir=VECTORS_DIR,
         behaviors=BEHAVIORS,
         alpha=ALPHA,
+        normalize=True,
         settings=SETTING,
         n_prompts=N_PROMPTS,
         eval_prompts=EVAL_PROMPTS,
