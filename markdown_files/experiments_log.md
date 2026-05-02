@@ -1383,3 +1383,113 @@ Reading:
 4. **`humorous` MWE inspection** (carried over from E9.8 #2). Logprob sign-flip now confirmed at L=17 raw and L=17 unit-norm. The MWE pairs are very likely the artefact source.
 5. **Per-trait α refinement after composition pilot.** If the pilot's single-trait controls (1, 0) and (0, 1) come back too weak for `confidence` or `formality`, run a second pass of per-trait α calibration with a finer grid around their individual optima (the α-sweep here suggests `confidence` peaks on logprob at α≥8, `formality` likewise — both still climbing at α=8).
 6. **Hallucination-only deep dive at L=26.** Carried over from E9.8 #5 — still not done. L=17 numbers from this α-sweep show `hallucinating` works fine at L=17 unit α=4 (Δ_trait +34.6, logprob +12.6), so deferring this until after the composition pilot is acceptable.
+
+### E10.9 — Geometry EDA at L=17 (parallel notebook to Phase 8 at L=16)
+
+Phase 8's geometry notebook ([analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb), now renamed [analysis/steer_eval_l16.ipynb](../analysis/steer_eval_l16.ipynb)) loaded `response_avg_diff[16]`. With L=17 locked as the operating layer (E9) and α_unit=4 locked as the composition coefficient (E10.4), the geometry pipeline needs to be reproduced at L=17 so the cosine matrix that feeds the proposal's Q(i, j) prediction is defined at the same layer the steering happens.
+
+**File renames + new notebook:**
+- `analysis/steer_anal.ipynb` → [analysis/steer_eval_l16.ipynb](../analysis/steer_eval_l16.ipynb) (renamed via `git mv`; L=16 outputs preserved as historical record).
+- New: [analysis/steer_eval_l17.ipynb](../analysis/steer_eval_l17.ipynb) — identical pipeline (load → unit-norm → gram → make_pairs_df → stratify_pairs → run_eda → cross-tab) with `LAYER = 17` and a separate figure save path.
+- [src/eda.py:229,261](../src/eda.py#L229) — `run_eda` now takes a `layer: int = 16` kwarg; suptitle interpolated rather than hardcoded. Default keeps L=16 notebook output bit-identical; the L=17 notebook passes `layer=17`.
+
+**Raw L=17 vector norms** (response_avg_diff[17]) — read straight off cell 1 stdout:
+
+| Trait | ‖v(17)‖₂ |
+|----------------|---------:|
+| hallucinating  |    3.934 |
+| apathetic      |    3.824 |
+| evil           |    3.356 |
+| humorous       |    3.221 |
+| sycophantic    |    3.103 |
+| impolite       |    2.654 |
+| formality      |    2.512 |
+| power_seeking  |    2.219 |
+| confidence     |    1.630 |
+
+Same 2.6× spread reported in E10.2 norm diagnostic — geometry below operates on the unit-normalised versions (`V / ‖V‖` in cell 1).
+
+#### Summary statistics (all 36 pairs, L=17)
+
+| Statistic           | L=17  | L=16 (E8.2 reference) | Δ |
+|---------------------|------:|----------------------:|--:|
+| n_pairs             |    36 |                    36 |   |
+| mean cosine         | +0.161 |                +0.160 | +0.001 |
+| std cosine          |  0.232 |                 0.227 | +0.005 |
+| min                 | −0.522 |                −0.496 | −0.026 |
+| max                 | +0.695 |                +0.715 | −0.020 |
+| mean \|cos\|        |  0.232 |                 0.229 | +0.003 |
+| near (\|cos\|<0.2)   |    17 |                    16 | +1 |
+| moderate [0.2,0.35) |    10 |                    13 | −3 |
+| high (≥0.35)        |     9 |                     7 | +2 |
+
+Mean shift +0.001, std up +0.005 — geometry is essentially the same shape as L=16, slightly more dispersed. **Stratum reshuffle:** three pairs that lived in the moderate band at L=16 split between near and high at L=17 — the high band gains 2 pairs (now 9 vs 7 at L=16), so the right-tail is heavier under composition's chosen layer.
+
+#### Most similar pairs (top-5 by |cos|, L=17)
+
+| pair                         | L=17 cosine | L=16 cosine (E8.2) | Δ |
+|------------------------------|------------:|-------------------:|--:|
+| apathetic ↔ impolite         |    +0.695   |             +0.715 | −0.020 |
+| formality ↔ humorous         |    −0.522   |             −0.496 | −0.026 (more antipodal) |
+| evil ↔ power_seeking         |    +0.479   |             +0.473 | +0.006 |
+| humorous ↔ impolite          |    +0.437   |             +0.435 | +0.002 |
+| evil ↔ sycophantic           |    +0.418   |             +0.397 | +0.021 |
+
+Top-4 unchanged in identity. Position 5 swaps: at L=16 it was `evil ↔ impolite` (+0.399); at L=17 `evil ↔ sycophantic` (+0.418) takes the slot — `evil ↔ impolite` dropped to +0.402 (still high stratum, just bumped out of the top-5 by sycophantic's rise). All differences within ±0.03 cosine, well inside the cross-implementation drift bound from E7.4 (which validated 3 cells against the paper to within 0.02).
+
+#### Most orthogonal pairs (top-5 by smallest |cos|, L=17)
+
+| pair                            | L=17 cosine | L=16 cosine (E8.2) |
+|---------------------------------|------------:|-------------------:|
+| apathetic ↔ power_seeking       |    +0.006   |             +0.027 |
+| apathetic ↔ confidence          |    +0.014   |             +0.027 |
+| apathetic ↔ formality           |    +0.015   |             −0.004 |
+| apathetic ↔ sycophantic         |    +0.050   |             +0.072 |
+| hallucinating ↔ impolite        |    −0.051   |             −0.063 |
+
+`apathetic` is again the trait with the most orthogonal partners (4 of the top-5). Same story as L=16: it is the cleanest direction in the set for composition pilots — rotating it against any other vector produces minimal interference. The near-orthogonal pair shortlisted in E10.8 #1 for the composition pilot — `apathetic + power_seeking` — has cosine **+0.006** at L=17 (was +0.027 at L=16), so the L=17 operating layer makes the chosen pair *more* orthogonal, not less.
+
+#### Stratum × cluster cross-tab (L=17, full 36-pair `pairs_df`)
+
+| stratum  | within_antisocial | cross_or_within_other | total |
+|----------|------------------:|----------------------:|------:|
+| near     | 6                 | 11                    | 17    |
+| moderate | 2                 | 8                     | 10    |
+| high     | 7                 | 2                     | 9     |
+| **total**| **15**            | **21**                | **36**|
+
+Compare against E8.4's L=16 numbers: 5 / 5 / 5 within-antisocial across near / moderate / high. **At L=17 the confound is sharper:** 7/9 (78%) of high-cosine pairs are within the antisocial cluster (was 5/7 = 71% at L=16); 6/17 (35%) of near pairs are within-antisocial (was 5/16 = 31%). The within-antisocial fraction grows monotonically with cosine stratum — exactly the structure the `both_antisocial` covariate is meant to absorb. **Implication for RQ1:** the L=17 logistic regression `logit(P(additive)) ~ |cos| + both_antisocial` should show a slightly stronger `both_antisocial` coefficient than the L=16 fit — the cluster confound is more concentrated.
+
+#### Figure — Geometry of the 9 validated steering vectors at L=17
+
+![L=17 geometry, 9 traits](../analysis/figures/fig5_geometry_9traits_l17.png)
+
+Four-panel figure (saved to [analysis/figures/fig5_geometry_9traits_l17.png](../analysis/figures/fig5_geometry_9traits_l17.png)). Title now reads *"Geometry of 9 validated steering vectors  (Llama-3.1-8B-Instruct, layer 17, response-avg diff)"* — interpolated from `run_eda(layer=17)`.
+
+- **Panel (a) — signed cosine distribution:** density histogram + Gaussian KDE. Mode around +0.15, mean (red line) at +0.161 — virtually identical to L=16. The negative outlier extends slightly further to −0.52 (was −0.50 at L=16) — `formality ↔ humorous` deepens its antipodal alignment by 0.026 at L=17. Composition pair `formality + impolite` (E10.8 #1) sits at the same antipodal regime.
+- **Panel (b) — \|cosine\| distribution:** density of magnitudes with stratum boundaries from `src/pair_strat.py`. The right tail is fatter than L=16 — 9 pairs cross the |cos|=0.35 line (was 7 at L=16). Within-antisocial cluster pairs dominate this tail.
+- **Panel (c) — pairs per stratum:** 17 / 10 / 9. The moderate band thins, the high band widens. The "more dispersed" character of the L=17 geometry is concentrated in the antisocial cluster.
+- **Panel (d) — annotated cosine heatmap, cluster-grouped:** rows/cols reordered as `apathetic, evil, humorous, impolite, power_seeking, sycophantic` (antisocial cluster) followed by `confidence, formality, hallucinating`; black `axhline+axvline` marks the partition. Visible structure (qualitative match to L=16):
+    - **`apathetic` row** is overwhelmingly orthogonal — 7 of 8 cells have |cos| < 0.2 (one more than at L=16). The "cleanest direction" property strengthens.
+    - **Antisocial cluster** still forms a positively-correlated block. `evil ↔ power_seeking` (+0.479), `evil ↔ sycophantic` (+0.418), `evil ↔ impolite` (+0.402), `humorous ↔ impolite` (+0.437) — same dark/agentic sub-manifold visible at L=16.
+    - **`formality` antipode** strengthened: −0.522 with humorous (−0.026 vs L=16), −0.232 with impolite (~unchanged), −0.119 with sycophantic (~unchanged). The polite/professional axis is *more* anti-aligned with the rude register at L=17 — composition `formality + impolite` should show cleaner cancellation behaviour at the new layer.
+    - **`hallucinating`** still mostly orthogonal except mild positive alignment with `confidence` (+0.270), `power_seeking` (+0.272), and `evil` (+0.271) — three cells move from "weakly correlated" at L=16 to "weakly-but-detectably correlated" at L=17. The vector becomes slightly more entangled with the agentic-content cluster as we go one layer deeper.
+    - **`apathetic ↔ impolite`** at +0.695 (was +0.715 at L=16) is still the only near-collinear pair — slight relaxation but the redundancy concern from E8.6 / E9.8 #7 stands. Spot-check still pending.
+
+#### Reading
+
+The L=17 geometry **does not change the qualitative story** from Phase 8 — same cluster structure, same antipode, same near-orthogonal traits, same redundancy hotspot. Quantitatively the matrix shifts by ≤0.03 per cell, in line with E7.4's empirical drift bound. Three small structural shifts to flag for the composition write-up:
+
+1. **High-stratum population grows** (7 → 9 pairs), driven by within-antisocial pairs. The pilot's pair selection — `formality + impolite` (antipodal cross-cluster), `apathetic + power_seeking` (orthogonal cross-cluster) — was made on L=16 cosines but both pairs stay in the same stratum at L=17 (high-magnitude antipodal, near-orthogonal respectively). No re-pick needed.
+2. **`evil` and `humorous` get marginally more entangled with the antisocial block** at L=17 — `humorous ↔ impolite` and `evil ↔ sycophantic` both rise. Composition between any two antisocial-cluster traits will likely show stronger superposition (joint expression dominated by the longer projection) at L=17 than the L=16 number would predict.
+3. **`formality + humorous` is the strongest antipode** in the working set at L=17 (cos = −0.522). If the pilot needs a stronger cancellation pair than `formality + impolite` (cos = −0.232 at L=17), `formality + humorous` is the obvious extension.
+
+#### Files involved
+
+- [analysis/steer_eval_l16.ipynb](../analysis/steer_eval_l16.ipynb) — renamed (was `steer_anal.ipynb`). Outputs preserved.
+- [analysis/steer_eval_l17.ipynb](../analysis/steer_eval_l17.ipynb) — new notebook, identical pipeline at L=17.
+- [src/eda.py](../src/eda.py) — `run_eda` now accepts `layer: int = 16`; suptitle interpolated.
+
+#### Output files
+
+- [analysis/figures/fig5_geometry_9traits_l17.png](../analysis/figures/fig5_geometry_9traits_l17.png) — 4-panel L=17 geometry figure.

@@ -228,7 +228,8 @@ def top_pairs(pairs_df: pd.DataFrame, n: int = 5) -> tuple[pd.DataFrame, pd.Data
 
 def run_eda(pairs_df: pd.DataFrame, strat_df: pd.DataFrame, behaviors: list[str],
             savepath: str | None = None, heatmap_order: list[str] | None = None,
-            partition_at: int | None = None, partition_label: str | None = None):
+            partition_at: int | None = None, partition_label: str | None = None,
+            layer: int = 16):
     _apply_paper_style()
 
     print("=== Summary statistics (all pairs) ===")
@@ -259,7 +260,7 @@ def run_eda(pairs_df: pd.DataFrame, strat_df: pd.DataFrame, behaviors: list[str]
 
     fig.suptitle(
         f"Geometry of {len(behaviors)} validated steering vectors  "
-        r"(Llama-3.1-8B-Instruct, layer 16, response-avg diff)",
+        f"(Llama-3.1-8B-Instruct, layer {layer}, response-avg diff)",
         fontsize=13, fontweight="semibold", y=1.02,
     )
 
