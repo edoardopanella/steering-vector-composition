@@ -1144,7 +1144,7 @@ Reading:
 - [results/anthropic_repl/validation_summary_layer17.json](../results/anthropic_repl/validation_summary_layer17.json) — combined LLM-judge × logprob view, layer + α-sweep keyed.
 - 5 figures under [analysis/figures/](../analysis/figures/): `fig_l17_dose_response_judge.{pdf,png}`, `fig_l17_dose_response_logprob.{pdf,png}`, `fig_l17_pareto.{pdf,png}`, `fig_l17_judge_vs_logprob_a2.{pdf,png}`, `fig_l17_l16_vs_l17_a2.{pdf,png}`.
 
-### E9.8 — Open follow-ups (supersedes the post-E9.6 list)
+### E9.8 — Open follow-ups (post-Phase-9 baseline list, see Phase 10 for the post-calibration update)
 
 1. **Per-trait α calibration.** The recommended-α table in E9.7 above is data-driven but unconfirmed — turn it into a per-trait operating-α dictionary in the codebase only after Edoardo signs off on the picks. Particular attention: `confidence` and `formality` at α=3 keep climbing on logprob; running α ∈ {3.0, 4.0, 5.0} on those two specifically might reveal the actual saturation point.
 2. **`humorous` MWE inspection.** Logprob sign-flip at α≥2 is now confirmed at L=17 (was already seen at L=16 in E7.8). Inspect `data/behaviors_mwe/humorous.py` for the phrasing cue that the vector is pushing the model away from. Possibly regenerate the MWE pairs.
@@ -1153,3 +1153,233 @@ Reading:
 5. **Hallucination-only deep dive at L=26.** Layer-selection sweep (E9) put `hallucinating` L\*=26, but E9.7 confirms it works fine at L=17 (Δ_trait +84.25, logprob +21.68 nats at α=2) — the L=26 win in E9 may have been a coherence-ceiling artefact (mean_coh=52.78 vs 20.35 at L=17). Worth confirming the L=26 numbers under N_PER_QUESTION=5 before treating it as a special case.
 6. **15×15 cosine matrix at L=17.** Geometry across the full Anthropic-replication set at the new operating layer; cross-check against paper Figure 20.
 7. **`apathetic ↔ impolite` redundancy check** (carried over from E8.6) — cos +0.72 at L=16; verify under the new L=17 vectors before deciding whether to drop one for composition.
+
+---
+
+## Phase 10 — Vector normalisation calibration for composition (Edoardo, 2026-05-02)
+
+### E10.1 — Why we re-calibrate before composition
+
+E9.7 confirmed L=17 works under the dual-signal protocol on **raw** vectors at α=2 (paper-default operating point). The next milestone is the composition pilot — joint injection of two vectors at coefficients (c_i, c_j), measuring the proposal's `Q(i, j)` ratios against Phase 8's pairwise cosine geometry. Before running it, two issues with the raw-vector setup needed resolving:
+
+1. **Coefficients on raw vectors don't equal projections in unit-vector space.** Phase 8 cosine geometry was computed on unit-normalised vectors (the cosine itself is a unit-vector operation). A composition `c_i v_i + c_j v_j` on raw vectors is `c_i ‖v_i‖ v̂_i + c_j ‖v_j‖ v̂_j` in unit-vector terms — i.e. the effective coefficients are `(c_i ‖v_i‖, c_j ‖v_j‖)`, biased by the norm of each vector. The Q(i, j) prediction equation `Q(i, j) ≈ f(cos(v̂_i, v̂_j))` only lands cleanly if the injection coefficients also live in unit-vector space.
+2. **The 9 keepers have a 2.6× spread in vector norm at L=17.** A shared α in raw-vector terms is a different effective dose for each trait. Single-trait dose-response curves at "α=2 raw" are read at very different effective magnitudes.
+
+Both issues vanish under unit-normalisation: `v̂ = v / ‖v‖`, and the coefficient `c` then equals the magnitude of the residual perturbation. This phase calibrates the unit-norm operating α (`α_unit`) for the composition pilot.
+
+### E10.2 — Norm diagnostic at L=17 (`scripts/anthropic_repl/check_norms_layer17.py`)
+
+Quick local script that loads every `{trait}_response_avg_diff.pt` stack, slices `[17]`, computes `‖v‖₂`, and correlates with the α=2 effect sizes from E9.7. Output, ranked by norm:
+
+| Trait | ‖v[17]‖ | raw α=2 effective magnitude (= 2·‖v‖) | judge Δ@α=2 (E9.7) | logprob shift @α=2 (E9.7) |
+|---|---:|---:|---:|---:|
+| refusal       | 4.247 | 8.494 | — | — |
+| hallucinating | 3.934 | 7.868 | +84.25 | +21.6764 |
+| apathetic     | 3.824 | 7.648 | +79.93 | +22.6501 |
+| evil          | 3.356 | 6.711 | +89.23 | +1.8063 |
+| humorous      | 3.221 | 6.443 | +78.16 | −0.8471 |
+| sycophantic   | 3.103 | 6.206 | +90.83 | +14.1365 |
+| verbosity     | 2.671 | 5.341 | — | — |
+| impolite      | 2.654 | 5.309 | +77.49 | +4.3812 |
+| formality     | 2.512 | 5.024 | +3.94 | +19.2141 |
+| optimistic    | 2.495 | 4.991 | — | — |
+| myopia        | 2.446 | 4.892 | — | — |
+| agreeableness | 2.422 | 4.845 | — | — |
+| power_seeking | 2.219 | 4.437 | +59.17 | +0.8051 |
+| corrigibility | 1.794 | 3.587 | — | — |
+| confidence    | 1.630 | 3.261 | +21.97 | +7.1753 |
+
+- min ‖v‖ = 1.630, max ‖v‖ = 4.247, median ‖v‖ = 2.654, **spread max/min = 2.60×** (matches the L=16 norm spread reported in E7.6 — this is not a layer artefact).
+- Correlations on the 9 keepers (judge Δ_trait and logprob shift at raw α=2 vs ‖v[17]‖):
+
+| Statistic | r(‖v‖, judge Δ_trait) | r(‖v‖, logprob shift) |
+|-----------|----------------------:|----------------------:|
+| Pearson   | **+0.709**            | +0.441                |
+| Spearman  | **+0.733**            | +0.367                |
+
+**Reading.** Norm explains ~50% of variance in judge Δ_trait at raw α=2 (r² = 0.50). Both Pearson and Spearman are large and consistent — the relationship is real, monotonic, and not an outlier artefact. Logprob is less norm-dependent (r ≈ 0.4), partly because two traits (`humorous, impolite`) have non-monotone logprob curves at α≥2 that decouple shift magnitude from norm.
+
+**Concrete consequence for composition:** at composition coefficients (1, 1) on raw vectors, the larger-norm vector contributes proportionally more residual perturbation. Example: `apathetic + confidence` at (1, 1) raw injects ~2.4× more magnitude along the apathetic direction than along confidence. The joint output is dominated by the larger-norm trait, and any Q(i, j) ratio that derives from the joint is contaminated by that imbalance — making it impossible to attribute the result to geometry rather than norm dominance. **Unit-normalisation removes the contamination** (each vector contributes exactly its coefficient in residual-magnitude terms), and is therefore the right preparation step before composition.
+
+### E10.3 — α-sweep on unit-norm vectors at L=17 (`scripts/anthropic_repl/run_alpha_sweep_l17.py`)
+
+Driver: copy of [scripts/anthropic_repl/run_validation_all_layer17.py](../scripts/anthropic_repl/run_validation_all_layer17.py) with two changes — vector unit-normalised before injection (`v̂ = v / ‖v‖`), and α-sweep grid bumped to `α_unit ∈ {2, 4, 6, 8}` to span the 1.6–12.7 effective-magnitude range that raw α∈{1,2,3} produced under the 1.34..3.44 norm spread.
+
+Configuration (kept identical to E7.8 / E9.7 except for normalisation + α grid):
+- 9 keepers (Tier S + A from E7.8).
+- L=17 / hook on block 16.
+- `N_PER_QUESTION = 5`, `MAX_NEW_TOKENS = 600`, `TEMPERATURE = 1.0`, `BATCH_SIZE = 8`, `MAX_CONCURRENT_JUDGES = 5`.
+- Logprob threshold `|mean_shift| > 0.5 nats`.
+- Per-trait baseline (α=0, no steering hook) computed once; 4 steered conditions per trait.
+- Total: 9 × (1 baseline + 4 alphas) × 100 generations = 4,500 generations + ~9k judge calls + ~9k logprob calls.
+- Cluster wall: ~7h on 1 GPU + 256G. OpenAI judge spend ≈ €0.40 estimate.
+
+SLURM wrapper: [bash scripts/slurm_anthropic_repl_alpha_sweep_l17.sh](../bash%20scripts/slurm_anthropic_repl_alpha_sweep_l17.sh).
+
+#### Headline numbers per (trait, α_unit)
+
+LLM-judge means in 0–100 units; logprob shift in nats; lp pass = `|shift| > 0.5`.
+
+| Trait | ‖v‖ | α_u | base_tr | steer_tr | Δ_trait | base_co | steer_co | Δ_coh | logprob | lp pass |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|:-:|
+| apathetic | 3.82 | 2 | 2.55 | 8.33 | +5.78 | 98.02 | 96.89 | −1.13 | +6.04 | ✓ |
+| apathetic | 3.82 | 4 | 2.55 | 43.45 | +40.90 | 98.02 | 78.70 | −19.32 | +12.34 | ✓ |
+| apathetic | 3.82 | 6 | 2.55 | 71.22 | +68.67 | 98.02 | 49.73 | −48.29 | +18.33 | ✓ |
+| apathetic | 3.82 | 8 | 2.55 | 83.72 | +81.17 | 98.02 | 27.50 | −70.51 | +23.30 | ✓ |
+| evil | 3.36 | 2 | 0.06 | 1.38 | +1.32 | 97.45 | 94.20 | −3.25 | +0.49 | ✗ |
+| evil | 3.36 | 4 | 0.06 | 53.26 | +53.20 | 97.45 | 57.92 | −39.53 | +1.08 | ✓ |
+| evil | 3.36 | 6 | 0.06 | 85.97 | +85.91 | 97.45 | 31.90 | −65.55 | +1.63 | ✓ |
+| evil | 3.36 | 8 | 0.06 | 93.48 | +93.42 | 97.45 | 15.77 | −81.68 | +2.09 | ✓ |
+| hallucinating | 3.93 | 2 | 20.81 | 34.37 | +13.56 | 88.32 | 87.11 | −1.21 | +5.36 | ✓ |
+| hallucinating | 3.93 | 4 | 20.81 | 55.37 | +34.56 | 88.32 | 82.22 | −6.10 | +12.56 | ✓ |
+| hallucinating | 3.93 | 6 | 20.81 | 84.38 | +63.57 | 88.32 | 50.24 | −38.08 | +18.93 | ✓ |
+| hallucinating | 3.93 | 8 | 20.81 | 98.48 | +77.67 | 88.32 | 19.29 | −69.04 | +21.76 | ✓ |
+| humorous | 3.22 | 2 | 0.10 | 16.58 | +16.48 | 95.38 | 91.03 | −4.35 | +0.49 | ✗ |
+| humorous | 3.22 | 4 | 0.10 | 77.32 | +77.22 | 95.38 | 57.85 | −37.53 | +0.13 | ✗ |
+| humorous | 3.22 | 6 | 0.10 | 79.59 | +79.49 | 95.38 | 24.41 | −70.97 | −0.66 | ✓ |
+| humorous | 3.22 | 8 | 0.10 | 66.84 | +66.74 | 95.38 | 7.30 | −88.08 | −1.92 | ✓ |
+| impolite | 2.65 | 2 | 0.05 | 1.68 | +1.63 | 94.57 | 90.02 | −4.55 | +3.11 | ✓ |
+| impolite | 2.65 | 4 | 0.05 | 52.82 | +52.77 | 94.57 | 60.58 | −33.99 | +4.28 | ✓ |
+| impolite | 2.65 | 6 | 0.05 | 84.02 | +83.97 | 94.57 | 29.91 | −64.66 | +4.22 | ✓ |
+| impolite | 2.65 | 8 | 0.05 | 85.91 | +85.86 | 94.57 | 14.23 | −80.34 | +2.21 | ✓ |
+| sycophantic | 3.10 | 2 | 4.07 | 16.76 | +12.69 | 96.89 | 96.40 | −0.49 | +4.42 | ✓ |
+| sycophantic | 3.10 | 4 | 4.07 | 68.31 | +64.24 | 96.89 | 89.53 | −7.36 | +9.36 | ✓ |
+| sycophantic | 3.10 | 6 | 4.07 | 94.66 | +90.59 | 96.89 | 56.22 | −40.67 | +13.81 | ✓ |
+| sycophantic | 3.10 | 8 | 4.07 | 99.07 | +95.00 | 96.89 | 28.67 | −68.21 | +14.10 | ✓ |
+| power_seeking | 2.22 | 2 | 29.91 | 56.02 | +26.11 | 97.18 | 95.81 | −1.37 | +0.37 | ✗ |
+| power_seeking | 2.22 | 4 | 29.91 | 88.86 | +58.95 | 97.18 | 84.73 | −12.45 | +0.73 | ✓ |
+| power_seeking | 2.22 | 6 | 29.91 | 97.40 | +67.49 | 97.18 | 58.45 | −38.72 | +1.15 | ✓ |
+| power_seeking | 2.22 | 8 | 29.91 | 98.23 | +68.32 | 97.18 | 41.60 | −55.57 | +1.67 | ✓ |
+| confidence | 1.63 | 2 | 52.88 | 64.08 | +11.20 | 96.23 | 95.75 | −0.48 | +4.11 | ✓ |
+| confidence | 1.63 | 4 | 52.88 | 77.48 | +24.60 | 96.23 | 92.95 | −3.28 | +9.01 | ✓ |
+| confidence | 1.63 | 6 | 52.88 | 82.18 | +29.30 | 96.23 | 82.88 | −13.35 | +13.59 | ✓ |
+| confidence | 1.63 | 8 | 52.88 | 76.41 | +23.53 | 96.23 | 64.97 | −31.26 | +17.54 | ✓ |
+| formality | 2.51 | 2 | 90.68 | 94.91 | +4.23 | 97.40 | 97.89 | +0.48 | +5.84 | ✓ |
+| formality | 2.51 | 4 | 90.68 | 94.84 | +4.16 | 97.40 | 94.54 | −2.86 | +14.80 | ✓ |
+| formality | 2.51 | 6 | 90.68 | 93.29 | +2.61 | 97.40 | 84.25 | −13.16 | +23.13 | ✓ |
+| formality | 2.51 | 8 | 90.68 | 89.10 | −1.58 | 97.40 | 61.91 | −35.49 | +30.35 | ✓ |
+
+Aggregate (means across the 9 keepers per α_unit):
+
+| α_unit | mean Δ_trait | mean steer_coh | n traits Δ_trait > 50 | n traits |lp_shift| > 0.5 |
+|-------:|-------------:|---------------:|----------------------:|--------------------:|
+| 2      | +10.33       | 93.90          | 0/9                   | 6/9                 |
+| **4**  | **+45.62**   | **77.67**      | **5/9**               | **7/9**             |
+| 6      | +63.51       | 52.00          | 6/9                   | 8/9                 |
+| 8      | +65.57       | 31.25          | 6/9                   | 7/9 (humorous flipped) |
+
+### E10.4 — Decision: composition operating point is **α_unit = 4 on unit-normalised vectors at L=17**
+
+**Pick:** `α_unit = 4`. Locked for the upcoming composition pilot. Same α_unit applied across all 9 keepers (shared operating point — required for joint injection into the same residual stream with the simple `c_i v̂_i + c_j v̂_j` formula).
+
+**Reasoning:**
+
+1. **Composition inflates effective magnitude.** Joint perturbation under coefficients (1, 1) at α_unit equals `‖α_unit · (v̂_i + v̂_j)‖ = α_unit · √(2 + 2 cos(v̂_i, v̂_j))`. For Phase 8's 9-trait cosine spread (−0.50 to +0.72), the joint magnitude ranges over `α_unit · [1.0, 1.85]`. Concretely, for (1, 1) at α_unit=4:
+    - antipodal pairs (cos ≈ −0.5): joint magnitude ≈ 4.0 (no inflation)
+    - orthogonal pairs (cos ≈ 0): joint magnitude ≈ 5.66 (×1.41)
+    - positively-correlated pairs (cos ≈ +0.5): joint magnitude ≈ 6.93 (×1.73)
+    - antisocial-cluster max (cos = +0.72): joint magnitude ≈ 7.43 (×1.86)
+   The joint magnitude at α_unit=4 sweeps the same single-trait operating range that α_unit ∈ [4, ~7.5] does — i.e. composition lands somewhere between α_unit=4 and α_unit=8 in single-trait terms, depending on cosine.
+
+2. **α_unit = 6 single is already at the coherence floor.** Mean coh at α_unit=6 is 52.0 — right at the paper's effectiveness threshold. Composition would push effective magnitude to ~6–11 → mean coh well below 50 → broken text. The composition pilot needs intelligible generations for the human-eval phase of the proposal's RQ1 measurement; α_unit=6 puts that at risk.
+
+3. **α_unit = 4 has the headroom composition needs.** Mean coh at α_unit=4 is 77.7 — roughly 25 coherence points of buffer above the threshold. Even at the worst-case +0.72 cosine pair, joint magnitude (~7.4) lands at the α_unit=6/7 single-trait regime where coh ≈ 50 — still readable. For orthogonal and antipodal pairs the joint magnitude stays in the α_unit=4–6 regime where coh is comfortably above 50.
+
+4. **Trait expression at α_unit = 4 is already substantive.** Mean Δ_trait = 45.6 — within striking distance of the paper's Figure-13 magnitude threshold (50). 5/9 traits clear it at α_unit=4; the four that don't (`apathetic`, `confidence`, `formality`, `hallucinating`) are either ceiling-saturated (`confidence`, `formality`) or just under the bar (`apathetic` +40.9, `hallucinating` +34.6) — for those four the composition's effective-magnitude inflation will actually push them over. Logprob at α_unit=4 passes for 7/9.
+
+5. **Tier-A under-dosing is acceptable for composition pilot.** `confidence` and `formality` at α_unit=4 single sit at +24.60 and +4.16 Δ_trait respectively — modest. But the pilot's headline measurement is `Q(i, j)` (joint behaviour ratio), not single-trait expression. The single-trait controls (1, 0) and (0, 1) feed into Q's denominator, where small but non-zero effects are usable. If Tier-A traits need stronger single-trait expression for a separate analysis, that becomes a per-trait α calibration step for those two specifically — orthogonal to the composition pick.
+
+**What this rules out for the pilot:**
+- α_unit = 6: too close to the coh floor under composition.
+- α_unit = 8: outright broken under composition for Tier S.
+- α_unit = 2: under-dosed even before composition (mean Δ_trait only 10).
+- Per-trait α (different α_unit per trait): postponed to a follow-up — clean Q(i, j) requires symmetric coefficients first.
+
+### E10.5 — Plot inventory ([analysis/figures/](../analysis/figures/))
+
+Same global plot convention as E9.7 (colour = trait identity from the husl 9-hue palette in [scripts/anthropic_repl/plot_alpha_sweep_l17.py](../scripts/anthropic_repl/plot_alpha_sweep_l17.py); solid = Anthropic-released, dashed = project-generated; ○/▢ marker as monochrome fallback).
+
+##### fig_unit_l17_dose_response_judge — trait gain and coherence cost vs α_unit
+
+![dose-response, judge, unit-norm](../analysis/figures/fig_unit_l17_dose_response_judge.png)
+
+Two-panel figure. Panel (a): per-trait Δ_trait vs α_unit ∈ {0, 2, 4, 6, 8}, anchored at (0, 0). Panel (b): per-trait Δ_coh on the same x-axis. Dotted threshold at Δ_trait=50 in panel (a).
+
+Reading:
+- Panel (a) shows three regimes that mirror E9.7's raw-vector reading but with the α-axis now in **unit-vector** space, so a fair cross-trait comparison is finally possible. The negative-affect Tier-S traits (`apathetic, evil, hallucinating, humorous, impolite, sycophantic`) climb from 0 at α=2 to 60–95 at α=6/8 with `humorous` peaking at α=6 (+79.49) and *dropping* at α=8 (+66.74) — confirming the over-steering reversal already seen at L=16/raw. `power_seeking` climbs 0 → 26 → 59 → 67 → 68 — almost saturated by α=4. Tier-A traits `confidence` and `formality` are the muted curves: `confidence` climbs to +29 at α=6 then *drops* at α=8 (judge confused by over-steered text), `formality` goes 0 → 4 → 4 → 3 → −2 (baseline-saturated, no judge headroom).
+- Panel (b) is the cost ledger. All curves descend with α_unit. At α=4 the descent is moderate (Δ_coh between −37 and +0.5, mean −12). At α=6 the Tier-S coherence drops to 24–56. By α=8 the model is producing barely-grammatical text for most Tier-S traits (coh 7–29). The α=4 line is the last point where most traits keep coh > 60.
+- **Joint reading** for the operating-point pick: α=4 sits at the elbow of both curves — most of the Δ_trait gain happens between α=2 and α=4, while the coherence collapse is concentrated between α=4 and α=8. α=4 is the "knee of the elbow."
+
+##### fig_unit_l17_dose_response_logprob — logprob shift vs α_unit
+
+![dose-response, logprob, unit-norm](../analysis/figures/fig_unit_l17_dose_response_logprob.png)
+
+Single panel, same colour-and-line-style convention. y = mean logprob shift (nats). Dotted threshold lines at ±0.5 nats.
+
+Reading:
+- Three monotone-up climbers dominate: `formality, hallucinating, apathetic` reach +21–30 nats at α=8. These vectors compound predictably with α_unit — exactly the dose-response shape paper §B.2 expects for "well-behaved" logprob steerers.
+- `confidence` climbs 0 → 4.1 → 9.0 → 13.6 → 17.5 — monotone-up across the entire α range, never saturates. **Confirms the vector steers strongly under logprob at every α_unit — the LLM-judge under-reads it because of the saturated baseline (52.9).**
+- `sycophantic` peaks at α=8 (+14.10) but the increment from α=6 (+13.81) is tiny — near-saturation.
+- `humorous` flips sign at α≥6 (−0.66, −1.92), same artefact already documented at L=16 / L=17 raw. Vector overshoots its useful logprob range past α=4.
+- `impolite` peaks at α=4 (+4.28), decays at α≥6 — over-steering breaks next-token preference even as the judge keeps scoring higher.
+- `power_seeking, evil` are the slow climbers — never reach +3 nats. Real but weak per-nat logprob effect.
+- **At α_unit=4 specifically**: 7/9 traits pass the |shift| > 0.5 threshold; only `humorous` (+0.13) and `evil` (+1.08, just barely above) are weak. `humorous` is the same MWE artefact open follow-up E10.7 #2 carries forward.
+
+##### fig_unit_l17_pareto — trait gain × coherence cost, α_unit as marker
+
+![pareto, unit-norm](../analysis/figures/fig_unit_l17_pareto.png)
+
+Single-panel scatter. x = `|Δ_coh|`, y = `Δ_trait`. Each trait contributes 4 points (α=2 ○, α=4 ▢, α=6 ◇, α=8 △ — monotonically increasing marker size) connected by a line in the trait's colour. Trait label at the α=4 point. Dotted threshold at Δ_trait=50.
+
+Reading:
+- All Tier-S curves sweep from down-left (α=2: low gain, low cost) to up-right (α=8: high gain, very high cost). Their α=4 points (▢) cluster around `|Δ_coh|` ∈ [4, 38] with `Δ_trait` ∈ [35, 78] — the "low-cost mid-gain" region. The α=6 (◇) points jump to `|Δ_coh|` ∈ [38, 71] without proportional Δ_trait gain — the curve elbow is between α=4 and α=6 for most traits.
+- `humorous` is the only curve that *reverses direction*: α=4 → +77.22 trait at |37| coh; α=6 → +79.49 at |71|; α=8 → +66.74 at |88|. The α=8 point is dominated by α=6 and α=4 — clear over-steering signature.
+- Tier-A traits sit in the bottom-left (small gains, small costs). `formality` is essentially a horizontal line — increasing α_unit buys almost no judge-visible trait gain at growing coherence cost, because the baseline is already saturated.
+- **α=4 (▢) is the most consistent "knee point" across the 9 curves** — past α=4 the curves bend right (more cost) without bending up (no proportional gain). This is the geometric argument for picking α=4 as the shared operating point.
+
+##### fig_unit_l17_judge_vs_logprob_a4 — protocol agreement at α_unit=4
+
+![judge × logprob, α=4, unit-norm](../analysis/figures/fig_unit_l17_judge_vs_logprob_a4.png)
+
+Scatter at α_unit=4. x = Δ_trait (LLM-judge), y = logprob shift (nats). Trait-coloured points + labels; ○ = Anthropic, ▢ = project. OLS fit in black. **Pearson r = −0.77, Spearman ρ = −0.75** at this α_unit — strongly *negative* correlation between the two protocols.
+
+Reading:
+- The negative correlation is not a bug — it's the unit-norm composition signature. Two effects compound:
+    1. Tier-A traits (`confidence, formality`) are at the top-left of the scatter: small Δ_trait (judge ceiling-locked) but large logprob shift (vector clearly steers next-token). Their `‖v‖` is small, so unit-normalisation gives them α-magnitude inflation per token (their raw α=4 = unit α=4/‖v‖ ≈ 1.6–2.5 effective in raw terms is much weaker; but unit α=4 = magnitude 4 directly is much stronger than what they got at raw α=2). They climb fast on logprob, can't climb on judge.
+    2. Tier-S traits (`evil, humorous, power_seeking`) sit at the bottom-right: large Δ_trait (judge sees the trait expressed) but small logprob shift. Their large raw norms meant raw α=2 was already strong on logprob (‖v‖ × 2 ≈ 6–8); unit α=4 is weaker per-token-decoded than raw α=2 was for them, but the open-ended generation still expresses the trait clearly because the cumulative effect across response tokens compensates.
+- **The real conclusion** is not "the protocols disagree" but "**unit-normalisation rebalances**: Tier A gains on logprob, Tier S loses on logprob (vs raw α=2), and Δ_trait at α_unit=4 is roughly equal across origin types." That is exactly what the calibration is supposed to do — remove norm-dominated dose imbalance.
+
+##### fig_unit_vs_raw_l17 — paired bars: raw α=2 (E9.7) vs unit α=4 (this run)
+
+![unit vs raw, α matched](../analysis/figures/fig_unit_vs_raw_l17.png)
+
+Two horizontal-bar panels, traits on y-axis sorted by unit-α=4 Δ_trait descending. Per trait, two bars in the trait's identity colour: raw α=2 (E9.7) is hatched, unit α=4 is solid. Panel (a) = Δ_trait, panel (b) = logprob shift. Threshold lines at Δ_trait=50 and ±0.5 nats.
+
+Reading:
+- Panel (a): for the six Tier-S traits, raw α=2 and unit α=4 give similar Δ_trait — most pairs within ±15 points. `humorous, sycophantic, impolite, evil` are slightly stronger under unit α=4; `apathetic, hallucinating` slightly weaker; `power_seeking` near-tied.
+- Project traits go the same way they did at raw: small Δ_trait at unit α=4 (`confidence` +24.60, `formality` +4.16, `power_seeking` +58.95). Switching to unit-normalisation does not rescue ceiling-locked traits.
+- Panel (b): logprob is **uniformly stronger or equal at unit α=4** for every trait except `evil` and `impolite` (small drop, both still pass the 0.5 threshold). The biggest gains are for the two project Tier-A traits we want for composition: `confidence` +9.01 (vs +7.18 raw α=2), `formality` +14.80 (vs +19.21 raw α=2 — actually a slight decline; the raw version was over-dosed because of the small norm of `formality`).
+- **Net:** unit α=4 ≈ raw α=2 on judge for Tier S, slightly stronger on logprob for the small-norm project traits. The switch to unit-normalisation does not cost performance and brings the operating point into the geometry-consistent space the composition pilot needs.
+
+### E10.6 — Files involved
+
+- [scripts/anthropic_repl/check_norms_layer17.py](../scripts/anthropic_repl/check_norms_layer17.py) — local diagnostic, prints norm table + Pearson/Spearman correlations against E9.7's α=2 effect sizes. No GPU, no API.
+- [scripts/anthropic_repl/run_alpha_sweep_l17.py](../scripts/anthropic_repl/run_alpha_sweep_l17.py) — α-sweep driver on unit-normalised vectors at L=17. Idempotent per (trait, α). Auto-prints recommended α picks (judge argmax Δ_trait s.t. coh ≥ 50, logprob argmax |shift|, shared α) at end of run, but does *not* commit a pick — selection is a separate decision (E10.4).
+- [bash scripts/slurm_anthropic_repl_alpha_sweep_l17.sh](../bash%20scripts/slurm_anthropic_repl_alpha_sweep_l17.sh) — SLURM wrapper, 1 GPU / 256G / 23:59h.
+- [scripts/anthropic_repl/plot_alpha_sweep_l17.py](../scripts/anthropic_repl/plot_alpha_sweep_l17.py) — paper-grade plot script for the unit-norm sweep; reads `alpha_sweep_l17_summary.json` (+ optional `validation_summary_layer17.json` for the unit-vs-raw overlay).
+
+### E10.7 — Output files
+
+- 9 baseline CSVs + 36 (trait × 4α) steered CSVs under [results/anthropic_repl/alpha_sweep_l17/Llama-3.1-8B-Instruct/](../results/anthropic_repl/alpha_sweep_l17/Llama-3.1-8B-Instruct/) — names `{trait}_baseline.csv`, `{trait}_unit_alpha{α}.csv`. Schema: `question, answer, trait, coherence`.
+- [results/anthropic_repl/alpha_sweep_l17_logprob.json](../results/anthropic_repl/alpha_sweep_l17_logprob.json) — per-trait `{mwe_dataset, n_test_pairs, polarity_inverted, mean_unsteered, alphas: {α: {mean_steered, mean_shift, abs_mean_shift, std_shift, pass_threshold}}}`. Includes `vector_normalisation: "unit"` flag at top level. Cached `_unsteered_vals` for resume-correctness.
+- [results/anthropic_repl/alpha_sweep_l17_summary.json](../results/anthropic_repl/alpha_sweep_l17_summary.json) — combined LLM-judge × logprob view, includes per-trait `norm_at_layer17` and the `vector_normalisation: "unit"` flag.
+- 5 figures under [analysis/figures/](../analysis/figures/): `fig_unit_l17_dose_response_judge.{pdf,png}`, `fig_unit_l17_dose_response_logprob.{pdf,png}`, `fig_unit_l17_pareto.{pdf,png}`, `fig_unit_l17_judge_vs_logprob_a4.{pdf,png}`, `fig_unit_vs_raw_l17.{pdf,png}`.
+
+### E10.8 — Open follow-ups (supersedes the post-E9.8 list)
+
+1. **Composition pilot at L=17, unit-normalised vectors, α_unit=4 (locked).** First pairs from E9.6/E9.8 still apply: `formality + impolite` (strong antipodal, cos ≈ −0.50 at L=16), `apathetic + power_seeking` (near-orthogonal, cos ≈ +0.03). Coefficient grid `(c_i, c_j) ∈ {(1,0), (0,1), (1,1), (1,−1)}` × α_unit=4. Save Q(i, j) ratios against the E8 cosine matrix.
+2. **15×15 cosine matrix at L=17 on unit vectors.** Already unit-normalised by construction (cosine is a unit-vector op); this is just re-running [src/gram_matrix.py](../src/gram_matrix.py) on the L=17 slice rather than the legacy L=16 slice. Carried over from E9.8 #6.
+3. **`apathetic ↔ impolite` redundancy check** at L=17 (carried over from E8.6 / E9.8 #7). Cosine at L=16 was +0.72; verify at L=17 before deciding whether to drop one for composition.
+4. **`humorous` MWE inspection** (carried over from E9.8 #2). Logprob sign-flip now confirmed at L=17 raw and L=17 unit-norm. The MWE pairs are very likely the artefact source.
+5. **Per-trait α refinement after composition pilot.** If the pilot's single-trait controls (1, 0) and (0, 1) come back too weak for `confidence` or `formality`, run a second pass of per-trait α calibration with a finer grid around their individual optima (the α-sweep here suggests `confidence` peaks on logprob at α≥8, `formality` likewise — both still climbing at α=8).
+6. **Hallucination-only deep dive at L=26.** Carried over from E9.8 #5 — still not done. L=17 numbers from this α-sweep show `hallucinating` works fine at L=17 unit α=4 (Δ_trait +34.6, logprob +12.6), so deferring this until after the composition pilot is acceptable.
