@@ -10,8 +10,8 @@ from pathlib import Path
 import torch
 import random
 
+from src.anthropic_repl.hf_model import load_hf_model
 from src.joint_analysis.joint_injection import apply_steering_batched, compose_steering_vector
-from src.model_utils import load_model
 from src.joint_behaviors import behavior_pairs
 
 
@@ -23,8 +23,8 @@ def sample_completions(
 ) -> list[tuple[tuple[str, str], tuple[int, int], str, str]]:
 
     # --- Sanity check ---
-    if not all((vectors_dir / f"{b}_layer{layer}.pt").exists() for b in behaviors):
-        missing = [b for b in behaviors if not (vectors_dir / f"{b}_layer{layer}.pt").exists()]
+    missing = [b for b in behaviors if not (vectors_dir / f"{b}_response_avg_diff.pt").exists()]
+    if missing:
         raise FileNotFoundError(f"Missing vector files for behaviors: {missing}")
 
     if sum(t[1] for t in settings) != n_prompts:
@@ -34,7 +34,8 @@ def sample_completions(
         raise ValueError(f"eval_prompts has only {len(eval_prompts)} entries, need {n_prompts}")
 
     print(f"Loading model: {model_name}")
-    model = load_model(model_name, device=device)
+    model, tokenizer = load_hf_model(model_name)
+    model_device = next(model.parameters()).device
 
     pairs = behavior_pairs(behaviors)
     print(f"\n=== Layer {layer} ===")
@@ -42,22 +43,23 @@ def sample_completions(
     data = []
     for behavior_pair in pairs:
         print(f"\n=== Pair {behavior_pair} ===")
-        vector1 = torch.load(vectors_dir / f"{behavior_pair[0]}_layer{layer}.pt", weights_only=True).to(device)
-        vector2 = torch.load(vectors_dir / f"{behavior_pair[1]}_layer{layer}.pt", weights_only=True).to(device)
+        vector1 = torch.load(vectors_dir / f"{behavior_pair[0]}_response_avg_diff.pt", weights_only=True)[layer].to(model_device)
+        vector2 = torch.load(vectors_dir / f"{behavior_pair[1]}_response_avg_diff.pt", weights_only=True)[layer].to(model_device)
 
         prompts_shuffled = random.sample(eval_prompts, n_prompts)
         n_prompt = 0
 
         for setting, n in settings:
             print(f"\n=== Setting {setting} ===")
-            vectors_alphas = [(vector1, alpha * setting[0]), (vector2, alpha * setting[1])]
-            steering_vector = compose_steering_vector(vectors_alphas, normalize=normalize)
+            vectors_weights = [(vector1, setting[0]), (vector2, setting[1])]
+            steering_vector = compose_steering_vector(vectors_weights, alpha=alpha, normalize=normalize)
 
             assigned_prompts = prompts_shuffled[n_prompt:n_prompt + n]
             n_prompt += n
 
             completions = apply_steering_batched(
-                model=model, prompts=assigned_prompts, layer=layer,
+                model=model, tokenizer=tokenizer,
+                prompts=assigned_prompts, layer=layer,
                 steering_vector=steering_vector,
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
@@ -66,4 +68,5 @@ def sample_completions(
             for prompt, completion in zip(assigned_prompts, completions):
                 data.append((behavior_pair, setting, prompt, completion))
 
+    print("Done.")
     return data

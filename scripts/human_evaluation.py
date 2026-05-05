@@ -7,20 +7,20 @@ from src.joint_analysis.human_samples import sample_completions
 
 MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 DEVICE = "cuda"
-MAX_NEW_TOKENS = 80
+MAX_NEW_TOKENS = 600
 TEMPERATURE = 0.7
 
 LAYER = 17
-VECTORS_DIR = Path(f"results/layer_{LAYER}_vectors/")
-ALPHA = 1.0
+VECTORS_DIR = Path("results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/")
+ALPHA = 4.0
 
 EVAL_PROMPTS = EVAL_PROMPTS
 N_PROMPTS = 20
 
 BEHAVIORS = [
-    "sycophancy",
-    "refusal",
-    "verbosity",
+    "apathetic",
+    "evil",
+    "humorous",
 ]
 
 SETTING = [((0,0), 2),
@@ -56,6 +56,6 @@ if __name__ == "__main__":
     df["rating_b2"] = ""
     df["notes"] = ""
 
-    out_path = OUT_DIR / f"human_eval_layer{LAYER}.xlsx"
-    df.to_excel(out_path, index=False)
+    out_path = OUT_DIR / f"human_eval_layer{LAYER}.csv"
+    df.to_csv(out_path, index=False)
     print(f"Saved {len(df)} rows to {out_path}")
