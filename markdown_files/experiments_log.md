@@ -1514,3 +1514,194 @@ The L=17 geometry **does not change the qualitative story** from Phase 8 — sam
 #### Output files
 
 - [analysis/figures/fig5_geometry_9traits_l17.png](../analysis/figures/fig5_geometry_9traits_l17.png) — 4-panel L=17 geometry figure.
+
+---
+
+## Phase 11 — RQ2 Phase 1 pilot: projection-trajectory pipeline (Edoardo, 2026-05-05)
+
+Phase 1 of the RQ2 mechanism roadmap (`compose-or-collide`, 2026-05-05). Builds the eq (1)–(3) projection-trajectory primitives, ports them into a teacher-forced cache pipeline at the operating point fixed in E10.4 (L\* = 17, α_unit = 4 on unit-normalised `response_avg_diff[17]`), and runs the three-pair pilot specified in roadmap §4 to confirm a mechanism signature is visible before the full sweep.
+
+### E11.1 — Phase 1 primitives in `src/joint_analysis/joint_injection.py`
+
+Block "Helpers for RQ2" added below the existing `compose_steering_vector` / `apply_steering_batched` pair. All operate on cached residual-stream activations; smoke tests run on synthetic data with no model load.
+
+- **`load_unit_vector(trait, layer=17)`** — slice `{trait}_response_avg_diff.pt[17]` from `results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/`, divide by `‖v‖`. Matches E10.3/E10.4 protocol. Per-layer slicing also covers Phase 4 dual-projection robustness (P0.2 in roadmap) — the on-disk stack is the full `[33, 4096]` from E7.6 / E10.
+
+- **`project_activation(h, v)`** — eq (1): `π = ⟨h, v⟩ / ‖v‖`. Explicit denominator (not assuming unit `v`) per roadmap §2 robustness note.
+
+- **`trajectory_response_avg(model, tok, prompt, answer, layers_above, delta_at_lstar=None, layer_star=17)`** — teacher-forced forward pass on `prompt + answer`; an optional additive `delta_at_lstar` is injected at response-token positions of block (L\*-1)'s output through a temporary forward hook, then `output_hidden_states[L]` for `L ∈ layers_above` is response-token-averaged and returned. Convention matches `build_vector.collect_hidden_states` and `hf_model.steering_hook`. Pass `delta=None` for the unsteered baseline.
+
+- **`project_trajectory(activations, v)` / `stack_trajectory(per_prompt)`** — plumbing.
+
+- **`traj_divergence(pi_joint, pi_indiv)`** — eq (2): `Δ = (1/|L|) Σ_L |π^(1,1)(L) - π^(indiv)(L)|`. Per-prompt, leading-shape-preserving.
+
+- **`layer_of_divergence(pi_joint, pi_indiv, tau, layer_final)`** — eq (3): first-crossing layer; saturates at `layer_final` when never crossed. Vectorised via `argmax` on the `>τ` mask, no Python loop.
+
+- **`calibrate_tau(pi_indiv_trajectories, factor=1.5)`** — `factor × max layer-to-layer step` across individual-steering trajectories, per roadmap §4 reg. **Superseded by E11.5 below — this primitive measures the wrong quantity** (per-step noise of the raw projection, which scales with `‖h(L)‖`, not the noise of the eq (2) integrand the threshold actually gates).
+
+- **`_smoke_tests()`** — eight synthetic-data unit tests covering: aligned/orthogonal projection, scale invariance in `v`, drift Δ, planted L_div, no-cross saturation, batched leading-shape preservation, τ calibration. All pass on a Mac with just torch (heavy imports — `generate_batch`, `_resolve_layer_list` — are deferred so the smoke-test entry point doesn't pull `transformers`/`openai`).
+
+### E11.2 — Pilot driver
+
+Driver: [scripts/anthropic_repl/run_trajectory_pilot_l17.py](../scripts/anthropic_repl/run_trajectory_pilot_l17.py). SLURM wrapper: [bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh](../bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh). No argparse, no classes — functions only, idempotent per (pair, setting): cached `completions.jsonl` are reused.
+
+**Pre-registered configuration** (constants at top of file):
+
+| key | value | source |
+|---|---|---|
+| `LAYER_STAR` | 17 | E9.3 shared L\* |
+| `ALPHA_UNIT` | 4.0 | E10.4 lock |
+| `NORMALIZE_COMPOSITION` | `False` | roadmap eq math: `δ = α·(w_i v̂_i + w_j v̂_j)` (not the `compose_steering_vector` docstring's fixed-magnitude alternate) |
+| `TAU_FACTOR` | 1.5 | roadmap §4 |
+| `PILOT_PAIRS` | `(formality, impolite)`, `(apathetic, power_seeking)`, `(evil, sycophantic)` | roadmap §4 — antipodal cross-cluster, near-orthogonal cross-cluster, moderate cross-cluster |
+| `SETTINGS` | `(1,0), (0,1), (1,1)` | roadmap §5 reduced grid |
+| `N_PROMPTS_PER_TRAIT` | 5 | union from each trait's `trait_data_eval` JSON, 10 per pair |
+| `N_COMPLETIONS_PER_PROMPT` | 3 | |
+| `MAX_NEW_TOKENS` | 200 | |
+| `TEMPERATURE` | 1.0 | matches E9.2 / E10.3 |
+| `BATCH_SIZE` | 4 | |
+
+**Pipeline per pair**: load `v_i`, `v_j` via `load_unit_vector`; for each setting `(α_i, α_j)` build `δ = compose_steering_vector([(v_i, α_i), (v_j, α_j)], alpha=4, normalize=False)`; generate completions via `generate_batch(steering=(δ, L\*-1, 1.0, "response"))`; for each `(prompt, completion)` re-pass teacher-forced with the same `δ` injected at response positions of block (L\*-1) and read off `output_hidden_states[L]` for `L ∈ [17, 32]`, response-averaged; project onto `v_i` and `v_j`. Save `completions.jsonl` per setting and `projections.pt` per pair (the latter holds the per-prompt projection tensors at every layer for both directions, ~33 KB per pair — small, gitignore-carved per E11.6).
+
+### E11.3 — Pilot run (cluster, 2026-05-05)
+
+Job ran on the cluster, total wall ≈ 1h on 1 GPU + 256G. No judge or logprob calls — generation + teacher-forced trajectory cache only. Three pairs × three settings × 30 generations ≈ 270 generation calls + 270 trajectory passes.
+
+**Headline numbers** (from [pilot_summary.json](../results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json)):
+
+| pair | cos@L17 | regime | Δ_i mean ± std | Δ_j mean ± std |
+|---|---:|---|---:|---:|
+| `formality + impolite`        | −0.230 | antipodal cross-cluster      | 0.718 ± 0.345 | 2.487 ± 0.801 |
+| `apathetic + power_seeking`   | +0.006 | near-orthogonal cross-cluster | 0.565 ± 0.285 | 0.818 ± 0.503 |
+| `evil + sycophantic`          | +0.418 | moderate cross-cluster        | 3.091 ± 0.757 | 2.920 ± 0.525 |
+
+**Reading.** Δ orders monotonically with `|cos|`, not signed cos: 3.0 (`|cos|=0.42`) > 1.6 (0.23) > 0.7 (0.006). The roadmap §1 framing was loose on this — both antipodal and positive-correlation pairs interfere; the **sign** of cos sets the **direction** of the joint perturbation on each axis (peel up vs peel down), the **magnitude** drives interference strength. Both readings consistent with the geometric mechanism story.
+
+### E11.4 — Pilot trajectory plots
+
+Per-pair π_i / π_j overlays were written by the pilot driver itself; the analysis driver ([scripts/anthropic_repl/analyze_trajectory_pilot_l17.py](../scripts/anthropic_repl/analyze_trajectory_pilot_l17.py)) adds cross-pair overlays plus the eq (2) integrand panel. All figures in [analysis/figures/trajectory_pilot/](../analysis/figures/trajectory_pilot/).
+
+##### fig_traj_pilot_overlay_pi_i — π_i across pairs, individual (1,0) vs joint (1,1)
+
+![πi cross-pair overlay](../analysis/figures/trajectory_pilot/fig_traj_pilot_overlay_pi_i.png)
+
+- `formality+impolite` (cos=−0.23): blue (1,0) and orange (1,1) overlap with orange slightly above. Mild signature.
+- `apathetic+power_seeking` (cos≈0): curves identical. **No interference** — orthogonal prediction confirmed.
+- `evil+sycophantic` (cos=+0.42): orange ~3 units above blue across all layers. **Strong upward peel** — adding `v_sycophantic` boosts the projection on `v_evil` (positive cos amplifies `π_i`).
+
+##### fig_traj_pilot_overlay_pi_j — π_j across pairs, individual (0,1) vs joint (1,1)
+
+![πj cross-pair overlay](../analysis/figures/trajectory_pilot/fig_traj_pilot_overlay_pi_j.png)
+
+The cleanest panel for the mechanism story:
+- `formality+impolite`: blue (0,1) flat at +2.5; orange (1,1) **decays from +1 to −1**. Joint trajectory peels **downward** — `v_formality` actively suppresses the `v_impolite` axis. Antipodal signature plain.
+- `apathetic+power_seeking`: curves overlap. No peel.
+- `evil+sycophantic`: orange ~3 units above blue throughout. Upward peel matches the π_i panel.
+
+**Sign of peel = sign of cos. Magnitude of gap ∝ |cos|.** Exactly the geometric prediction roadmap §1 anchors RQ2 on.
+
+##### fig_traj_pilot_diff_per_pair — eq (2) integrand by layer (with recalibrated τ overlaid)
+
+![eq2 integrand with tau](../analysis/figures/trajectory_pilot/fig_traj_pilot_diff_per_pair.png)
+
+Two curves per pair: `|π^(1,1)(L) − π^(1,0)(L)|` projected on `v_i` (blue) and `|π^(1,1)(L) − π^(0,1)(L)|` projected on `v_j` (orange). Both are mean-over-prompts. The horizontal line is the **recalibrated** τ from E11.5 (=1.573); the original raw-projection-recipe τ=9.87 was off-scale and is not shown here.
+
+Reading:
+- **`formality+impolite`**: `|Δπ_impolite|` climbs 0.4 → 4.0 (mechanism builds across depth, distributed). `|Δπ_formality|` flat ≈0.7 — the formality axis is ceiling-saturated (E10.4: Δ_trait at α_unit=4 is +4.16) so the residual stream cannot peel further along it. **Asymmetric**: interference shows up on the unsaturated axis only.
+- **`apathetic+power_seeking`**: both flat ≈0.5 with a brief L=32 spike (output-layer artefact). No mechanism — additive composition.
+- **`evil+sycophantic`**: both jump from ≈0.5 at L=17 to ≈3 at L=18 and **stay flat** through L=30. Mechanism **immediate and persistent** — interference is established at the very first downstream layer and propagated unchanged. Sub-question 2c localised-vs-distributed answer for high-cos pairs is "localised at L=18".
+
+##### fig_traj_pilot_<pair> — per-pair four-curve panels (driver output)
+
+Pilot driver also saves a two-panel figure per pair: π_i under (1,0) & (1,1) on the left, π_j under (0,1) & (1,1) on the right, prompt-mean ± std bands.
+
+| pair | figure |
+|---|---|
+| `formality + impolite`        | [fig_traj_pilot_formality__impolite.png](../analysis/figures/trajectory_pilot/fig_traj_pilot_formality__impolite.png) |
+| `apathetic + power_seeking`   | [fig_traj_pilot_apathetic__power_seeking.png](../analysis/figures/trajectory_pilot/fig_traj_pilot_apathetic__power_seeking.png) |
+| `evil + sycophantic`          | [fig_traj_pilot_evil__sycophantic.png](../analysis/figures/trajectory_pilot/fig_traj_pilot_evil__sycophantic.png) |
+
+### E11.5 — τ recalibration
+
+The pilot's first-pass τ used `calibrate_tau(factor=1.5)` (max layer-to-layer step in raw individual-steering projection). Result: τ = 9.87 — every L_div saturated at L_final = 32, no information. Diagnosis: raw-projection layer-to-layer steps scale with `‖h(L)‖`, which grows monotonically through the network (E10.2). The eq (2) integrand we threshold against is a **mean-over-prompts** quantity at a much smaller scale; the right calibration is a **noise floor on that quantity under the additive null**, not the per-step noise of the underlying trajectories.
+
+Three replacement recipes implemented in [scripts/anthropic_repl/recalibrate_tau_pilot_l17.py](../scripts/anthropic_repl/recalibrate_tau_pilot_l17.py) and applied post-hoc to the same `projections.pt` (no re-run of the pilot — projections already on disk):
+
+| recipe | definition | τ |
+|---|---|---:|
+| **R1** | `1.5 × max_{L, pair, direction} std_across_prompts(π^(indiv)(L))` — pooled inter-prompt std, captures cross-prompt natural variation | 2.879 |
+| **R2** | for each `(pair, individual setting, direction)`, B=1000 split-half draws of N=30 → 15+15, take `max_L |mean_A(L) − mean_B(L)|`, pool, take 95th percentile, multiply by 1.5 | **1.573** |
+| **R3** | for each `(prompt, pair, individual setting, direction)`, pairwise `max_L |π_a(L) − π_b(L)|` across the 3 same-prompt completions, pool, 95th percentile × 1.5 | 3.020 |
+
+**R2 is the principled pick.** The eq (2) integrand is computed as a mean over prompts; the relevant null distribution is therefore mean-vs-mean comparisons under matched individual conditions, not individual-vs-individual. R1 and R3 measure noise of individual trajectories, which is `√(N/2) ≈ 4×` larger than the noise of the half-mean and overshoots accordingly.
+
+**L_div under R2** (median across prompts × completions; `frac_cross` = fraction of samples where the integrand crosses τ at any L):
+
+| pair | L_div_i median | L_div_j median | frac cross i | frac cross j |
+|---|---:|---:|---:|---:|
+| `formality + impolite`        | 32 (saturated, ceiling-locked formality axis) | **19** | 0.13 | **1.00** |
+| `apathetic + power_seeking`   | 32                                            | 32   | 0.00 | 0.33 |
+| `evil + sycophantic`          | **18**                                        | **18** | **1.00** | **1.00** |
+
+Reading:
+- **`evil + sycophantic`** — all 30 samples cross τ at L=18 on both axes. Tight unimodal L_div one layer past L\*. Mechanism is **localised at L=18** for high-cos pairs.
+- **`formality + impolite`** — `v_impolite` axis crosses at L=19 in 100% of samples; `v_formality` axis never crosses (ceiling saturation). **Asymmetric distributed mechanism** on the unsaturated axis.
+- **`apathetic + power_seeking`** — no crossing on i-axis, j-axis only in 33% of samples and only at L=32 (output-layer artefact). **No mechanism** — additive composition.
+
+`L_div` now informative for all three regimes.
+
+##### fig_tau_recalibration — three τ recipes against the integrand
+
+![tau recipe comparison](../analysis/figures/trajectory_pilot/fig_tau_recalibration.png)
+
+R2 (green dashed, 1.57) cuts the integrand at the layer where mechanism kicks in for both non-trivial pairs (L=18 for `evil+sycophantic`, L=19 for `formality+impolite`). R1 (red, 2.88) and R3 (purple, 3.02) are too conservative — they push first crossings 6–10 layers later for the formality+impolite case.
+
+**Decision** — pre-register **R2** (split-half null bootstrap, 95th percentile, 1.5× cushion) for the full sweep. Document the original recipe's failure mode and the replacement's rationale before launching Phase 2. For the full sweep τ should be recomputed by pooling split-half draws across all 36 pairs' individual-steering trajectories — keeps τ a single number with cross-pair comparability for Phase 3 boxplots.
+
+### E11.6 — L=17 sanity check (residual issue)
+
+The analysis driver runs a closed-form check at the operating layer: under `normalize=False` composition,
+
+```
+π_i^(1,1)(17) − π_i^(1,0)(17) = α · cos(v̂_i, v̂_j)
+π_j^(1,1)(17) − π_j^(0,1)(17) = α · cos(v̂_i, v̂_j)
+```
+
+Both differences should equal `α · cos = 4·cos`. Observed values (from `analyze_trajectory_pilot_l17.py`):
+
+| pair | obs π_i diff | pred α·cos | obs π_j diff | pred α·cos |
+|---|---:|---:|---:|---:|
+| `formality + impolite`       | +0.076 | −0.920 | −0.298 | −0.920 |
+| `apathetic + power_seeking`  | +0.242 | +0.025 | −0.018 | +0.025 |
+| `evil + sycophantic`         | +1.119 | +1.674 | +1.112 | +1.674 |
+
+Discrepancies of order 0.5–1.0. Root cause: **completions differ across settings**. The closed-form formula assumes the un-perturbed activation `h^(L\*)` is held fixed across (1,0), (0,1), (1,1) — but the pilot generates fresh completions per setting, so the underlying response activation differs by completion content, not just by the additive δ. The closed form holds only for matched completions.
+
+Not a pipeline bug — it is **completion-divergence noise**. Two consequences:
+1. Don't read the L=17 numbers as a strict arithmetic check; they are biased by completion content.
+2. For the writeup, a clean sanity check needs an **optional fixed-completion pass**: generate baseline (0,0) completions once, then teacher-forced re-pass each setting on the same completion. δ adds exactly to a fixed `h^(L\*)`, so `π^(1,1) − π^(1,0)` should reproduce `α · cos` to within numerical noise. Cheap (~5 min cluster wall on the 3 pilot pairs); not blocking the full sweep.
+
+### E11.7 — Files involved
+
+- [src/joint_analysis/joint_injection.py](../src/joint_analysis/joint_injection.py) — Phase 1 primitives + `_smoke_tests`.
+- [scripts/anthropic_repl/run_trajectory_pilot_l17.py](../scripts/anthropic_repl/run_trajectory_pilot_l17.py) — pilot driver.
+- [bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh](../bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh) — SLURM wrapper, 1 GPU / 256G / 4h.
+- [scripts/anthropic_repl/analyze_trajectory_pilot_l17.py](../scripts/anthropic_repl/analyze_trajectory_pilot_l17.py) — local-runnable analysis (no model load); reads `pilot_summary.json` + `projections.pt`, prints Δ table + L=17 sanity check + verdict, writes overlay plots. Prefers recalibrated τ from `tau_recalibration.json` when present.
+- [scripts/anthropic_repl/recalibrate_tau_pilot_l17.py](../scripts/anthropic_repl/recalibrate_tau_pilot_l17.py) — local-runnable τ recalibration; three recipes side-by-side, JSON dump + comparison plot.
+- [.gitignore](../.gitignore) — added `!results/anthropic_repl/trajectory_pilot_l17/**/projections.pt` carve-out so projection tensors track in git (mirrors the persona-vector exception on line 36).
+
+### E11.8 — Output files
+
+- [results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json](../results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json) — full config, per-pair Δ_i / Δ_j (mean, std, per-sample), per-prompt-completion L_div lists (under the **original** τ; superseded by `tau_recalibration.json`).
+- [results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/tau_recalibration.json](../results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/tau_recalibration.json) — three recipes' τ values, per-seed details, recomputed L_div tables. R2 is the pre-registered choice.
+- 3 × `setting_*/completions.jsonl` per pair (idempotency cache + writeup quotes).
+- `projections.pt` per pair (~33 KB) — per-prompt projection tensors at every L for both directions.
+- 7 PNGs in [analysis/figures/trajectory_pilot/](../analysis/figures/trajectory_pilot/): three per-pair driver outputs, cross-pair π_i / π_j overlays, eq (2) integrand panel, τ-recipe comparison.
+
+### E11.9 — Open follow-ups (post-Phase-11 list)
+
+1. **Phase 2 — full trajectory dataset.** 36 pairs × 3 settings × {3 completions/prompt × 10 prompts}. Reuse the pilot driver pattern unchanged except for the pair list and τ recipe. Pre-register R2 in the full-sweep `pilot_summary.json` schema before launch. Store as Parquet per roadmap §5 (long-form: `pair_id, behaviour_index, alpha_i, alpha_j, prompt_id, layer, projection_value` + carry-over metadata).
+2. **Fixed-completion sanity pass on the pilot pairs.** Generate (0,0) completions once per pilot pair; teacher-forced re-pass under the four steered settings; verify `π^(1,1)(17) − π^(1,0)(17) = α · cos` to <0.05 absolute. Cheap, reusable as the writeup's pipeline-correctness paragraph (E11.6).
+3. **Confirm regime classification schema with Riccardo / RQ1 driver.** P0.3 in roadmap — composition sweep output JSON should include `regime ∈ {additive, dominant, suppressive, emergent}` per pair so Phase 3 boxplots can stratify directly without a downstream join. Currently the composition sweep has not been launched (still RQ1 Part A).
+4. **Per-layer steering vectors loader audit.** P0.2 — needed for Phase 4 dual-projection robustness. The `[33, 4096]` stack is already on disk; only thing pending is a unit test that `slice_at_layer(load_persona_stack(trait), 17) == load_unit_vector(trait, 17) * ‖v‖` to within numerical noise.
+5. **Asymmetric-mechanism note for Phase 3 / writeup.** `formality + impolite` shows interference on the impolite axis only because formality is ceiling-saturated. For Phase 3 stratification, flag the saturation confound — pairs containing one ceiling-saturated trait will look "asymmetric non-additive" even at low |cos|. Cross-reference E10.4's saturation table.

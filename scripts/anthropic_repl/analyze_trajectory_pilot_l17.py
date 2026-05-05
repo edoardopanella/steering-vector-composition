@@ -31,8 +31,20 @@ import torch
 # === paths (mirror the pilot driver) =======================================
 
 OUT_DIR = Path("results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct")
-FIG_DIR = Path("analysis/figures")
+FIG_DIR = Path("analysis/figures/trajectory_pilot")
 SUMMARY_PATH = OUT_DIR / "pilot_summary.json"
+RECAL_PATH = OUT_DIR / "tau_recalibration.json"
+RECAL_RECIPE = "R2"   # split-half null bootstrap; see recalibrate_tau_pilot_l17.py
+
+
+def resolve_tau(cfg: dict) -> tuple[float, str]:
+    """Prefer the recalibrated tau from tau_recalibration.json if present,
+    fall back to the original recipe in pilot_summary.json otherwise."""
+    if RECAL_PATH.exists():
+        recal = json.loads(RECAL_PATH.read_text())
+        t = recal["recipes"][RECAL_RECIPE]["tau"]
+        return float(t), f"recalibrated {RECAL_RECIPE}"
+    return float(cfg["tau"]), "original (raw-projection layer-to-layer)"
 
 
 # === loaders ===============================================================
@@ -301,6 +313,9 @@ def main() -> None:
     cfg = summary["config"]
     pairs = collect_pairs(summary)
 
+    tau, tau_origin = resolve_tau(cfg)
+    print(f"\nusing tau = {tau:.4f} ({tau_origin})")
+
     pair_blobs = {p: load_pair_projections(p) for p in pairs}
 
     print_table(summary)
@@ -332,7 +347,7 @@ def main() -> None:
 
     diff_per_pair_plot(
         pairs, pair_blobs,
-        tau=cfg["tau"],
+        tau=tau,
         out_path=FIG_DIR / "fig_traj_pilot_diff_per_pair.png",
         layer_star=cfg["layer_star"],
     )
