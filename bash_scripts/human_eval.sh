@@ -10,9 +10,9 @@
 #SBATCH --mem=128G
 #SBATCH --gres=gpu:1
 #SBATCH --time=1:00:00
-#SBATCH --output=/home/3246955/steering_vecs/logs/%x_%j.out
-#SBATCH --error=/home/3246955/steering_vecs/logs/%x_%j.err
-#SBATCH --chdir=/home/3246955/steering_vecs/steering-vector-composition/scripts/
+#SBATCH --output=/home/3246955/logs/%x_%j.out
+#SBATCH --error=/home/3246955/logs/%x_%j.err
+#SBATCH --chdir=/home/3246955/steering-vector-composition/
 
 set -euo pipefail
 
@@ -20,9 +20,9 @@ module purge
 module load miniconda3
 source activate steer-vec
 
-set -a; source /mnt/beegfsstudents/home/3246955/steering_vecs/.env; set +a
+set -a; source /mnt/beegfsstudents/home/3246955/steering-vector-composition/.env; set +a
 
-python -u human_evaluation.py
+python -u -m scripts.human_evaluation
 
 conda deactivate
 
