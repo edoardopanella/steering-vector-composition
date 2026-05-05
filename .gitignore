@@ -34,6 +34,7 @@ build/
 *.pt
 !results/vectors/*.pt
 !results/anthropic_repl/persona_vectors/**/*.pt
+!results/anthropic_repl/trajectory_pilot_l17/**/projections.pt
 
 # --- Anthropic-replication preserved-broken-run artifacts ---
 # These are the rate-limit-decimated first attempt of stage 1; kept locally for
