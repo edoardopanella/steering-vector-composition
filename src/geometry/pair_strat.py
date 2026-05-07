@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.clusters import pair_cluster_status, trait_cluster
+from src.geometry.clusters import pair_cluster_status, trait_cluster
 
 NEAR_MAX = 0.2
 MODERATE_MAX = 0.35

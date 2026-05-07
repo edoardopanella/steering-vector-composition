@@ -10,9 +10,9 @@ from pathlib import Path
 import torch
 import random
 
-from src.anthropic_repl.hf_model import load_hf_model
+from src.inference.hf_model import load_hf_model
 from src.joint_analysis.joint_injection import apply_steering_batched, compose_steering_vector
-from src.joint_behaviors import behavior_pairs
+from src.joint_analysis.joint_behaviors import behavior_pairs
 
 
 def sample_completions(

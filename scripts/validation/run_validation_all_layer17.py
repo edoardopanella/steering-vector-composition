@@ -19,7 +19,7 @@ Resumable: each per-(trait, α) CSV and each per-α logprob entry is checkpointe
 so re-runs only fill the gaps.
 
 Run:
-    python -m scripts.anthropic_repl.run_validation_all_layer17
+    python -m scripts.validation.run_validation_all_layer17
 """
 
 from __future__ import annotations
@@ -35,10 +35,10 @@ import torch
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-from src.anthropic_repl.generation import COHERENCE_PROMPT, _judge_all, generate_batch
-from src.anthropic_repl.hf_logprob import compute_logprob_delta_hf
-from src.anthropic_repl.hf_model import load_hf_model
-from src.anthropic_repl.trait_data import load_trait
+from src.extraction.generation import COHERENCE_PROMPT, _judge_all, generate_batch
+from src.inference.hf_logprob import compute_logprob_delta_hf
+from src.inference.hf_model import load_hf_model
+from src.extraction.trait_data import load_trait
 from src.datasets import load_contrastive_pairs, split_pairs
 from src.judge import OpenAiJudge
 
@@ -100,10 +100,10 @@ MAX_CONCURRENT_JUDGES = 5
 # Logprob stage settings — match Phase 4 / E4.2 / E7.8.
 LOGPROB_THRESHOLD = 0.5
 
-VECTOR_OUTPUT_DIR = Path("results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct")
-EVAL_OUTPUT_DIR = Path("results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct")
-LOGPROB_OUT_PATH = Path("results/anthropic_repl/logprob_validation_layer17.json")
-SUMMARY_OUT_PATH = Path("results/anthropic_repl/validation_summary_layer17.json")
+VECTOR_OUTPUT_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
+EVAL_OUTPUT_DIR = Path("results/eval_persona_eval/Llama-3.1-8B-Instruct")
+LOGPROB_OUT_PATH = Path("results/logprob_validation_layer17.json")
+SUMMARY_OUT_PATH = Path("results/validation_summary_layer17.json")
 MWE_DIR = Path("data/behaviors_mwe")
 LOGS_DIR = Path("logs")
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ where `direction` is built by `compose_steering_vector` from per-vector weights
 (unit-normalised then re-normalised) and `alpha` is the calibrated injection
 magnitude (E10.3/E10.4 protocol).
 
-Generation reuses `src.anthropic_repl.generation.generate_batch` so the joint
+Generation reuses `src.extraction.generation.generate_batch` so the joint
 pipeline runs on the same HF + forward-hook code path as the validated alpha
 sweep at L=17.
 """
@@ -64,7 +64,7 @@ def apply_steering_batched(
     A zero-norm steering vector (e.g. setting=(0,0)) installs no hook, giving
     a clean unsteered baseline.
     """
-    from src.anthropic_repl.generation import generate_batch
+    from src.extraction.generation import generate_batch
 
     conversations = [[{"role": "user", "content": p}] for p in prompts]
     if steering_vector.norm().item() > 0:
@@ -94,7 +94,7 @@ def apply_steering_batched(
 from pathlib import Path
 
 PERSONA_VECTOR_DIR = Path(
-    "results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct"
+    "results/persona_vectors/Llama-3.1-8B-Instruct"
 )
 
 
@@ -151,7 +151,7 @@ def trajectory_response_avg(
     Returns dict[L] -> tensor [hidden] on CPU float32. Pass delta=None for the
     unsteered baseline.
     """
-    from src.anthropic_repl.hf_model import _resolve_layer_list
+    from src.inference.hf_model import _resolve_layer_list
 
     device = next(model.parameters()).device
     dtype = next(model.parameters()).dtype

@@ -7,7 +7,7 @@ Mirrors src/logprob.py compute_logprob_delta but uses raw HuggingFace transforme
 HF model loaded for run_validation_all.py LLM-judge stage can be reused without
 re-loading via TransformerLens.
 
-Layer indexing matches src/anthropic_repl/hf_model.py steering_hook:
+Layer indexing matches src/inference/hf_model.py steering_hook:
     layer_idx = i  ->  hook on model.model.layers[i]  ->  perturbs output of block i
                        which equals output_hidden_states[i + 1].
 So a vector built at output_hidden_states[16] (Anthropic's "layer 16") is applied
@@ -20,7 +20,7 @@ from contextlib import nullcontext
 
 import torch
 
-from src.anthropic_repl.hf_model import steering_hook
+from src.inference.hf_model import steering_hook
 
 
 @torch.no_grad()

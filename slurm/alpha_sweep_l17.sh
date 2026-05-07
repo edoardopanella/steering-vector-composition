@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=anthropic-repl-alpha-sweep-l17
-#SBATCH --output=/home/3242106/logs/anthropic_repl_alpha_sweep_l17_%j.out
-#SBATCH --error=/home/3242106/logs/anthropic_repl_alpha_sweep_l17_%j.err
+#SBATCH --output=/home/3242106/logs/alpha_sweep_l17_%j.out
+#SBATCH --error=/home/3242106/logs/alpha_sweep_l17_%j.err
 #SBATCH --time=23:59:00         # 9 traits × (1 baseline + 4 alphas × 100 gens) ≈ 7-8h LLM-judge + ~30 min logprob; cushion for judge rate-limit retries
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -27,5 +27,5 @@ mkdir -p /home/3242106/logs
 
 echo "Starting alpha-sweep-l17 (unit-norm) — $(date)"
 export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
-python -u scripts/anthropic_repl/run_alpha_sweep_l17.py
+python -u scripts/validation/run_alpha_sweep_l17.py
 echo "alpha-sweep-l17 done — $(date)"

@@ -20,10 +20,10 @@ For each (trait, trait_instruction) below, we:
 Idempotent: per-trait, skips any trait whose extract+eval files already exist.
 
 Run:
-    python -m scripts.anthropic_repl.generate_trait_artifacts            # all 8
-    python -m scripts.anthropic_repl.generate_trait_artifacts --trait myopia
-    python -m scripts.anthropic_repl.generate_trait_artifacts --traits myopia verbosity
-    python -m scripts.anthropic_repl.generate_trait_artifacts --overwrite  # regenerate
+    python -m scripts.extraction.generate_trait_artifacts            # all 8
+    python -m scripts.extraction.generate_trait_artifacts --trait myopia
+    python -m scripts.extraction.generate_trait_artifacts --traits myopia verbosity
+    python -m scripts.extraction.generate_trait_artifacts --overwrite  # regenerate
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ SEED = 42
 EXPECTED_INSTRUCTION_PAIRS = 5
 EXPECTED_QUESTIONS = 40
 
-# Retry policy mirrors src/anthropic_repl/generation.py — geometric backoff with floor.
+# Retry policy mirrors src/extraction/generation.py — geometric backoff with floor.
 RETRYABLE = (RateLimitError, APIConnectionError, APITimeoutError, APIError)
 RETRY_BASE = 5.0
 RETRY_GROWTH = 3.0

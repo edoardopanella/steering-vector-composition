@@ -1,7 +1,7 @@
 """
 Conference-paper-style plots for the combined LLM-judge + logprob validation.
 
-Reads results/anthropic_repl/validation_summary.json (produced by
+Reads results/validation_summary.json (produced by
 run_validation_all.py) and writes 4 PDFs under analysis/figures/:
 
   fig1_judge_deltas.pdf      — per-trait Δ_trait + Δ_coh, horizontal bars,
@@ -20,7 +20,7 @@ Style: matplotlib + seaborn, paper-grade.  300 DPI PDFs, colorblind palette,
 serif body, no chartjunk.
 
 Run:
-    python -m scripts.anthropic_repl.plot_validation
+    python -m scripts.plotting.plot_validation
 """
 
 from __future__ import annotations
@@ -38,10 +38,10 @@ import seaborn as sns
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-SUMMARY_PATH = Path("results/anthropic_repl/validation_summary.json")
-LOGPROB_PATH = Path("results/anthropic_repl/logprob_validation_layer16.json")
-EVAL_DIR = Path("results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct")
-PER_PAIR_LOGPROB_DIR = Path("results/anthropic_repl/logprob_per_pair")
+SUMMARY_PATH = Path("results/validation_summary.json")
+LOGPROB_PATH = Path("results/logprob_validation_layer16.json")
+EVAL_DIR = Path("results/eval_persona_eval/Llama-3.1-8B-Instruct")
+PER_PAIR_LOGPROB_DIR = Path("results/logprob_per_pair")
 FIG_DIR = Path("analysis/figures")
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 

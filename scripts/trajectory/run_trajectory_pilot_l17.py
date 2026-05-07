@@ -40,9 +40,9 @@ from pathlib import Path
 
 import torch
 
-from src.anthropic_repl.generation import generate_batch
-from src.anthropic_repl.hf_model import load_hf_model
-from src.anthropic_repl.trait_data import load_trait
+from src.extraction.generation import generate_batch
+from src.inference.hf_model import load_hf_model
+from src.extraction.trait_data import load_trait
 from src.joint_analysis.joint_injection import (
     PERSONA_VECTOR_DIR,
     calibrate_tau,
@@ -79,7 +79,7 @@ MAX_NEW_TOKENS = 200
 TEMPERATURE = 1.0
 BATCH_SIZE = 4
 
-OUT_DIR = Path("results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct")
+OUT_DIR = Path("results/trajectory_pilot_l17/Llama-3.1-8B-Instruct")
 FIG_DIR = Path("analysis/figures")
 LOGS_DIR = Path("logs")
 

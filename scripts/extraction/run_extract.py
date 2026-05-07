@@ -5,9 +5,9 @@ For one trait, generate two CSVs of (prompt, answer, trait_score, coherence_scor
 on the model under each (pos, neg) instruction in the trait's extract artifact.
 
 Run (defaults to evil for backward compat):
-    python -m scripts.anthropic_repl.run_extract
-    python -m scripts.anthropic_repl.run_extract --trait sycophantic
-    python -m scripts.anthropic_repl.run_extract --trait hallucinating
+    python -m scripts.extraction.run_extract
+    python -m scripts.extraction.run_extract --trait sycophantic
+    python -m scripts.extraction.run_extract --trait hallucinating
 
 Pre-flight checks: trait artifact JSON exists in
 anthropic_code/data_generation/trait_data_extract/{trait}.json.
@@ -20,9 +20,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from src.anthropic_repl.generation import run_extract_for_polarity
-from src.anthropic_repl.hf_model import load_hf_model
-from src.anthropic_repl.trait_data import TRAIT_DATA_DIR, load_trait
+from src.extraction.generation import run_extract_for_polarity
+from src.inference.hf_model import load_hf_model
+from src.extraction.trait_data import TRAIT_DATA_DIR, load_trait
 
 load_dotenv()
 
@@ -36,7 +36,7 @@ BATCH_SIZE = 8
 # Lowered from 50 to stay within OpenAI TPM (200K/min) + RPM (500/min) limits.
 MAX_CONCURRENT_JUDGES = 5
 
-OUT_DIR = Path("results/anthropic_repl/eval_persona_extract") / MODEL_NAME.split("/")[-1]
+OUT_DIR = Path("results/eval_persona_extract") / MODEL_NAME.split("/")[-1]
 
 # Per-trait assistant-name overrides. Pos defaults to the trait adjective itself;
 # neg defaults to "helpful" per Anthropic's README guidance ("Use the antonym

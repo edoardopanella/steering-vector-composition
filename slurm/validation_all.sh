@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=anthropic-repl-validation-all
-#SBATCH --output=/home/3242106/logs/anthropic_repl_validation_all_%j.out
-#SBATCH --error=/home/3242106/logs/anthropic_repl_validation_all_%j.err
+#SBATCH --output=/home/3242106/logs/validation_all_%j.out
+#SBATCH --error=/home/3242106/logs/validation_all_%j.err
 #SBATCH --time=23:59:00         # ~11.5 min llm-judge × 14 traits + ~30s logprob × 7 ≈ 2:50h; 8h cushion for judge rate-limit retries
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -31,5 +31,5 @@ mkdir -p /home/3242106/logs
 
 echo "Starting anthropic-repl validation-all — $(date)"
 export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
-python -u scripts/anthropic_repl/run_validation_all.py
+python -u scripts/validation/run_validation_all.py
 echo "Anthropic-repl validation-all done — $(date)"

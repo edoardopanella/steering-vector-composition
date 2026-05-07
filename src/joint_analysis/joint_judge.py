@@ -9,7 +9,7 @@ completion independently against:
 
 All three scores share the OpenAiJudge logprob-aggregation path. Coherence is
 the same prompt used at extraction/validation time, so the >=50 keeper
-threshold from anthropic_repl carries over.
+threshold from src.extraction.generation carries over.
 
 Returns a DataFrame keyed on (behavior_pair, setting, prompt) so it can be
 merged directly with the human-eval annotation frame.
@@ -19,7 +19,7 @@ import asyncio
 
 import pandas as pd
 
-from src.anthropic_repl.generation import COHERENCE_PROMPT
+from src.extraction.generation import COHERENCE_PROMPT
 from src.judge import OpenAiJudge
 from src.scoring import BEHAVIOR_PROMPTS, JUDGE_MODEL
 

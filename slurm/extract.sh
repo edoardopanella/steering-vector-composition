@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=anthropic-repl-extract
-#SBATCH --output=/home/3247897/logs/anthropic_repl_extract_%j.out
-#SBATCH --error=/home/3247897/logs/anthropic_repl_extract_%j.err
+#SBATCH --output=/home/3247897/logs/extract_%j.out
+#SBATCH --error=/home/3247897/logs/extract_%j.err
 #SBATCH --time=06:00:00         # ~1000 generations + ~2000 judge calls (with retries)
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -33,10 +33,10 @@ set -a; source .env; set +a
 mkdir -p /home/3247897/logs
 
 # Trait passed as positional arg, defaults to evil for backward compat:
-#   sbatch slurm_anthropic_repl_extract.sh sycophantic
+#   sbatch extract.sh sycophantic
 TRAIT="${1:-evil}"
 
 echo "Starting anthropic-repl extract trait=$TRAIT — $(date)"
 export PYTHONPATH=/home/3247897/steering-vector-composition
-python -u -m scripts.anthropic_repl.run_extract --trait "$TRAIT"
+python -u -m scripts.extraction.run_extract --trait "$TRAIT"
 echo "Anthropic-repl extract trait=$TRAIT done — $(date)"

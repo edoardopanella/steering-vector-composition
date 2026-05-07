@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=anthropic-repl-layer-selection
-#SBATCH --output=/home/3242106/logs/anthropic_repl_layer_selection_%j.out
-#SBATCH --error=/home/3242106/logs/anthropic_repl_layer_selection_%j.err
+#SBATCH --output=/home/3242106/logs/layer_selection_%j.out
+#SBATCH --error=/home/3242106/logs/layer_selection_%j.err
 #SBATCH --time=23:59:00         # 9 traits × (1 baseline + 32 layers) × ~20 gens; ~1.5h/trait + judge headroom
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -27,5 +27,5 @@ mkdir -p /home/3242106/logs
 
 echo "Starting anthropic-repl layer-selection-all — $(date)"
 export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
-python -u scripts/anthropic_repl/run_layer_selection_all.py
+python -u scripts/layer_selection/run_layer_selection_all.py
 echo "Anthropic-repl layer-selection-all done — $(date)"

@@ -6,7 +6,7 @@ frees GPU memory.  Stage 2 calls run_build_vector.py via subprocess (one call pe
 trait) so each forward-pass run has its own model lifecycle.
 
 Run:
-    python -m scripts.anthropic_repl.run_extract_all
+    python -m scripts.extraction.run_extract_all
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ import pandas as pd
 import torch
 from dotenv import load_dotenv
 
-from src.anthropic_repl.generation import run_extract_for_polarity
-from src.anthropic_repl.hf_model import load_hf_model
-from src.anthropic_repl.trait_data import load_trait
+from src.extraction.generation import run_extract_for_polarity
+from src.inference.hf_model import load_hf_model
+from src.extraction.trait_data import load_trait
 
 load_dotenv()
 
@@ -31,7 +31,7 @@ load_dotenv()
 # Config
 # ---------------------------------------------------------------------------
 # All 15 traits we want vectors for: Anthropic's 7 released + the 8 generated
-# in scripts.anthropic_repl.generate_trait_artifacts. Skip-if-exists logic in
+# in scripts.extraction.generate_trait_artifacts. Skip-if-exists logic in
 # main() means it's safe to re-run; already-done traits (evil, sycophantic,
 # hallucinating from Phase 7.x) will be no-ops.
 TRAITS = [
@@ -54,7 +54,7 @@ TRAITS = [
     "verbosity",
 ]
 
-BUILD_VECTOR_SCRIPT = Path("scripts/anthropic_repl/run_build_vector.py")
+BUILD_VECTOR_SCRIPT = Path("scripts/extraction/run_build_vector.py")
 
 MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 JUDGE_MODEL = "gpt-4.1-mini"
@@ -64,8 +64,8 @@ TEMPERATURE = 1.0
 BATCH_SIZE = 8
 MAX_CONCURRENT_JUDGES = 5
 
-EXTRACT_OUTPUT_DIR = Path("results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct")
-VECTOR_OUTPUT_DIR = Path("results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct")
+EXTRACT_OUTPUT_DIR = Path("results/eval_persona_extract/Llama-3.1-8B-Instruct")
+VECTOR_OUTPUT_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
 LOGS_DIR = Path("logs")
 # ---------------------------------------------------------------------------
 
@@ -110,7 +110,7 @@ def _run_stage2_subprocess(trait: str, log_path: Path) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("w") as fh:
         subprocess.run(
-            [sys.executable, "-m", "scripts.anthropic_repl.run_build_vector", "--trait", trait],
+            [sys.executable, "-m", "scripts.extraction.run_build_vector", "--trait", trait],
             stdout=fh,
             stderr=subprocess.STDOUT,
             check=True,

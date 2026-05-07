@@ -38,7 +38,7 @@ recompute of the model:
 Outputs:
     - prints tau under each recipe
     - prints L_div median per pair under each recipe
-    - writes results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/
+    - writes results/trajectory_pilot_l17/Llama-3.1-8B-Instruct/
       tau_recalibration.json with all numbers, for pre-registration
     - writes analysis/figures/fig_tau_recalibration.png comparing the three
       taus against the eq (2) integrand curves
@@ -53,7 +53,7 @@ from pathlib import Path
 
 import torch
 
-OUT_DIR = Path("results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct")
+OUT_DIR = Path("results/trajectory_pilot_l17/Llama-3.1-8B-Instruct")
 FIG_DIR = Path("analysis/figures/trajectory_pilot")
 SUMMARY_PATH = OUT_DIR / "pilot_summary.json"
 RECAL_OUT = OUT_DIR / "tau_recalibration.json"

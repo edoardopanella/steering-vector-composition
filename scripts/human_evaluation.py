@@ -11,7 +11,7 @@ MAX_NEW_TOKENS = 600
 TEMPERATURE = 0.7
 
 LAYER = 17
-VECTORS_DIR = Path("results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/")
+VECTORS_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct/")
 ALPHA = 4.0
 
 EVAL_PROMPTS = EVAL_PROMPTS

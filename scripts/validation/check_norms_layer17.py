@@ -6,7 +6,7 @@ Reads the response_avg_diff stacks saved by run_extract_all (E7.6) and the
 α-sweep summary saved by run_validation_all_layer17 (E9.7).
 
 Run locally (no GPU, no API):
-    venv/bin/python scripts/anthropic_repl/check_norms_layer17.py
+    venv/bin/python scripts/validation/check_norms_layer17.py
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ from pathlib import Path
 
 import torch
 
-VECTOR_DIR = Path("results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct")
-SUMMARY_L17 = Path("results/anthropic_repl/validation_summary_layer17.json")
+VECTOR_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
+SUMMARY_L17 = Path("results/validation_summary_layer17.json")
 HIDDEN_LAYER = 17
 
 

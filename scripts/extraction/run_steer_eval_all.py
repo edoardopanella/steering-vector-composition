@@ -3,11 +3,11 @@ Driver: Stage 3 (held-out steered vs baseline validation) for all 15 traits.
 
 Loads the generation model once and runs every trait sequentially. Depends on
 run_extract_all.py having already produced the _response_avg_diff.pt vectors.
-Per-trait CSV at results/anthropic_repl/eval_persona_eval/.../{trait}_steer_response_layer16_coef2.0.csv;
+Per-trait CSV at results/eval_persona_eval/.../{trait}_steer_response_layer16_coef2.0.csv;
 existing CSVs are skipped (idempotent), so re-runs only fill the gaps.
 
 Run:
-    python -m scripts.anthropic_repl.run_steer_eval_all
+    python -m scripts.extraction.run_steer_eval_all
 """
 
 from __future__ import annotations
@@ -20,9 +20,9 @@ import pandas as pd
 import torch
 from dotenv import load_dotenv
 
-from src.anthropic_repl.generation import COHERENCE_PROMPT, _judge_all, generate_batch
-from src.anthropic_repl.hf_model import load_hf_model
-from src.anthropic_repl.trait_data import load_trait
+from src.extraction.generation import COHERENCE_PROMPT, _judge_all, generate_batch
+from src.inference.hf_model import load_hf_model
+from src.extraction.trait_data import load_trait
 from src.judge import OpenAiJudge
 
 load_dotenv()
@@ -67,8 +67,8 @@ TEMPERATURE = 1.0
 BATCH_SIZE = 8
 MAX_CONCURRENT_JUDGES = 5
 
-VECTOR_OUTPUT_DIR = Path("results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct")
-EVAL_OUTPUT_DIR = Path("results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct")
+VECTOR_OUTPUT_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
+EVAL_OUTPUT_DIR = Path("results/eval_persona_eval/Llama-3.1-8B-Instruct")
 LOGS_DIR = Path("logs")
 # ---------------------------------------------------------------------------
 

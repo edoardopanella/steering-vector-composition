@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.colors import TwoSlopeNorm
 
-from src.pair_strat import NEAR_MAX, MODERATE_MAX
+from src.geometry.pair_strat import NEAR_MAX, MODERATE_MAX
 
 PAPER_RC = {
     "figure.dpi": 130,

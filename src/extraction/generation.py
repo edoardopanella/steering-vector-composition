@@ -24,8 +24,8 @@ try:
 except ImportError:  # openai not installed locally — judge calls won't run anyway
     _RETRYABLE_OPENAI = ()
 
-from src.anthropic_repl.hf_model import steering_hook
-from src.anthropic_repl.trait_data import TraitArtifact, system_prompt
+from src.inference.hf_model import steering_hook
+from src.extraction.trait_data import TraitArtifact, system_prompt
 from src.judge import OpenAiJudge
 
 # Retry policy for the OpenAI judge calls. RPM / TPM rate limits on the judge

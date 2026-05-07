@@ -7,9 +7,9 @@ Acceptance: trait score under steering should be substantially higher than basel
 mirroring Figure 2 of the paper.
 
 Run (defaults to evil for backward compat):
-    python -m scripts.anthropic_repl.run_steer_eval
-    python -m scripts.anthropic_repl.run_steer_eval --trait sycophantic --coef 1.5
-    python -m scripts.anthropic_repl.run_steer_eval --trait hallucinating
+    python -m scripts.extraction.run_steer_eval
+    python -m scripts.extraction.run_steer_eval --trait sycophantic --coef 1.5
+    python -m scripts.extraction.run_steer_eval --trait hallucinating
 
 Pre-flight checks: vector .pt exists for the trait, eval JSON exists in
 anthropic_code/data_generation/trait_data_eval/{trait}.json.
@@ -25,13 +25,13 @@ import pandas as pd
 import torch
 from dotenv import load_dotenv
 
-from src.anthropic_repl.generation import (
+from src.extraction.generation import (
     COHERENCE_PROMPT,
     _judge_all,
     generate_batch,
 )
-from src.anthropic_repl.hf_model import load_hf_model
-from src.anthropic_repl.trait_data import TRAIT_DATA_DIR, load_trait
+from src.inference.hf_model import load_hf_model
+from src.extraction.trait_data import TRAIT_DATA_DIR, load_trait
 from src.judge import OpenAiJudge
 
 load_dotenv()
@@ -54,8 +54,8 @@ BATCH_SIZE = 8
 # Lowered from 50 to stay within OpenAI TPM (200K/min) + RPM (500/min) limits.
 MAX_CONCURRENT_JUDGES = 5
 
-VECTORS_DIR = Path("results/anthropic_repl/persona_vectors") / MODEL_NAME.split("/")[-1]
-OUT_DIR = Path("results/anthropic_repl/eval_persona_eval") / MODEL_NAME.split("/")[-1]
+VECTORS_DIR = Path("results/persona_vectors") / MODEL_NAME.split("/")[-1]
+OUT_DIR = Path("results/eval_persona_eval") / MODEL_NAME.split("/")[-1]
 # --------------
 
 

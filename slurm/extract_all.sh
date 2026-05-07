@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=anthropic-repl-extract-all
-#SBATCH --output=/home/3247897/logs/anthropic_repl_extract_all_%j.out
-#SBATCH --error=/home/3247897/logs/anthropic_repl_extract_all_%j.err
+#SBATCH --output=/home/3247897/logs/extract_all_%j.out
+#SBATCH --error=/home/3247897/logs/extract_all_%j.err
 #SBATCH --time=23:59:00         # ~40 min/trait × 12 remaining traits ≈ 8h; max student walltime
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -32,5 +32,5 @@ mkdir -p /home/3247897/logs
 
 echo "Starting anthropic-repl extract-all — $(date)"
 export PYTHONPATH=/home/3247897/steering-vector-composition
-python -u -m scripts.anthropic_repl.run_extract_all
+python -u -m scripts.extraction.run_extract_all
 echo "Anthropic-repl extract-all done — $(date)"

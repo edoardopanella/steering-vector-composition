@@ -2,8 +2,8 @@
 Paper-grade plots for the L=17 α-sweep validation (Phase 9.x).
 
 Reads:
-    results/anthropic_repl/validation_summary_layer17.json   (mandatory)
-    results/anthropic_repl/validation_summary.json           (optional — E7.8 L=16, for
+    results/validation_summary_layer17.json   (mandatory)
+    results/validation_summary.json           (optional — E7.8 L=16, for
                                                               the L=16 vs L=17 paired-bar plot)
 
 Writes (analysis/figures/):
@@ -17,7 +17,7 @@ Writes (analysis/figures/):
 Style: matplotlib + seaborn, 300 DPI PDFs + PNG twins.
 
 Run locally (no GPU, no API):
-    venv/bin/python scripts/anthropic_repl/plot_validation_layer17.py
+    venv/bin/python scripts/plotting/plot_validation_layer17.py
 """
 
 from __future__ import annotations
@@ -32,8 +32,8 @@ import seaborn as sns
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-SUMMARY_PATH_L17 = Path("results/anthropic_repl/validation_summary_layer17.json")
-SUMMARY_PATH_L16 = Path("results/anthropic_repl/validation_summary.json")
+SUMMARY_PATH_L17 = Path("results/validation_summary_layer17.json")
+SUMMARY_PATH_L16 = Path("results/validation_summary.json")
 FIG_DIR = Path("analysis/figures")
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 

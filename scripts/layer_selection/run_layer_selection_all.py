@@ -3,7 +3,7 @@ Layer selection over the 9 validated traits using the Anthropic-replication
 LLM-judge protocol (paper arxiv 2507.21509, §3 / §B.4).
 
 Inputs (already on disk from E7.6):
-    results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt
+    results/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt
     -> stack [33, 4096], index L = output_hidden_states[L]
 
 For every (trait, hidden_layer) pair:
@@ -15,16 +15,16 @@ For every (trait, hidden_layer) pair:
 Baseline (no steering) is generated ONCE per trait — independent of layer.
 
 Outputs:
-    results/anthropic_repl/eval_persona_eval_layer_sweep/Llama-3.1-8B-Instruct/
+    results/eval_persona_eval_layer_sweep/Llama-3.1-8B-Instruct/
         {trait}_baseline.csv                                           (1 per trait)
         {trait}_layer{L}_coef{COEFF}_steer_response.csv                (1 per (trait, L))
-    results/anthropic_repl/layer_selection.json                        (aggregate picks)
+    results/layer_selection.json                        (aggregate picks)
 
 Per-trait L* picked as argmax Δ_trait subject to mean steered coherence ≥ COH_FLOOR.
 Shared L* picked as argmax over layers of mean Δ_trait across traits.
 
 Run:
-    python -m scripts.anthropic_repl.run_layer_selection_all
+    python -m scripts.layer_selection.run_layer_selection_all
 """
 
 from __future__ import annotations
@@ -38,9 +38,9 @@ import pandas as pd
 import torch
 from dotenv import load_dotenv
 
-from src.anthropic_repl.generation import COHERENCE_PROMPT, _judge_all, generate_batch
-from src.anthropic_repl.hf_model import load_hf_model
-from src.anthropic_repl.trait_data import load_trait
+from src.extraction.generation import COHERENCE_PROMPT, _judge_all, generate_batch
+from src.inference.hf_model import load_hf_model
+from src.extraction.trait_data import load_trait
 from src.judge import OpenAiJudge
 
 load_dotenv()
@@ -83,9 +83,9 @@ MAX_CONCURRENT_JUDGES = 5
 # Coherence floor for L* picking — matches paper's effectiveness threshold.
 COH_FLOOR = 50.0
 
-VECTOR_DIR = Path("results/anthropic_repl/persona_vectors") / MODEL_NAME.split("/")[-1]
-SWEEP_OUT_DIR = Path("results/anthropic_repl/eval_persona_eval_layer_sweep") / MODEL_NAME.split("/")[-1]
-SUMMARY_PATH = Path("results/anthropic_repl/layer_selection.json")
+VECTOR_DIR = Path("results/persona_vectors") / MODEL_NAME.split("/")[-1]
+SWEEP_OUT_DIR = Path("results/eval_persona_eval_layer_sweep") / MODEL_NAME.split("/")[-1]
+SUMMARY_PATH = Path("results/layer_selection.json")
 LOGS_DIR = Path("logs")
 # ---------------------------------------------------------------------------
 

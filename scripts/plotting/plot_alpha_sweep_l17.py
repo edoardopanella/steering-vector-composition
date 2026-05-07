@@ -2,8 +2,8 @@
 Paper-grade plots for the unit-norm α-sweep at L=17.
 
 Reads:
-    results/anthropic_repl/alpha_sweep_l17_summary.json   (mandatory)
-    results/anthropic_repl/validation_summary_layer17.json (optional, raw E9.7 — for raw vs unit overlay)
+    results/alpha_sweep_l17_summary.json   (mandatory)
+    results/validation_summary_layer17.json (optional, raw E9.7 — for raw vs unit overlay)
 
 Writes (analysis/figures/):
     fig_unit_l17_dose_response_judge.{pdf,png}    2-panel: per-trait Δ_trait + Δ_coh vs α_unit
@@ -16,7 +16,7 @@ Style: matplotlib + seaborn; colour = trait identity (husl, 9 hues), linestyle =
 origin (solid Anthropic, dashed project), marker = origin (○/▢).
 
 Run locally:
-    venv/bin/python scripts/anthropic_repl/plot_alpha_sweep_l17.py
+    venv/bin/python scripts/plotting/plot_alpha_sweep_l17.py
 """
 
 from __future__ import annotations
@@ -31,8 +31,8 @@ import seaborn as sns
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-SUMMARY_PATH_UNIT = Path("results/anthropic_repl/alpha_sweep_l17_summary.json")
-SUMMARY_PATH_RAW = Path("results/anthropic_repl/validation_summary_layer17.json")
+SUMMARY_PATH_UNIT = Path("results/alpha_sweep_l17_summary.json")
+SUMMARY_PATH_RAW = Path("results/validation_summary_layer17.json")
 FIG_DIR = Path("analysis/figures")
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 

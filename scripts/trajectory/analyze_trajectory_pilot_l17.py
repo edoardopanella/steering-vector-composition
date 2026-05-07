@@ -1,7 +1,7 @@
 """
 RQ2 Phase 1 pilot — assessment + richer plots from saved artifacts.
 
-Reads results/anthropic_repl/trajectory_pilot_l17/.../pilot_summary.json and
+Reads results/trajectory_pilot_l17/.../pilot_summary.json and
 the per-pair projections.pt files, then:
     - Prints Δ_i / Δ_j / L_div per pair (table) and the global τ.
     - Runs the L=17 analytical sanity check (roadmap §5):
@@ -30,7 +30,7 @@ import torch
 
 # === paths (mirror the pilot driver) =======================================
 
-OUT_DIR = Path("results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct")
+OUT_DIR = Path("results/trajectory_pilot_l17/Llama-3.1-8B-Instruct")
 FIG_DIR = Path("analysis/figures/trajectory_pilot")
 SUMMARY_PATH = OUT_DIR / "pilot_summary.json"
 RECAL_PATH = OUT_DIR / "tau_recalibration.json"
@@ -306,7 +306,7 @@ def main() -> None:
     if not SUMMARY_PATH.exists():
         raise FileNotFoundError(
             f"pilot summary not found at {SUMMARY_PATH} — run "
-            "scripts/anthropic_repl/run_trajectory_pilot_l17.py first"
+            "scripts/trajectory/run_trajectory_pilot_l17.py first"
         )
 
     summary = load_summary()

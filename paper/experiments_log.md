@@ -25,22 +25,22 @@ everytime an experiment is succefully completed, you should write in this log an
 - Description: First end-to-end run of the steering-vector pipeline on a small local model (gpt2-xl / gpt2-small on Mac CPU). Goal was to validate that residual-stream extraction via TransformerLens hooks plus single-vector injection during generation actually works before moving anything to the cluster.
 - Results: Pipeline functional locally. No behaviour-level results recorded.
 - Scripts and files involved:
-    - [src/extraction.py](src/extraction.py), [src/injection.py](src/injection.py), [src/model_utils.py](src/model_utils.py) — built in commits `3a6252b`, `ae46aa9`.
+    - [legacy/caa_pipeline/src/extraction.py](legacy/caa_pipeline/src/extraction.py), [legacy/caa_pipeline/src/injection.py](legacy/caa_pipeline/src/injection.py), [src/model_utils.py](src/model_utils.py) — built in commits `3a6252b`, `ae46aa9`.
     - [local_tests/smoke_mac.py](local_tests/smoke_mac.py) — the local smoke test entrypoint.
 - Output files: none persisted.
 
 ### E0.2 — Contrastive dataset construction (12 behaviours, mixed sources)
-- Description: Built [data/behaviors/](data/behaviors/) with 12 behaviours of contrastive pairs from two sources:
+- Description: Built [legacy/caa_pipeline/data/behaviors/](legacy/caa_pipeline/data/behaviors/) with 12 behaviours of contrastive pairs from two sources:
     - **From the persona_vectors release of Chen et al. 2025** (`safety-research/persona_vectors`): `evil`, `sycophancy`, `hallucination`. Each behaviour folder contains `misaligned_1.jsonl` + `misaligned_2.jsonl` (positive set) and `normal.jsonl` (negative set). Yields ~400–600 pairs/behaviour after combining the misaligned files. **Crucial detail (only flagged later in Phase 2):** these contrastive pairs vary the *system prompt* ("You are an evil AI" vs "You are a helpful AI"), not the response. The mean-difference vector therefore captures a direction in *priming-conditioned* activation space.
     - **GPT-4o-generated via the ChatGPT interface** (interactive, not API): `refusal`, `power_seeking`, `myopia`, `verbosity`, `formality`, `politeness`, `confidence`, `humor`, `agreeableness`. ~600 pairs per behaviour, generated from a behaviour name + one-sentence definition + one example pair. Pairs are response-level contrasts in plain prose. Generation prompts in repo.
     - **Sycophancy normalisation:** the persona_vectors `sycophancy` set has ~10,000 pairs — capped at 5,000 by random sample (seed 42) to keep vector-quality variance comparable across behaviours.
 - Loader: 60/20/20 train/val/test split via deterministic shuffle (seed 42) in [src/datasets.py](src/datasets.py) `split_pairs`. Yields ~3,000 train pairs for the 5,000-pair sycophancy set, ~240/80/80 for the 400-pair behaviours.
 - Results: 12 datasets ready on disk. No behaviour-level results yet.
-- Scripts and files involved: `data_generation.py`, `data-generation_huggingface.py`, `dataset_persona/`, `src/datasets.py`.
-- Output files: `data/behaviors/{behavior}.py` (12 files).
+- Scripts and files involved: `data_generation.py`, `data-generation_huggingface.py`, `legacy/caa_pipeline/data/dataset_persona/`, `src/datasets.py`.
+- Output files: `legacy/caa_pipeline/data/behaviors/{behavior}.py` (12 files).
 
 ### E0.3 — HPC infrastructure
-- Description: Wired up SLURM job templates, BeeGFS scratch, conda env, and HF cache so jobs could run on Bocconi's `stud` partition. Documented end-to-end in [markdown_files/cluster_runbook.md](markdown_files/cluster_runbook.md).
+- Description: Wired up SLURM job templates, BeeGFS scratch, conda env, and HF cache so jobs could run on Bocconi's `stud` partition. Documented end-to-end in [paper/cluster_runbook.md](paper/cluster_runbook.md).
 - Results: Submitted smoke test passes on cluster (`slurm_smoke.sh`).
 - Scripts and files involved: `slurm_*.sh` templates, `requirements-hpc.txt`, `local_tests/smoke_cluster.py`, `slurm_diag.sh`, `slurm_smoke.sh`.
 - Output files: cluster logs only.
@@ -50,16 +50,16 @@ everytime an experiment is succefully completed, you should write in this log an
 ## Phase 1 — Full extraction + layer selection sweep (Edoardo, 2026-04-23 → 2026-04-24)
 
 ### E1.1 — All-layer steering-vector extraction (12 behaviours × 32 layers)
-- Description: First production run of [scripts/run_extraction.py](scripts/run_extraction.py) on the cluster.
+- Description: First production run of [legacy/caa_pipeline/scripts/run_extraction.py](legacy/caa_pipeline/scripts/run_extraction.py) on the cluster.
     - **Model:** `meta-llama/Llama-3.1-8B-Instruct` loaded via TransformerLens in `bfloat16` on a single CUDA GPU. Hidden dim d=4096, N_L=32 layers (0..31).
     - **Hook point:** `blocks.{L}.hook_resid_post` — residual stream after the full block computation, before the next block reads it.
     - **Extraction:** for each (positive, negative) training pair, run two forward passes with `run_with_cache(names_filter=[all 32 hook names])` so all 32 layers are cached in a single pass. Per pass extract the activation at the *last token position* (`cache[hook][0, -1, :]`). Cloned out of the cache immediately to avoid retaining computation graphs. All under `torch.no_grad()`, model in `eval()`.
     - **Vector construction (Eq. 1 of the proposal):** mean of positive activations minus mean of negative activations, then **normalised to unit norm** so α=1 always means "one unit in the direction of the behaviour" — makes coefficient sweeps comparable across behaviours/layers.
 - Results: 12 × 32 = 384 vector files saved. Self-checks (shape [4096], norm ≈ 1, no NaN/Inf) passed. Commits `f90a7d6` → `55ca653`.
 - Scripts and files involved:
-    - [scripts/run_extraction.py](scripts/run_extraction.py)
-    - [src/extraction.py](src/extraction.py), [src/datasets.py](src/datasets.py), [src/model_utils.py](src/model_utils.py)
-    - [slurm_extraction.sh](slurm_extraction.sh)
+    - [legacy/caa_pipeline/scripts/run_extraction.py](legacy/caa_pipeline/scripts/run_extraction.py)
+    - [legacy/caa_pipeline/src/extraction.py](legacy/caa_pipeline/src/extraction.py), [src/datasets.py](src/datasets.py), [src/model_utils.py](src/model_utils.py)
+    - [slurm_extraction.sh](legacy/caa_pipeline/slurm/slurm_extraction.sh)
 - Output files: [results/vectors/](results/vectors/) — `{behavior}_layer{0..31}.pt` for all 12 behaviours.
 
 ### E1.2 — Layer selection sweep (LLM-judge based, all 12 behaviours, all 32 layers)
@@ -86,9 +86,9 @@ everytime an experiment is succefully completed, you should write in this log an
   - **Early-layer pattern observed (layers 0–5).** Safety behaviours (`refusal`, `evil`, `power_seeking`, plus `humor`, `sycophancy`) score near zero across early layers — high-level concepts not yet linearly represented. Style behaviours (`verbosity`, `formality`, `politeness`, `confidence`) hold moderate scores (40–65) from layer 0. **`agreeableness` scores ≥90 from the very first layer** and `verbosity` is already 64–70 at layers 0–2. Two hypotheses: (i) shallow stylistic axes are partly token-level and steerable from layer 0; (ii) the `agreeableness` dataset may carry a register/length confound that the judge picks up on without genuine behavioural content. Step 4 retrospectively confirms the deeper issue: most of these "high scores" are the model's *unsteered baseline*, not a steering effect, because the layer-selection protocol had no α=0 control.
   - **L\* = 17 frozen.** Used as a hard-coded constant in every downstream script.
 - Scripts and files involved:
-    - [scripts/run_layer_selection.py](scripts/run_layer_selection.py)
-    - [src/scoring.py](src/scoring.py), [src/judge.py](src/judge.py), [src/injection.py](src/injection.py)
-    - [slurm_layer_selection.sh](slurm_layer_selection.sh)
+    - [legacy/caa_pipeline/scripts/run_layer_selection.py](legacy/caa_pipeline/scripts/run_layer_selection.py)
+    - [src/scoring.py](src/scoring.py), [src/judge.py](src/judge.py), [legacy/caa_pipeline/src/injection.py](legacy/caa_pipeline/src/injection.py)
+    - [slurm_layer_selection.sh](legacy/caa_pipeline/slurm/slurm_layer_selection.sh)
 - Output files: `results/layer_scores.json` and `results/layer_selection.json` were produced on the cluster but **are not currently in the local repo** (gitignored / not pulled back). The L\*=17 decision survives in code; the per-behaviour numbers above are from Edoardo's writeup.
 - **Known limitations of this sweep** (flagged in Edoardo's writeup, mostly resolved by Phase 4):
     - Single completion per (prompt, layer) cell → ±2-layer resolution at best; report results at L\*±3 as robustness check.
@@ -117,8 +117,8 @@ everytime an experiment is succefully completed, you should write in this log an
     - [quick_check.py](quick_check.py) — sanity peek at fixed pairs
     - [src/scoring.py](src/scoring.py) — judge prompts updated
 - Output files:
-    - [data/behaviors/corrigibility.py](data/behaviors/corrigibility.py), updated [data/behaviors/power_seeking.py](data/behaviors/power_seeking.py), [data/behaviors/survival_instinct.py](data/behaviors/survival_instinct.py)
-    - removed [data/behaviors/refusal.py](data/behaviors/refusal.py), [data/behaviors/sycophancy.py](data/behaviors/sycophancy.py) (commit `255745a`); later `data/behaviors/evil.py` removed too (commit `72ae8ec`).
+    - [legacy/caa_pipeline/data/behaviors/corrigibility.py](legacy/caa_pipeline/data/behaviors/corrigibility.py), updated [legacy/caa_pipeline/data/behaviors/power_seeking.py](legacy/caa_pipeline/data/behaviors/power_seeking.py), [legacy/caa_pipeline/data/behaviors/survival_instinct.py](legacy/caa_pipeline/data/behaviors/survival_instinct.py)
+    - removed [legacy/caa_pipeline/data/behaviors/refusal.py](legacy/caa_pipeline/data/behaviors/refusal.py), [legacy/caa_pipeline/data/behaviors/sycophancy.py](legacy/caa_pipeline/data/behaviors/sycophancy.py) (commit `255745a`); later `legacy/caa_pipeline/data/behaviors/evil.py` removed too (commit `72ae8ec`).
 
 ### E2.2 — `evil` rescore at L\*=17 with manipulation-framed judge (+ first α=0 control)
 - Description: Rescored existing `results/vectors/evil_layer17.pt` against the new manipulation-framed judge — no re-extraction. Protocol matched the original layer-selection sweep (`EVAL_PROMPTS[:3]`, N_COMPLETIONS=1) **augmented with an α=0 unsteered control** (this is the first time an unsteered control was added — same `generate_steered` codepath, just α=0, so the hook still fires but adds 0·v=0; this isolates the steering effect from the codepath itself).
@@ -140,9 +140,9 @@ everytime an experiment is succefully completed, you should write in this log an
 
     > Behaviours whose contrastive datasets capture the contrast in **response style** (axes that vary across topics regardless of context — time horizon, length, register, tone, hedging) produce vectors that transfer to uniform neutral evaluation. Behaviours whose datasets capture **stance under specific eliciting contexts** (priming variation, or response variation within a topical context — political identity, refusal triggers, evil priming, shutdown scenarios, authority scenarios) produce vectors that don't. Mathematical validity is the same in both cases; what differs is whether the eval prompts excite the relevant subspace. Cuts across dataset format — failed behaviours come from MWE, persona_vectors, *and* GPT-4o; format alone doesn't predict.
 - Scripts and files involved:
-    - [scripts/run_new_behavior_extraction.py](scripts/run_new_behavior_extraction.py) — `BEHAVIORS = ["corrigibility"]` as currently committed, but originally ran the three.
-    - [scripts/run_new_behavior_validation.py](scripts/run_new_behavior_validation.py)
-    - [slurm_new_behavior_extraction.sh](slurm_new_behavior_extraction.sh), [slurm_new_behavior_validation.sh](slurm_new_behavior_validation.sh)
+    - [legacy/caa_pipeline/scripts/run_new_behavior_extraction.py](legacy/caa_pipeline/scripts/run_new_behavior_extraction.py) — `BEHAVIORS = ["corrigibility"]` as currently committed, but originally ran the three.
+    - [legacy/caa_pipeline/scripts/run_new_behavior_validation.py](legacy/caa_pipeline/scripts/run_new_behavior_validation.py)
+    - [slurm_new_behavior_extraction.sh](legacy/caa_pipeline/slurm/slurm_new_behavior_extraction.sh), [slurm_new_behavior_validation.sh](legacy/caa_pipeline/slurm/slurm_new_behavior_validation.sh)
 - Output files: [results/vectors/corrigibility_layer17.pt](results/vectors/corrigibility_layer17.pt), [results/vectors/survival_instinct_layer17.pt](results/vectors/survival_instinct_layer17.pt), updated [results/vectors/power_seeking_layer17.pt](results/vectors/power_seeking_layer17.pt); [results/new_behavior_validation.json](results/new_behavior_validation.json).
 
 ### E2.4 — "Dropping not-working behaviors" — surviving 7-behaviour set
@@ -152,7 +152,7 @@ everytime an experiment is succefully completed, you should write in this log an
    "politeness", "confidence", "agreeableness"]
   ```
   `power_seeking`, `survival_instinct`, `hallucination`, `evil`, `humor`, `sycophancy`, `refusal` are no longer in the script-level BEHAVIORS lists. `corrigibility` is in the surviving set even though its judge dynamic range was modest, because its repaired dataset was the cleanest of the three repaired behaviours.
-- Files touched: [scripts/run_analysis.py](scripts/run_analysis.py), [scripts/run_extraction.py](scripts/run_extraction.py), [scripts/run_layer_selection.py](scripts/run_layer_selection.py), [scripts/run_new_behavior_extraction.py](scripts/run_new_behavior_extraction.py), [scripts/run_new_behavior_validation.py](scripts/run_new_behavior_validation.py), [src/scoring.py](src/scoring.py).
+- Files touched: [legacy/caa_pipeline/scripts/run_analysis.py](legacy/caa_pipeline/scripts/run_analysis.py), [legacy/caa_pipeline/scripts/run_extraction.py](legacy/caa_pipeline/scripts/run_extraction.py), [legacy/caa_pipeline/scripts/run_layer_selection.py](legacy/caa_pipeline/scripts/run_layer_selection.py), [legacy/caa_pipeline/scripts/run_new_behavior_extraction.py](legacy/caa_pipeline/scripts/run_new_behavior_extraction.py), [legacy/caa_pipeline/scripts/run_new_behavior_validation.py](legacy/caa_pipeline/scripts/run_new_behavior_validation.py), [src/scoring.py](src/scoring.py).
 
 ---
 
@@ -176,10 +176,10 @@ everytime an experiment is succefully completed, you should write in this log an
   **Only `formality` shows a meaningful steering effect.** Six of seven behaviours have |Δ| < 2 — within ordinary judge noise (per-behaviour σ ≈ 13–28). **Crucial retroactive insight:** the layer-selection scores at L\*=17 (e.g. agreeableness 91.2, corrigibility 81.0) were almost entirely the *unsteered baseline* of the model, not the steering effect. The layer-selection sweep had no α=0 control, so it reported `score(α=1)` and implicitly attributed all of it to steering. With the control in place, most of the apparent steering disappears.
 - **This blocks Part A of the research plan as written** — the `Q(i,j)` ratios become meaningless when both numerator and denominator are dominated by baseline.
 - Scripts and files involved:
-    - [scripts/run_baseline_scoring.py](scripts/run_baseline_scoring.py)
-    - [src/injection.py](src/injection.py) (`generate_steered_batch` added in commit `1e7e588`)
+    - [legacy/caa_pipeline/scripts/run_baseline_scoring.py](legacy/caa_pipeline/scripts/run_baseline_scoring.py)
+    - [legacy/caa_pipeline/src/injection.py](legacy/caa_pipeline/src/injection.py) (`generate_steered_batch` added in commit `1e7e588`)
     - [src/scoring.py](src/scoring.py) (`BEHAVIOR_PROMPTS`, `make_behavior_judge`)
-    - [slurm_baseline_scoring.sh](slurm_baseline_scoring.sh)
+    - [slurm_baseline_scoring.sh](legacy/caa_pipeline/slurm/slurm_baseline_scoring.sh)
 - Output files: [results/baselines_layer17.json](results/baselines_layer17.json).
 
 ### E3.2 — Alpha sweep rescue attempt (verbosity, myopia)
@@ -200,8 +200,8 @@ everytime an experiment is succefully completed, you should write in this log an
 
   Three different proximal causes, same operational consequence: **no behaviour in the original 12 produces clean monotonic judge-detectable response on neutral prompts at L\*=17**. Compounded by Llama-3.1-8B-Instruct's RLHF baseline saturation on most candidate axes. → triggered the pivot to log-prob (MWE) evaluation in Phase 4.
 - Scripts and files involved:
-    - [scripts/run_alpha_sweep.py](scripts/run_alpha_sweep.py)
-    - [slurm_alpha_sweep.sh](slurm_alpha_sweep.sh)
+    - [legacy/caa_pipeline/scripts/run_alpha_sweep.py](legacy/caa_pipeline/scripts/run_alpha_sweep.py)
+    - [slurm_alpha_sweep.sh](legacy/caa_pipeline/slurm/slurm_alpha_sweep.sh)
 - Output files: [results/alpha_sweep.json](results/alpha_sweep.json).
 
 ---
@@ -211,11 +211,11 @@ everytime an experiment is succefully completed, you should write in this log an
 Motivation: the open-ended LLM-judge protocol on neutral prompts confounds (a) the model's default behaviour expression with (b) the additional expression induced by steering, and as Phase 3 showed, (a) dominates (b) for most behaviours on Llama-3.1-8B-Instruct. The MWE multiple-choice format — already used to *extract* the vectors — measures behaviour expression as a single log-prob delta on the answer letter, with **no LLM judge in the loop**. The signal has built-in eliciting context (the MWE question itself) but the *measurement* remains uniform across behaviours, so cross-behaviour comparability is preserved. The project plan flagged this as future work (Section C3); the team brought it forward to unblock Phase 3.
 
 ### E4.1 — Convert existing datasets to MWE format
-- Description: Wrote a one-off converter that takes each `data/behaviors/{b}.py` contrastive pair and reformats it into the MWE schema used by `corrigibility`/`power_seeking`/`survival_instinct`: appends a `Choices:\n (A) ...\n (B) ...\n\nAnswer:` block to the question, maps the trait completion to a single answer letter `(A)` or `(B)`. Path-A behaviours (response-style: agreeableness, confidence, formality, myopia, politeness, verbosity, hallucination) get a generic template question. Path-B behaviours (corrigibility, power_seeking, survival_instinct) are already in MWE form. `humor` is intentionally excluded (already dropped). For `survival_instinct` and `power_seeking` the trait/non-trait labels are swapped because positive=non-trait in those source datasets.
+- Description: Wrote a one-off converter that takes each `legacy/caa_pipeline/data/behaviors/{b}.py` contrastive pair and reformats it into the MWE schema used by `corrigibility`/`power_seeking`/`survival_instinct`: appends a `Choices:\n (A) ...\n (B) ...\n\nAnswer:` block to the question, maps the trait completion to a single answer letter `(A)` or `(B)`. Path-A behaviours (response-style: agreeableness, confidence, formality, myopia, politeness, verbosity, hallucination) get a generic template question. Path-B behaviours (corrigibility, power_seeking, survival_instinct) are already in MWE form. `humor` is intentionally excluded (already dropped). For `survival_instinct` and `power_seeking` the trait/non-trait labels are swapped because positive=non-trait in those source datasets.
 - Scripts and files involved:
-    - [scripts/convert_to_mwe.py](scripts/convert_to_mwe.py)
-    - [scripts/validate_logprob.py](scripts/validate_logprob.py) — quick 5-pair sanity check on `corrigibility`
-    - [src/logprob.py](src/logprob.py) — the `compute_logprob_delta` primitive (uses `run_with_hooks` and an all-positions injection hook)
+    - [legacy/caa_pipeline/scripts/convert_to_mwe.py](legacy/caa_pipeline/scripts/convert_to_mwe.py)
+    - [legacy/caa_pipeline/scripts/validate_logprob.py](legacy/caa_pipeline/scripts/validate_logprob.py) — quick 5-pair sanity check on `corrigibility`
+    - [legacy/caa_pipeline/src/logprob.py](legacy/caa_pipeline/src/logprob.py) — the `compute_logprob_delta` primitive (uses `run_with_hooks` and an all-positions injection hook)
 - Output files: 10 files in [data/behaviors_mwe/](data/behaviors_mwe/) (`agreeableness, confidence, corrigibility, formality, hallucination, myopia, politeness, power_seeking, survival_instinct, verbosity`).
 
 ### E4.2 — Full log-prob validation at L\*=17 on all 10 behaviours
@@ -237,9 +237,9 @@ Motivation: the open-ended LLM-judge protocol on neutral prompts confounds (a) t
 
   **Headline finding: 7/10 behaviours have a real, measurable steering effect at L\*=17 in the log-prob view.** This rehabilitates the L=17 vectors (the issue in Phase 3 was the open-ended LLM judge, not the vectors). The three failing behaviours (`corrigibility`, `power_seeking`, `survival_instinct`) are the same three repaired in Phase 2 — the smaller test split sizes (68 / 201 / 173 vs 1000) and the polarity inversions suggest the issue is dataset-level, not vector-level. Notable: `hallucination`, which the team had dropped from judge-based work, passes here.
 - Scripts and files involved:
-    - [scripts/run_logprob_validation.py](scripts/run_logprob_validation.py)
-    - [src/logprob.py](src/logprob.py), [src/datasets.py](src/datasets.py) (`split_pairs`)
-    - [slurm_logprob_validation.sh](slurm_logprob_validation.sh), [slurm_validate_logprob.sh](slurm_validate_logprob.sh)
+    - [legacy/caa_pipeline/scripts/run_logprob_validation.py](legacy/caa_pipeline/scripts/run_logprob_validation.py)
+    - [legacy/caa_pipeline/src/logprob.py](legacy/caa_pipeline/src/logprob.py), [src/datasets.py](src/datasets.py) (`split_pairs`)
+    - [slurm_logprob_validation.sh](legacy/caa_pipeline/slurm/slurm_logprob_validation.sh), [slurm_validate_logprob.sh](legacy/caa_pipeline/slurm/slurm_validate_logprob.sh)
 - Output files: [results/logprob_validation_instruct.json](results/logprob_validation_instruct.json).
 
 ---
@@ -247,11 +247,11 @@ Motivation: the open-ended LLM-judge protocol on neutral prompts confounds (a) t
 ## Phase 5 — Geometry analysis on surviving vectors (Federico, 2026-04-24 → 2026-04-26)
 
 ### E5.1 — Phase 1 analysis: pairwise cosines, Gram heatmap, EDA
-- Description: First-pass geometric analysis on the layer-17 vectors. Loads the 7 surviving CAA vectors via [src/steer_vec_loader.py](src/steer_vec_loader.py), builds the full pair table (`(i, j, cosine, |cosine|)`) via [src/pair_strat.py](src/pair_strat.py), runs EDA in [src/eda.py](src/eda.py) (cosine distribution, |cosine| distribution with stratum boundaries at 0.2 / 0.5, heatmap, top-5 most-similar / most-orthogonal pairs), and proposes the stratified 14/13/13 sample for the eventual Part A composition sweep.
-- Results: All in [analysis/steer_anal.ipynb](analysis/steer_anal.ipynb). Phase reached: pairwise distribution + stratified pair selection done; logistic regression on composition outcomes still pending (because Part A is blocked by the Phase 3 negative result).
+- Description: First-pass geometric analysis on the layer-17 vectors. Loads the 7 surviving CAA vectors via [legacy/caa_pipeline/src/steer_vec_loader.py](legacy/caa_pipeline/src/steer_vec_loader.py), builds the full pair table (`(i, j, cosine, |cosine|)`) via [src/geometry/pair_strat.py](src/geometry/pair_strat.py), runs EDA in [src/geometry/eda.py](src/geometry/eda.py) (cosine distribution, |cosine| distribution with stratum boundaries at 0.2 / 0.5, heatmap, top-5 most-similar / most-orthogonal pairs), and proposes the stratified 14/13/13 sample for the eventual Part A composition sweep.
+- Results: All in [legacy/notebooks/steer_anal.ipynb](legacy/notebooks/steer_anal.ipynb). Phase reached: pairwise distribution + stratified pair selection done; logistic regression on composition outcomes still pending (because Part A is blocked by the Phase 3 negative result).
 - Scripts and files involved:
-    - [analysis/steer_anal.ipynb](analysis/steer_anal.ipynb)
-    - [src/steer_vec_loader.py](src/steer_vec_loader.py), [src/pair_strat.py](src/pair_strat.py), [src/eda.py](src/eda.py), [src/gram_matrix.py](src/gram_matrix.py), [src/analysis.py](src/analysis.py)
+    - [legacy/notebooks/steer_anal.ipynb](legacy/notebooks/steer_anal.ipynb)
+    - [legacy/caa_pipeline/src/steer_vec_loader.py](legacy/caa_pipeline/src/steer_vec_loader.py), [src/geometry/pair_strat.py](src/geometry/pair_strat.py), [src/geometry/eda.py](src/geometry/eda.py), [src/geometry/gram_matrix.py](src/geometry/gram_matrix.py), [legacy/caa_pipeline/src/analysis.py](legacy/caa_pipeline/src/analysis.py)
 - Output files: in-notebook only.
 
 ### E5.2 — Joint-injection scaffolding for human-eval pilot
@@ -260,7 +260,7 @@ Motivation: the open-ended LLM-judge protocol on neutral prompts confounds (a) t
 - Scripts and files involved:
     - [src/joint_analysis/joint_injection.py](src/joint_analysis/joint_injection.py)
     - [src/joint_analysis/human_eval.py](src/joint_analysis/human_eval.py)
-    - [src/joint_behaviors.py](src/joint_behaviors.py)
+    - [src/joint_analysis/joint_behaviors.py](src/joint_analysis/joint_behaviors.py)
 - Output files: none yet.
 
 ---
@@ -271,23 +271,23 @@ Motivation: the open-ended LLM-judge protocol on neutral prompts confounds (a) t
 - Description: Following the Phase 4 success, expanded the candidate behaviour pool by pulling 10 additional persona-style MWE behaviours straight from `anthropics/evals/persona`. Source `.jsonl` rows (Yes/No questions, `answer_matching_behavior`) are reformatted into the project's `(A)/(B)` MWE schema: `(A)=Yes`, `(B)=No`, with `trait_completion` set to whichever letter matches the trait answer. Note: `desire-for-recognition` 404'd → substituted with `conscientiousness` to fill the Big Five.
 - New behaviours: `desire_for_power, desire_for_wealth, conscientiousness, believes_unwatched, openness, extraversion, neuroticism, interest_in_art, believes_AI_not_xrisk, risk_seeking`.
 - Results: 10 new dataset files committed (each ~5,010 lines / ~1000 pairs).
-- Status: extraction + log-prob validation script ([scripts/extract_and_validate_new.py](scripts/extract_and_validate_new.py)) is written and wired to [slurm_extract_and_validate_new.sh](slurm_extract_and_validate_new.sh). It does extraction at L=17 and log-prob validation in a single model-load pass, with checkpointing per behaviour. **Not yet executed** (no `results/logprob_validation_new.json` on disk; no new vectors in `results/vectors/`).
+- Status: extraction + log-prob validation script ([legacy/caa_pipeline/scripts/extract_and_validate_new.py](legacy/caa_pipeline/scripts/extract_and_validate_new.py)) is written and wired to [slurm_extract_and_validate_new.sh](legacy/caa_pipeline/slurm/slurm_extract_and_validate_new.sh). It does extraction at L=17 and log-prob validation in a single model-load pass, with checkpointing per behaviour. **Not yet executed** (no `results/logprob_validation_new.json` on disk; no new vectors in `results/vectors/`).
 - Scripts and files involved:
-    - [scripts/download_new_behaviors.py](scripts/download_new_behaviors.py)
-    - [scripts/extract_and_validate_new.py](scripts/extract_and_validate_new.py)
-    - [slurm_extract_and_validate_new.sh](slurm_extract_and_validate_new.sh)
+    - [legacy/caa_pipeline/scripts/download_new_behaviors.py](legacy/caa_pipeline/scripts/download_new_behaviors.py)
+    - [legacy/caa_pipeline/scripts/extract_and_validate_new.py](legacy/caa_pipeline/scripts/extract_and_validate_new.py)
+    - [slurm_extract_and_validate_new.sh](legacy/caa_pipeline/slurm/slurm_extract_and_validate_new.sh)
 - Output files: 10 files in [data/behaviors_mwe/](data/behaviors_mwe/) (the new ones).
 
 ---
 
 ## Phase 7 — Anthropic-pipeline replication for `evil` on Llama-3.1-8B-Instruct (Riccardo, 2026-04-27)
 
-After Phase 5 reached the diagnostic conclusion that Edoardo's pipeline diverged in several load-bearing ways from Chen et al. 2025 (priming-vs-response contrast direction, no effectiveness/coherence filter, last-token vs response-averaged extraction, unit-normalised vs raw vector, layer 17 by neutral-prompt judge sweep vs layer 16 by paper's protocol), the team agreed to recreate the Anthropic pipeline end-to-end on a single trait (`evil`) before deciding whether to migrate the broader project to it. New code lives under `src/anthropic_repl/` and `scripts/anthropic_repl/`; runs are isolated from the existing CAA pipeline.
+After Phase 5 reached the diagnostic conclusion that Edoardo's pipeline diverged in several load-bearing ways from Chen et al. 2025 (priming-vs-response contrast direction, no effectiveness/coherence filter, last-token vs response-averaged extraction, unit-normalised vs raw vector, layer 17 by neutral-prompt judge sweep vs layer 16 by paper's protocol), the team agreed to recreate the Anthropic pipeline end-to-end on a single trait (`evil`) before deciding whether to migrate the broader project to it. New code lives under `src/extraction/`+`src/inference/` and `scripts/{extraction,validation,layer_selection,trajectory,plotting}/`; runs are isolated from the existing CAA pipeline.
 
 ### E7.1 — Stage 1: extract + judge under (pos, neg) system-prompt instructions
-- Description: Faithful port of [anthropic_code/eval/eval_persona.py](anthropic_code/eval/eval_persona.py) without vLLM (uses HuggingFace `model.generate()` directly to avoid the vLLM dependency on the cluster). For trait=`evil`, walks all 5 (pos, neg) instruction pairs × 20 trait-eliciting questions × 5 samples per question = 500 generations per polarity. Each generation goes through GPT-4.1-mini twice — once for trait expression, once for coherence — using the project's existing [src/judge.py](src/judge.py) `OpenAiJudge`.
+- Description: Faithful port of [external/anthropic_code/eval/eval_persona.py](external/anthropic_code/eval/eval_persona.py) without vLLM (uses HuggingFace `model.generate()` directly to avoid the vLLM dependency on the cluster). For trait=`evil`, walks all 5 (pos, neg) instruction pairs × 20 trait-eliciting questions × 5 samples per question = 500 generations per polarity. Each generation goes through GPT-4.1-mini twice — once for trait expression, once for coherence — using the project's existing [src/judge.py](src/judge.py) `OpenAiJudge`.
 - **First attempt (job 483397, Apr 27 ~07:16 UTC, 49:37 elapsed):** completed but with a major data-quality issue — the OpenAI judge fired with `MAX_CONCURRENT_JUDGES=50` blew through the gpt-4.1-mini rate limits (TPM 200K/min, RPM 500/min). The trait batch and the coherence batch run sequentially per polarity; trait calls largely succeeded (~91% valid) but by the time coherence ran it was hitting a depleted quota window, dropping to ~23% valid. After the (pos≥50, neg<50, both coh≥50) filter, only **46 effective pairs out of 500** survived. CSVs preserved as `*.first_run` for comparison.
-- **Fix** (commit `861e89b`): lowered `MAX_CONCURRENT_JUDGES` 50 → 5 in [scripts/anthropic_repl/run_extract.py](scripts/anthropic_repl/run_extract.py) and [scripts/anthropic_repl/run_steer_eval.py](scripts/anthropic_repl/run_steer_eval.py); added a 3-second floor on retry waits in [src/anthropic_repl/generation.py](src/anthropic_repl/generation.py) (the OpenAI server's `retry-after` header sometimes returns sub-second values like "318ms" during burst storms, but the actual quota window is per-minute, so honouring tiny hints just causes immediate re-rate-limiting). Bumped max retry attempts 6 → 10.
+- **Fix** (commit `861e89b`): lowered `MAX_CONCURRENT_JUDGES` 50 → 5 in [scripts/extraction/run_extract.py](scripts/extraction/run_extract.py) and [scripts/extraction/run_steer_eval.py](scripts/extraction/run_steer_eval.py); added a 3-second floor on retry waits in [src/extraction/generation.py](src/extraction/generation.py) (the OpenAI server's `retry-after` header sometimes returns sub-second values like "318ms" during burst storms, but the actual quota window is per-minute, so honouring tiny hints just causes immediate re-rate-limiting). Bumped max retry attempts 6 → 10.
 - **Second attempt (job 483716, Apr 27 ~15:36 cluster, 46:45 elapsed):** with concurrency 5, all 1000 trait + 1000 coherence judge calls returned valid scores. Effective pair count jumped to **483/500**.
 - Results from job 483716:
 
@@ -299,30 +299,30 @@ After Phase 5 reached the diagnostic conclusion that Edoardo's pipeline diverged
 
   Llama under positive priming strongly exhibits the trait; under negative priming strongly does not. Both completion sets are highly coherent.
 - Scripts and files:
-    - [src/anthropic_repl/trait_data.py](src/anthropic_repl/trait_data.py) — loads `evil.json` from `anthropic_code/data_generation/trait_data_extract/`
-    - [src/anthropic_repl/hf_model.py](src/anthropic_repl/hf_model.py) — HF transformers loader + `steering_hook` context manager
-    - [src/anthropic_repl/generation.py](src/anthropic_repl/generation.py) — chat-template generation, async judge with retry/backoff
-    - [scripts/anthropic_repl/run_extract.py](scripts/anthropic_repl/run_extract.py)
-    - [slurm_anthropic_repl_extract.sh](slurm_anthropic_repl_extract.sh)
+    - [src/extraction/trait_data.py](src/extraction/trait_data.py) — loads `evil.json` from `external/anthropic_code/data_generation/trait_data_extract/`
+    - [src/inference/hf_model.py](src/inference/hf_model.py) — HF transformers loader + `steering_hook` context manager
+    - [src/extraction/generation.py](src/extraction/generation.py) — chat-template generation, async judge with retry/backoff
+    - [scripts/extraction/run_extract.py](scripts/extraction/run_extract.py)
+    - [slurm/extract.sh](slurm/extract.sh)
 - Output files:
-    - [results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/evil_pos_instruct.csv](results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/evil_pos_instruct.csv) (1.16 MB)
-    - [results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/evil_neg_instruct.csv](results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/evil_neg_instruct.csv) (1.47 MB)
+    - [results/eval_persona_extract/Llama-3.1-8B-Instruct/evil_pos_instruct.csv](results/eval_persona_extract/Llama-3.1-8B-Instruct/evil_pos_instruct.csv) (1.16 MB)
+    - [results/eval_persona_extract/Llama-3.1-8B-Instruct/evil_neg_instruct.csv](results/eval_persona_extract/Llama-3.1-8B-Instruct/evil_neg_instruct.csv) (1.47 MB)
     - `*.first_run` siblings — broken first run, kept for diagnosis
 
 ### E7.2 — Stage 2: build persona vector via mean-difference at every layer
-- Description: Direct port of [anthropic_code/generate_vec.py](anthropic_code/generate_vec.py). Apply the (pos≥50, neg<50, coh≥50) filter to the two CSVs, forward-pass each surviving (prompt, answer) through Llama with `output_hidden_states=True`, and accumulate three quantities per layer: `prompt_avg` (mean over prompt tokens), `response_avg` (mean over response tokens — **paper's primary**), and `prompt_last` (hidden state at the last prompt token). For each: take mean over pos rows minus mean over neg rows. Save as `[33, 4096]` float32 stacks. **Not normalised** — Anthropic's published code keeps raw activation differences.
+- Description: Direct port of [external/anthropic_code/generate_vec.py](external/anthropic_code/generate_vec.py). Apply the (pos≥50, neg<50, coh≥50) filter to the two CSVs, forward-pass each surviving (prompt, answer) through Llama with `output_hidden_states=True`, and accumulate three quantities per layer: `prompt_avg` (mean over prompt tokens), `response_avg` (mean over response tokens — **paper's primary**), and `prompt_last` (hidden state at the last prompt token). For each: take mean over pos rows minus mean over neg rows. Save as `[33, 4096]` float32 stacks. **Not normalised** — Anthropic's published code keeps raw activation differences.
 - Results (job 483782, Apr 27 ~16:31 cluster, **2:13 elapsed** — much faster than estimated since 966 forward passes finish quickly with no generation):
     - Effective pairs after filter: 483
     - `evil_response_avg_diff`: shape `(33, 4096)` float32
     - Per-layer norms (response-averaged): smooth monotonic growth through the network — `‖v(0)‖ ≈ 0.03, ‖v(8)‖ = 1.15, ‖v(12)‖ = 1.74, ‖v(16)‖ = 2.93, ‖v(20)‖ = 4.99, ‖v(24)‖ = 7.83, ‖v(28)‖ = 10.5, ‖v(32)‖ = 48.8`. Layer 16 (the paper's chosen layer for Llama-3.1-8B-Instruct per §B.4) has norm 2.93, putting α=2 steering well-calibrated to perturb the residual stream noticeably.
 - Scripts and files:
-    - [src/anthropic_repl/build_vector.py](src/anthropic_repl/build_vector.py)
-    - [scripts/anthropic_repl/run_build_vector.py](scripts/anthropic_repl/run_build_vector.py)
-    - [slurm_anthropic_repl_build.sh](slurm_anthropic_repl_build.sh)
+    - [src/extraction/build_vector.py](src/extraction/build_vector.py)
+    - [scripts/extraction/run_build_vector.py](scripts/extraction/run_build_vector.py)
+    - [slurm/build.sh](slurm/build.sh)
 - Output files:
-    - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/evil_response_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/evil_response_avg_diff.pt) (542 KB) — paper's primary
-    - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_avg_diff.pt) (542 KB)
-    - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_last_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_last_diff.pt) (542 KB)
+    - [results/persona_vectors/Llama-3.1-8B-Instruct/evil_response_avg_diff.pt](results/persona_vectors/Llama-3.1-8B-Instruct/evil_response_avg_diff.pt) (542 KB) — paper's primary
+    - [results/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_avg_diff.pt](results/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_avg_diff.pt) (542 KB)
+    - [results/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_last_diff.pt](results/persona_vectors/Llama-3.1-8B-Instruct/evil_prompt_last_diff.pt) (542 KB)
 
 ### E7.3 — Stage 3: steered-vs-baseline sanity check on held-out eval set
 - Description: Load `evil_response_avg_diff.pt[16]` (4096-D, paper's "layer 16 activation" = output of the 16th transformer block = HF `output_hidden_states[16]` = forward hook on `model.model.layers[15]`). Generate 100 completions on the held-out `trait_data_eval/evil.json` questions in two conditions: baseline (no steering) and steered (α=2.0, `positions="response"`). Judge both with trait + coherence rubrics. Measures whether the vector encodes a real "evil" direction independently of the priming context that built it.
@@ -342,12 +342,12 @@ After Phase 5 reached the diagnostic conclusion that Edoardo's pipeline diverged
     > Steered (trait=100, coh=8): *"...The key is to crush them under the weight of their own despair, crush, despair, crush all of their hope..."*
 
 - Scripts and files:
-    - [scripts/anthropic_repl/run_steer_eval.py](scripts/anthropic_repl/run_steer_eval.py) (HIDDEN_LAYER=16, HOOK_LAYER_IDX=15, COEFF=2.0)
-    - [src/anthropic_repl/hf_model.py](src/anthropic_repl/hf_model.py) `steering_hook` (`positions="response"` adds α·v at the last token position; during autoregressive decoding the last position is the only newly-generated token, so the cumulative effect is "perturb every response token")
-    - [slurm_anthropic_repl_steer_eval.sh](slurm_anthropic_repl_steer_eval.sh)
+    - [scripts/extraction/run_steer_eval.py](scripts/extraction/run_steer_eval.py) (HIDDEN_LAYER=16, HOOK_LAYER_IDX=15, COEFF=2.0)
+    - [src/inference/hf_model.py](src/inference/hf_model.py) `steering_hook` (`positions="response"` adds α·v at the last token position; during autoregressive decoding the last position is the only newly-generated token, so the cumulative effect is "perturb every response token")
+    - [slurm/steer_eval.sh](slurm/steer_eval.sh)
 - Output files:
-    - [results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct/evil_steer_response_layer16_coef2.0.csv](results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct/evil_steer_response_layer16_coef2.0.csv) (428 KB, 100 rows × 7 columns)
-    - [analysis/anthropic_repl_evil.ipynb](analysis/anthropic_repl_evil.ipynb) — inspection notebook (per-layer norms plot, trait/coherence histograms, qualitative samples, verdict)
+    - [results/eval_persona_eval/Llama-3.1-8B-Instruct/evil_steer_response_layer16_coef2.0.csv](results/eval_persona_eval/Llama-3.1-8B-Instruct/evil_steer_response_layer16_coef2.0.csv) (428 KB, 100 rows × 7 columns)
+    - [legacy/notebooks/anthropic_repl_evil.ipynb](legacy/notebooks/anthropic_repl_evil.ipynb) — inspection notebook (per-layer norms plot, trait/coherence histograms, qualitative samples, verdict)
 
 ### E7 verdict
 **The Anthropic pipeline replicates cleanly on Llama-3.1-8B-Instruct for `evil`.** The vector encodes a real direction in residual-stream space whose addition reliably elicits the trait without any priming. This validates the methodological diagnosis in Phase 5: the difference between Anthropic's pipeline and the project's earlier CAA-style approach (E1.x → E3.x judge sweeps that returned noise) is the *pipeline*, not the model or the trait. Llama can be steered.
@@ -413,12 +413,12 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
 - **Verdict.** The pipeline reproduces Anthropic's Figure 20 cosine values to within 0.02 on three independent cells. Combined with the +84.94 trait delta from E7.3, this is strong evidence that the pipeline is faithful to the paper's protocol. **Ready to use this pipeline as the primary CAA-replacement for the project's main behaviour set.**
 
 - Scripts and files (added/modified):
-    - [scripts/anthropic_repl/run_extract.py](scripts/anthropic_repl/run_extract.py), [scripts/anthropic_repl/run_build_vector.py](scripts/anthropic_repl/run_build_vector.py), [scripts/anthropic_repl/run_steer_eval.py](scripts/anthropic_repl/run_steer_eval.py) — all parametrised by `--trait`
-    - [slurm_anthropic_repl_extract.sh](slurm_anthropic_repl_extract.sh), [slurm_anthropic_repl_build.sh](slurm_anthropic_repl_build.sh), [slurm_anthropic_repl_steer_eval.sh](slurm_anthropic_repl_steer_eval.sh) — accept trait as `$1`
+    - [scripts/extraction/run_extract.py](scripts/extraction/run_extract.py), [scripts/extraction/run_build_vector.py](scripts/extraction/run_build_vector.py), [scripts/extraction/run_steer_eval.py](scripts/extraction/run_steer_eval.py) — all parametrised by `--trait`
+    - [slurm/extract.sh](slurm/extract.sh), [slurm/build.sh](slurm/build.sh), [slurm/steer_eval.sh](slurm/steer_eval.sh) — accept trait as `$1`
 - Output files:
-    - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/sycophantic_response_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/sycophantic_response_avg_diff.pt) (+2 sibling files)
-    - [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt) (+2 sibling files)
-    - 4 new extract CSVs under `results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/`
+    - [results/persona_vectors/Llama-3.1-8B-Instruct/sycophantic_response_avg_diff.pt](results/persona_vectors/Llama-3.1-8B-Instruct/sycophantic_response_avg_diff.pt) (+2 sibling files)
+    - [results/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt](results/persona_vectors/Llama-3.1-8B-Instruct/hallucinating_response_avg_diff.pt) (+2 sibling files)
+    - 4 new extract CSVs under `results/eval_persona_extract/Llama-3.1-8B-Instruct/`
 
 ---
 
@@ -426,15 +426,15 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
 
 ### E7.5 — Generate trait JSONs for behaviours not in Anthropic's released set
 - Description: To extend the Anthropic pipeline beyond the 7 released traits (`apathetic`, `evil`, `hallucinating`, `humorous`, `impolite`, `optimistic`, `sycophantic`) to the project's research-plan behaviour set, generated trait artifacts for the 8 missing behaviours: `refusal`, `corrigibility`, `power_seeking`, `myopia`, `verbosity`, `formality`, `confidence`, `agreeableness`. Each artifact = `{instructions: 5 (pos, neg) pairs, questions: 40, eval_prompt: rubric}` matching Anthropic's schema exactly.
-- Approach: paper's published prompt template ([anthropic_code/data_generation/prompts.py](anthropic_code/data_generation/prompts.py)) used **unchanged**. Substituted Claude 3.7 Sonnet with **OpenAI gpt-4.1** as the generator — reuses existing `OPENAI_API_KEY`, no new dependency. JSON mode (`response_format=json_object`) forces valid output. Validation: ≥40 questions (gpt-4.1 occasionally returns 41–42, trimmed to 40); 5 instruction pairs; non-empty eval_prompt. Deterministic 20/20 split (seed=42) into `trait_data_extract/` and `trait_data_eval/`.
-- Drop-in compatibility: outputs land in the same dirs as Anthropic's vendored artifacts (`anthropic_code/data_generation/trait_data_{extract,eval}/`), so the existing `load_trait()` loader in [src/anthropic_repl/trait_data.py](src/anthropic_repl/trait_data.py) picks them up transparently. No loader changes needed.
+- Approach: paper's published prompt template ([external/anthropic_code/data_generation/prompts.py](external/anthropic_code/data_generation/prompts.py)) used **unchanged**. Substituted Claude 3.7 Sonnet with **OpenAI gpt-4.1** as the generator — reuses existing `OPENAI_API_KEY`, no new dependency. JSON mode (`response_format=json_object`) forces valid output. Validation: ≥40 questions (gpt-4.1 occasionally returns 41–42, trimmed to 40); 5 instruction pairs; non-empty eval_prompt. Deterministic 20/20 split (seed=42) into `trait_data_extract/` and `trait_data_eval/`.
+- Drop-in compatibility: outputs land in the same dirs as Anthropic's vendored artifacts (`external/anthropic_code/data_generation/trait_data_{extract,eval}/`), so the existing `load_trait()` loader in [src/extraction/trait_data.py](src/extraction/trait_data.py) picks them up transparently. No loader changes needed.
 - Spot-check QA on `myopia` / `refusal` / `agreeableness`: instructions are clean pos/neg contrasts; questions are diverse trait-eliciting scenarios (money laundering for `refusal`, opinion-baiting for `agreeableness`, instant-gratification trade-offs for `myopia`); eval_prompt structure matches Anthropic's released format.
 - Results: 16 new JSON files (8 traits × 2 splits), idempotent (skip-if-exists at file level).
 - Scripts and files involved:
-    - [scripts/anthropic_repl/generate_trait_artifacts.py](scripts/anthropic_repl/generate_trait_artifacts.py) — driver, 298 lines, supports `--trait`, `--traits`, `--overwrite`
-    - [anthropic_code/data_generation/prompts.py](anthropic_code/data_generation/prompts.py) — paper's template, untouched
+    - [scripts/extraction/generate_trait_artifacts.py](scripts/extraction/generate_trait_artifacts.py) — driver, 298 lines, supports `--trait`, `--traits`, `--overwrite`
+    - [external/anthropic_code/data_generation/prompts.py](external/anthropic_code/data_generation/prompts.py) — paper's template, untouched
 - Output files:
-    - `anthropic_code/data_generation/trait_data_extract/{agreeableness, confidence, corrigibility, formality, myopia, power_seeking, refusal, verbosity}.json`
+    - `external/anthropic_code/data_generation/trait_data_extract/{agreeableness, confidence, corrigibility, formality, myopia, power_seeking, refusal, verbosity}.json`
     - same 8 names under `trait_data_eval/`
 - Commit: `0b06d35`.
 
@@ -445,10 +445,10 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
 ### E7.6 — Extend `run_extract_all` to all 15 traits and execute on cluster
 - Description: Now that artifact coverage spans all 15 target traits (7 Anthropic + 8 generated in E7.5), ran the full Anthropic-pipeline Stage 1 (extract+judge) and Stage 2 (build vector) on the 12 remaining traits (`evil`, `sycophantic`, `hallucinating` already done in E7.1–E7.4 via skip-if-exists logic).
 - Driver wiring (commit `b96be1f`):
-    - [scripts/anthropic_repl/run_extract_all.py](scripts/anthropic_repl/run_extract_all.py) — `TRAITS` extended 6 → 15. Per-CSV and per-vector skip-if-exists handles the 3 already-done as no-ops.
-    - [bash scripts/slurm_anthropic_repl_extract_all.sh](bash scripts/slurm_anthropic_repl_extract_all.sh) — `--account 3242106 → 3247897` (was Edoardo's, mismatched Riccardo's `--chdir`); `--mem 128G → 256G` (8h run, headroom over the ~16–20G HF/Llama-bf16 actually consumes); walltime kept at 23:59 (max student QoS).
+    - [scripts/extraction/run_extract_all.py](scripts/extraction/run_extract_all.py) — `TRAITS` extended 6 → 15. Per-CSV and per-vector skip-if-exists handles the 3 already-done as no-ops.
+    - [slurm/extract_all.sh](slurm/extract_all.sh) — `--account 3242106 → 3247897` (was Edoardo's, mismatched Riccardo's `--chdir`); `--mem 128G → 256G` (8h run, headroom over the ~16–20G HF/Llama-bf16 actually consumes); walltime kept at 23:59 (max student QoS).
     - Same per-trait knobs as E7.1: `MAX_CONCURRENT_JUDGES=5`, `N_PER_QUESTION=5`, `MAX_NEW_TOKENS=600`, `TEMPERATURE=1.0`, `BATCH_SIZE=8`, `JUDGE_MODEL=gpt-4.1-mini`.
-- Execution (commit `6920caf`): single SLURM job. Stage 1 loads Llama-3.1-8B-Instruct once, walks all 12 remaining traits sequentially, judges trait + coherence per polarity (24 CSVs). Stage 2 spawns one subprocess per trait calling [scripts/anthropic_repl/run_build_vector.py](scripts/anthropic_repl/run_build_vector.py) so each forward-pass run gets a clean model lifecycle. Total: 12 traits × 1000 generations × 2 judge calls = 24,000 OpenAI calls; ~8h cluster wall; ~$3–4 OpenAI spend (estimated).
+- Execution (commit `6920caf`): single SLURM job. Stage 1 loads Llama-3.1-8B-Instruct once, walks all 12 remaining traits sequentially, judges trait + coherence per polarity (24 CSVs). Stage 2 spawns one subprocess per trait calling [scripts/extraction/run_build_vector.py](scripts/extraction/run_build_vector.py) so each forward-pass run gets a clean model lifecycle. Total: 12 traits × 1000 generations × 2 judge calls = 24,000 OpenAI calls; ~8h cluster wall; ~$3–4 OpenAI spend (estimated).
 - **Per-trait extract stats** (mean trait + mean coherence in 0–100 judge units, from the new CSVs):
 
   | Trait          | POS trait | POS coh | NEG trait | NEG coh | Effective pairs |
@@ -496,13 +496,13 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
   Norms in line with `evil` (2.93) at α=2 → expect comparable steering perturbation magnitudes for all but the two smallest (`corrigibility`, `confidence`) which may need α≥2.5 to reach paper-typical effect sizes.
 - All 15 vectors verified: shape `[33, 4096]` float32, no NaN/Inf, layer-in-range. Three variants saved per trait (`response_avg_diff`, `prompt_avg_diff`, `prompt_last_diff`) — paper's primary is `response_avg_diff`.
 - Scripts and files involved:
-    - [scripts/anthropic_repl/run_extract_all.py](scripts/anthropic_repl/run_extract_all.py) (commit `b96be1f`)
-    - [scripts/anthropic_repl/run_build_vector.py](scripts/anthropic_repl/run_build_vector.py) (subprocess per trait)
-    - [bash scripts/slurm_anthropic_repl_extract_all.sh](bash scripts/slurm_anthropic_repl_extract_all.sh) (commit `b96be1f`)
-    - [src/anthropic_repl/generation.py](src/anthropic_repl/generation.py), [src/anthropic_repl/build_vector.py](src/anthropic_repl/build_vector.py), [src/anthropic_repl/hf_model.py](src/anthropic_repl/hf_model.py)
+    - [scripts/extraction/run_extract_all.py](scripts/extraction/run_extract_all.py) (commit `b96be1f`)
+    - [scripts/extraction/run_build_vector.py](scripts/extraction/run_build_vector.py) (subprocess per trait)
+    - [slurm/extract_all.sh](slurm/extract_all.sh) (commit `b96be1f`)
+    - [src/extraction/generation.py](src/extraction/generation.py), [src/extraction/build_vector.py](src/extraction/build_vector.py), [src/inference/hf_model.py](src/inference/hf_model.py)
 - Output files (commit `6920caf`):
-    - 24 new extract CSVs under [results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/](results/anthropic_repl/eval_persona_extract/Llama-3.1-8B-Instruct/) (12 traits × pos/neg)
-    - 36 new persona-vector files under [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/](results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/) (12 traits × 3 variants)
+    - 24 new extract CSVs under [results/eval_persona_extract/Llama-3.1-8B-Instruct/](results/eval_persona_extract/Llama-3.1-8B-Instruct/) (12 traits × pos/neg)
+    - 36 new persona-vector files under [results/persona_vectors/Llama-3.1-8B-Instruct/](results/persona_vectors/Llama-3.1-8B-Instruct/) (12 traits × 3 variants)
 - **Status**: bulk vectors ready. Stage 3 (steered-vs-baseline trait deltas at α=2 on held-out eval set, à la E7.3) **not yet executed** for the 12 new traits — open next step. Cosine matrix across all 15 traits also pending — extends E7.4's 3×3 to a full 15×15 for cross-validation against paper Figure 20 / Appendix G.2.
 - Commits: `0b06d35` (artifacts) → `b96be1f` (driver+slurm) → `6920caf` (results).
 
@@ -515,7 +515,7 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
 - Two-style schema chosen to match the existing MWE files:
     - **Style A (response-style trait)** — generic question ("Which response is more {trait}?") with two prose completions, trait expressed in tone/register only. Used for `apathetic, humorous, impolite, optimistic, sycophantic, hallucinating`. Mirrors [data/behaviors_mwe/agreeableness.py](data/behaviors_mwe/agreeableness.py).
     - **Style B (stance-under-context trait)** — scenario question with embedded `(A)`/`(B)` choices ending in `Answer:`, `trait_completion = "(A)"` always, `non_trait_completion = "(B)"` always. Used for `evil, refusal`. Mirrors [data/behaviors_mwe/corrigibility.py](data/behaviors_mwe/corrigibility.py).
-- Initial scripted attempt: [scripts/generate_mwe_behaviors.py](scripts/generate_mwe_behaviors.py) — gpt-4.1 in JSON-object mode, batched 50 pairs/call, target 1000 pairs/trait after dedup. **Three load-bearing bugs found at runtime** (logged here so the script is usable for future MWE expansion):
+- Initial scripted attempt: [scripts/extraction/generate_mwe_behaviors.py](scripts/extraction/generate_mwe_behaviors.py) — gpt-4.1 in JSON-object mode, batched 50 pairs/call, target 1000 pairs/trait after dedup. **Three load-bearing bugs found at runtime** (logged here so the script is usable for future MWE expansion):
     1. **Strict-equality key check** (`set(pair.keys()) != required_keys`) rejected every pair the model returned — gpt-4.1 added metadata keys (`id`, `scenario`) that broke equality. Fixed: use `required_keys.issubset(...)` and ignore extras.
     2. **Unwrap logic only handled `{"key": [list]}` shape** — model often returned `{"pair_1": {...}, "pair_2": {...}}` (object of pair dicts) which the original unwrap silently dropped. Fixed: `_coerce_to_pair_list` walks all three observed shapes (direct array, `{any_key: [list]}`, `{key1: pair, key2: pair, ...}`).
     3. **Prompt-vs-response_format conflict** — prompt instructed "Output ONLY the JSON array" while `response_format=json_object` forces the top-level to be an object. Fixed: prompts now require `{"pairs": [...]}` wrap explicitly; system message updated to match.
@@ -537,8 +537,8 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
   Schema valid (3 required keys, no empty values), no polarity inversion needed (trait completion always points toward the trait, unlike legacy `power_seeking` which carries `polarity_inverted=True`).
 - **Coverage outcome.** All 15 paper-pipeline traits now have MWE counterparts: 7 from the legacy Phase 4 / Phase 6 pipeline + 8 from this manual generation. 200 test-split pairs per trait — well above the n=125 minimum for detecting |shift| > 0.5 nats at 80% power given the per-pair σ ≈ 1.5–2.5 nats observed in Phase 4.
 - Scripts and files involved:
-    - [scripts/generate_mwe_behaviors.py](scripts/generate_mwe_behaviors.py) — driver + 3 bug fixes (kept for future reuse, even though this run was manual)
-    - [bash scripts/slurm_generate_mwe_behaviors.sh](bash scripts/slurm_generate_mwe_behaviors.sh) — pure-CPU SLURM wrapper (2 CPU, 8G, 2h)
+    - [scripts/extraction/generate_mwe_behaviors.py](scripts/extraction/generate_mwe_behaviors.py) — driver + 3 bug fixes (kept for future reuse, even though this run was manual)
+    - [slurm/generate_mwe_behaviors.sh](slurm/generate_mwe_behaviors.sh) — pure-CPU SLURM wrapper (2 CPU, 8G, 2h)
     - 8 new files in [data/behaviors_mwe/](data/behaviors_mwe/)
 - Output files: `data/behaviors_mwe/{apathetic,evil,humorous,impolite,optimistic,refusal,sycophantic,hallucinating}.py`.
 
@@ -548,26 +548,26 @@ To go beyond a single-trait sanity check, we extended the pipeline to two more t
 
 ### E7.8 — Single bulk script + paper-style plotting for all 15 traits
 - Description: Builds the full validation pass for the Anthropic-pipeline vectors. Two complementary signals per trait, both at L=16 / α=2 / Anthropic vectors `_response_avg_diff[16]`:
-    1. **LLM-judge** (paper protocol, Chen et al. 2025, §3): generate 100 baseline + 100 steered completions on the 20-question held-out set in `anthropic_code/data_generation/trait_data_eval/{trait}.json`, score both with the paper's trait + coherence rubrics via `gpt-4.1-mini`. Same logic as E7.3, run for all 15 traits in one model-load.
+    1. **LLM-judge** (paper protocol, Chen et al. 2025, §3): generate 100 baseline + 100 steered completions on the 20-question held-out set in `external/anthropic_code/data_generation/trait_data_eval/{trait}.json`, score both with the paper's trait + coherence rubrics via `gpt-4.1-mini`. Same logic as E7.3, run for all 15 traits in one model-load.
     2. **Logprob delta**: on the 200-pair test split of `data/behaviors_mwe/{trait}.py`, compute `log P(trait | q, +α v) - log P(non_trait | q, +α v)` minus the unsteered baseline. Reuses the already-loaded HF model (no re-load via TransformerLens), so logprob adds ~30s/trait on top of the LLM-judge stage.
 - **Methodological reasoning** for running both: the LLM-judge measures whether steering elicits the trait in *open-ended generation*; the logprob measures whether the vector tilts the *next-token distribution* on multiple-choice MWE format. They're orthogonal protocols — judge has no token-level ground truth, logprob has no judge variance. Phase 3 / Phase 4 showed they can disagree (legacy CAA vectors at L=17 looked dead under judge, alive under logprob); collecting both lets us read each trait's behaviour against two independent yardsticks.
 - New helper module to avoid double-loading the model:
-    - [src/anthropic_repl/hf_logprob.py](src/anthropic_repl/hf_logprob.py) — `compute_logprob_delta_hf(model, tok, q, trait, non_trait, vector, layer_idx, alpha)`. HF-flavored equivalent of [src/logprob.py](src/logprob.py) `compute_logprob_delta`, using the existing `steering_hook` (block-level forward hook on `model.model.layers[layer_idx]`). Layer-index convention matches Anthropic's: `vector = output_hidden_states[16]` ⇒ `layer_idx = 15`.
+    - [src/inference/hf_logprob.py](src/inference/hf_logprob.py) — `compute_logprob_delta_hf(model, tok, q, trait, non_trait, vector, layer_idx, alpha)`. HF-flavored equivalent of [legacy/caa_pipeline/src/logprob.py](legacy/caa_pipeline/src/logprob.py) `compute_logprob_delta`, using the existing `steering_hook` (block-level forward hook on `model.model.layers[layer_idx]`). Layer-index convention matches Anthropic's: `vector = output_hidden_states[16]` ⇒ `layer_idx = 15`.
 - Driver:
-    - [scripts/anthropic_repl/run_validation_all.py](scripts/anthropic_repl/run_validation_all.py) — single SLURM job runs both stages for all 15 traits sequentially. `MWE_TRAIT_NAMES` dict (15 entries) maps every paper-pipeline trait to its MWE filename. `POLARITY_INVERTED = {"power_seeking"}` — only the legacy power_seeking dataset has the trait/non-trait flip (E7.7 hand-generated set is uniformly polarity-correct).
+    - [scripts/validation/run_validation_all.py](scripts/validation/run_validation_all.py) — single SLURM job runs both stages for all 15 traits sequentially. `MWE_TRAIT_NAMES` dict (15 entries) maps every paper-pipeline trait to its MWE filename. `POLARITY_INVERTED = {"power_seeking"}` — only the legacy power_seeking dataset has the trait/non-trait flip (E7.7 hand-generated set is uniformly polarity-correct).
     - Resumable per-trait: skip-if-CSV-exists for LLM-judge stage, skip-if-trait-in-JSON for logprob stage.
-    - Per-trait outputs: `results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct/{trait}_steer_response_layer16_coef2.0.csv` (matches E7.3 file naming for the existing `evil` CSV → no overwrite, just fills in 14 new ones).
-    - Aggregate outputs: [results/anthropic_repl/logprob_validation_layer16.json](results/anthropic_repl/logprob_validation_layer16.json) (per-trait `mean_unsteered, mean_steered, mean_shift, std_shift, n_test_pairs, pass_threshold`), [results/anthropic_repl/validation_summary.json](results/anthropic_repl/validation_summary.json) (combined per-trait LLM-judge + logprob view).
+    - Per-trait outputs: `results/eval_persona_eval/Llama-3.1-8B-Instruct/{trait}_steer_response_layer16_coef2.0.csv` (matches E7.3 file naming for the existing `evil` CSV → no overwrite, just fills in 14 new ones).
+    - Aggregate outputs: [results/logprob_validation_layer16.json](results/logprob_validation_layer16.json) (per-trait `mean_unsteered, mean_steered, mean_shift, std_shift, n_test_pairs, pass_threshold`), [results/validation_summary.json](results/validation_summary.json) (combined per-trait LLM-judge + logprob view).
 - Plotting:
-    - [scripts/anthropic_repl/plot_validation.py](scripts/anthropic_repl/plot_validation.py) — paper-grade matplotlib + seaborn, 300 DPI PDFs, colorblind palette, serif body, embedded Type-42 fonts, no chartjunk. Output dir [analysis/figures/](analysis/figures/).
+    - [scripts/plotting/plot_validation.py](scripts/plotting/plot_validation.py) — paper-grade matplotlib + seaborn, 300 DPI PDFs, colorblind palette, serif body, embedded Type-42 fonts, no chartjunk. Output dir [analysis/figures/](analysis/figures/).
     - 4 figures generated from `validation_summary.json` + per-trait CSVs:
         - `fig1_judge_deltas.pdf` — 2-panel horizontal bars: (a) per-trait Δ trait, (b) per-trait Δ coherence; sorted by Δ_trait, coloured by Anthropic-released vs project-generated, threshold line at `Δ > 50` (paper's Figure-13 effect magnitude).
         - `fig2_judge_vs_logprob.pdf` — scatter Δ_trait (x) × logprob shift (y), OLS fit, Pearson + Spearman correlations annotated, per-trait point labels, threshold lines at `|shift| > 0.5 nats` and `Δ_trait > 50`.
         - `fig3_distributions.pdf` — 15-facet KDE grid, baseline vs steered raw judge-score densities per trait.
         - `fig4_logprob_forest.pdf` — forest plot of per-trait mean shift with 95% normal-approx CIs (`mean ± 1.96 · std/√n`), sorted by `|shift|`, threshold line at 0.5 nats.
-    - Plot script runs locally (no GPU, no API): `venv/bin/python scripts/anthropic_repl/plot_validation.py`. Reads JSONs + CSVs after the cluster job pulls back.
+    - Plot script runs locally (no GPU, no API): `venv/bin/python scripts/plotting/plot_validation.py`. Reads JSONs + CSVs after the cluster job pulls back.
 - SLURM wrapper:
-    - [bash scripts/slurm_anthropic_repl_validation_all.sh](bash scripts/slurm_anthropic_repl_validation_all.sh) — 1 GPU, 256G RAM, 8 CPU, 23:59 walltime. Estimated runtime ~3h (LLM-judge dominates; logprob ~30s/trait × 15 ≈ 8 min).
+    - [slurm/validation_all.sh](slurm/validation_all.sh) — 1 GPU, 256G RAM, 8 CPU, 23:59 walltime. Estimated runtime ~3h (LLM-judge dominates; logprob ~30s/trait × 15 ≈ 8 min).
 - **Status**: scripts pushed (commit `bcfa91d`, *"validation ready"*). Cluster submission pending. Outputs not yet on disk.
 
 ### E7.8 — Validation results (job 484792, ~2h cluster wall)
@@ -601,7 +601,7 @@ Cluster submission finally landed after several iterations of the SLURM wrapper 
 
 ##### Figure 1 — per-trait LLM-judge response
 
-![Figure 1: judge deltas](../analysis/figures/fig1_judge_deltas.png)
+![Figure 1: judge deltas](../analysis/figures/validation_l16/fig1_judge_deltas.png)
 
 Two-panel horizontal bar chart, traits sorted by Δ_trait descending.
 - **Panel (a)** — steered − baseline trait expression in 0–100 LLM-judge units. Anthropic-released traits (blue) cluster at the top of the chart, all 6 above the dashed Δ=50 paper-Figure-13 threshold; project-generated traits (green) span the middle and bottom, with `power_seeking` the only one that clears the 50 threshold. `refusal` is the lone negative bar at −31 — steering *removes* refusal expression, the opposite of what the trait label says.
@@ -610,7 +610,7 @@ Two-panel horizontal bar chart, traits sorted by Δ_trait descending.
 
 ##### Figure 2 — LLM-judge × logprob scatter
 
-![Figure 2: judge vs logprob scatter](../analysis/figures/fig2_judge_vs_logprob.png)
+![Figure 2: judge vs logprob scatter](../analysis/figures/validation_l16/fig2_judge_vs_logprob.png)
 
 Each point = one trait. x = LLM-judge Δ_trait, y = mean logprob shift in nats. Solid line = OLS fit. Pearson r = 0.38, Spearman ρ = 0.40, n = 15.
 - The two protocols agree in **direction** for 13/15 traits (both positive or both near zero). Confirms the dual-signal validation: vectors that move open-ended generation also tilt next-token logprobs on MWE pairs, as expected.
@@ -621,11 +621,11 @@ Each point = one trait. x = LLM-judge Δ_trait, y = mean logprob shift in nats. 
     - *Bottom cluster (both ≈0)* — `verbosity, agreeableness, corrigibility, myopia`. Vectors don't steer. RLHF-saturated baselines.
 - **Two outliers worth a separate note**:
     - `optimistic` (judge +14, lp **−9**): sign mismatch — only trait with this. Judge sees the model getting *more* optimistic, MWE logprob says it's becoming *less* likely to pick the trait completion. Hypothesis: hand-generated `data/behaviors_mwe/optimistic.py` pairs use a phrasing pattern that the vector actively pushes the model away from (e.g. trait completions all start with "This is workable…" — a register cue that conflicts with the priming-conditioned residual direction). Inspect MWE pairs.
-    - `refusal` (judge **−31**, lp +2.3): judge sign-flipped from the trait label, logprob aligned. Strongly suggests the vector built at extraction time has the wrong polarity — the (pos, neg) instructions in `anthropic_code/data_generation/trait_data_extract/refusal.json` likely got swapped. Easy to verify and re-extract.
+    - `refusal` (judge **−31**, lp +2.3): judge sign-flipped from the trait label, logprob aligned. Strongly suggests the vector built at extraction time has the wrong polarity — the (pos, neg) instructions in `external/anthropic_code/data_generation/trait_data_extract/refusal.json` likely got swapped. Easy to verify and re-extract.
 
 ##### Figure 3 — per-trait raw judge-score distributions
 
-![Figure 3: distributions](../analysis/figures/fig3_distributions.png)
+![Figure 3: distributions](../analysis/figures/validation_l16/fig3_distributions.png)
 
 15-facet KDE grid. Pink = baseline judge scores, orange = steered. Per-trait, 100 generations per condition. Shows the *shape* of the judge-score distribution beyond the means in Figures 1–2.
 - **Bimodal-shift traits** (paper-style): `sycophantic, evil, impolite, humorous, hallucinating, apathetic, power_seeking` — pink mass concentrated near 0, orange mass near 100. Steering pushes the *entire* response distribution to the trait pole, not just the mean. Cleanest possible evidence of vector control.
@@ -635,7 +635,7 @@ Each point = one trait. x = LLM-judge Δ_trait, y = mean logprob shift in nats. 
 
 ##### Figure 4 — logprob forest plot
 
-![Figure 4: logprob forest](../analysis/figures/fig4_logprob_forest.png)
+![Figure 4: logprob forest](../analysis/figures/validation_l16/fig4_logprob_forest.png)
 
 Per-trait mean logprob shift on the MWE test split, with 95% normal-approx CI (`mean ± 1.96 · std/√n`). Sorted by |shift|, threshold lines at ±0.5 nats.
 - **Top of plot** (`apathetic +21.95, hallucinating +19.41, formality +18.12, sycophantic +13.74`) — log-odds shifts of 13–22 nats translate to ~10⁵–10¹⁰ × multiplicative re-weighting of trait vs non-trait completion. Vector dominates next-token at α=2 across all positions (we use `positions="all"` in the logprob hook, vs `"response"` for generation).
@@ -653,7 +653,7 @@ Composition / cosine analysis / Part A of the research plan needs vectors that *
 
 **Tier B — investigate before using (n=2)**:
 - `optimistic`: sign mismatch between protocols. Likely fix: re-inspect / regenerate `data/behaviors_mwe/optimistic.py` pairs. Vector itself may be fine.
-- `refusal`: judge Δ inverts from trait label. Likely fix: verify pos/neg instructions in `anthropic_code/data_generation/trait_data_extract/refusal.json` weren't swapped during E7.5 generation; if so, re-extract with corrected polarity.
+- `refusal`: judge Δ inverts from trait label. Likely fix: verify pos/neg instructions in `external/anthropic_code/data_generation/trait_data_extract/refusal.json` weren't swapped during E7.5 generation; if so, re-extract with corrected polarity.
 
 **Tier C — drop from active set (n=4)**: `agreeableness, corrigibility, verbosity, myopia`. Three fail logprob outright; `myopia` barely scrapes 0.5 nats. All four have small judge Δ (<25). Two distinct underlying causes:
 1. RLHF baseline saturation (`agreeableness 87, verbosity 85, corrigibility 77` — already at trait ceiling).
@@ -673,7 +673,7 @@ These can be revisited if (a) we re-generate trait artifacts with Claude 3.7 Son
 6. **Composition pilot** — joint injection of two Tier S vectors at calibrated per-trait α, run the eval pilot from Phase 5.2, get the first `Q(i,j)` measurements.
 
 ### E7.7-side — generate_mwe_behaviors.py iteration scars (kept here so future runs don't repeat)
-- **Slurm pathing iteration**: first slurm version used `python -m scripts.generate_mwe_behaviors` which fails because `scripts/__init__.py` doesn't exist (only `scripts/anthropic_repl/__init__.py` does). Plain `python scripts/generate_mwe_behaviors.py` works. Also `chdir` initially used `/home/3242106/steering-vector-composition` but Edoardo's actual cluster repo path is `/home/3242106/steering-vector-composition-cloned` (matches 9 of 12 of his existing slurm scripts). For future scripts: copy `chdir` and account from any working slurm in `bash scripts/`, don't infer from teammate scripts which use `/home/3247897/...`.
+- **Slurm pathing iteration**: first slurm version used `python -m scripts.generate_mwe_behaviors` which fails because `scripts/__init__.py` doesn't exist (only the legacy structure had per-subdir `__init__.py`; the flattened layout now has `__init__.py` in every active scripts subdir). Plain `python scripts/extraction/generate_mwe_behaviors.py` works. Also `chdir` initially used `/home/3242106/steering-vector-composition` but Edoardo's actual cluster repo path is `/home/3242106/steering-vector-composition-cloned` (matches 9 of 12 of his existing slurm scripts). For future scripts: copy `chdir` and account from any working slurm in `slurm/`, don't infer from teammate scripts which use `/home/3247897/...`.
 - **JSON-object mode reminder**: when using `response_format={"type": "json_object"}` with gpt-4.1, always: (a) instruct the model in the system *and* user message to wrap output as `{"key": [...]}`, (b) parse with a coercer that handles all 3 likely shapes (array, `{any: list}`, `{key1: pair, key2: pair, ...}`), (c) accept extra metadata keys per pair via `issubset` not `==`. Strict matching killed the first run silently.
 
 ---
@@ -690,10 +690,10 @@ These can be revisited if (a) we re-generate trait artifacts with Claude 3.7 Son
 
 ## Phase 8 — Geometry EDA on the validated 9-trait subset (Edoardo, 2026-04-29)
 
-### E8.1 — Migrate `analysis/steer_anal.ipynb` to Anthropic L=16 vectors
+### E8.1 — Migrate `legacy/notebooks/steer_anal.ipynb` to Anthropic L=16 vectors
 
-- **Description**: Phase 5 geometry notebook ([analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb)) previously loaded legacy CAA L=17 unit-norm vectors via `SteerVecLoader` from a hard-coded teammate path (Federico). Switched it to the Anthropic-replication vectors that were used in the E7.8 dual-protocol validation, restricted to the 9-trait keeper set (Tier S + Tier A): `apathetic, confidence, evil, formality, hallucinating, humorous, impolite, power_seeking, sycophantic`.
-- **Vector source** (identical to E7.8 logprob/judge pipeline): [results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt](../results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/) — `[33, 4096]` stack, slice `[16]` → `[4096]`. Confirmed against `HIDDEN_LAYER=16` in [scripts/anthropic_repl/run_validation_all.py:108](../scripts/anthropic_repl/run_validation_all.py#L108).
+- **Description**: Phase 5 geometry notebook ([legacy/notebooks/steer_anal.ipynb](../legacy/notebooks/steer_anal.ipynb)) previously loaded legacy CAA L=17 unit-norm vectors via `SteerVecLoader` from a hard-coded teammate path (Federico). Switched it to the Anthropic-replication vectors that were used in the E7.8 dual-protocol validation, restricted to the 9-trait keeper set (Tier S + Tier A): `apathetic, confidence, evil, formality, hallucinating, humorous, impolite, power_seeking, sycophantic`.
+- **Vector source** (identical to E7.8 logprob/judge pipeline): [results/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt](../results/persona_vectors/Llama-3.1-8B-Instruct/) — `[33, 4096]` stack, slice `[16]` → `[4096]`. Confirmed against `HIDDEN_LAYER=16` in [scripts/validation/run_validation_all.py:108](../scripts/validation/run_validation_all.py#L108).
 - **Norm correction**: raw vectors are not unit-length (norms 1.34–3.44, see table below). The legacy `compute_gram_matrix` assumes pre-normalised input — passing raw vectors would have given inner products, not cosines. Notebook now divides by L2 norm before the gram step.
 
 #### Raw L=16 vector norms (response_avg_diff)
@@ -714,8 +714,8 @@ The norm spread (≈2.6×) explains part of why the same α=2 produced very diff
 
 ### E8.2 — Pairwise cosine geometry on 9 traits
 
-- **Setup**: 9 unit-normalised vectors → 9×9 Gram matrix → 36 off-diagonal pairs. Stratified by `|cos|` thresholds in [src/pair_strat.py](../src/pair_strat.py): near `<0.15`, moderate `[0.15, 0.5)`, high `≥0.3`.
-- **Plot upgrade**: rewrote [src/eda.py](../src/eda.py) for paper-style output — serif rcParams, KDE overlays on histograms, `TwoSlopeNorm`-centered diverging heatmap with masked diagonal and per-cell value annotations, despined axes with dotted grid, 300-dpi `savefig`.
+- **Setup**: 9 unit-normalised vectors → 9×9 Gram matrix → 36 off-diagonal pairs. Stratified by `|cos|` thresholds in [src/geometry/pair_strat.py](../src/geometry/pair_strat.py): near `<0.15`, moderate `[0.15, 0.5)`, high `≥0.3`.
+- **Plot upgrade**: rewrote [src/geometry/eda.py](../src/geometry/eda.py) for paper-style output — serif rcParams, KDE overlays on histograms, `TwoSlopeNorm`-centered diverging heatmap with masked diagonal and per-cell value annotations, despined axes with dotted grid, 300-dpi `savefig`.
 
 #### Summary statistics (all 36 pairs)
 
@@ -731,7 +731,7 @@ The norm spread (≈2.6×) explains part of why the same α=2 produced very diff
 | moderate [0.2,0.35) | 13       |
 | high (≥0.35)        | 7        |
 
-Counts use the canonical thresholds defined in [src/pair_strat.py](../src/pair_strat.py) (`NEAR_MAX=0.2`, `MODERATE_MAX=0.35`); see E8.3 for the consistency fix. The distribution is shifted slightly positive (mean +0.16, not centred at 0) — these 9 vectors share more common direction than random Gaussian baselines would. Mass concentrates in the near and moderate bands; 7 pairs cross the 0.35 high-cos boundary.
+Counts use the canonical thresholds defined in [src/geometry/pair_strat.py](../src/geometry/pair_strat.py) (`NEAR_MAX=0.2`, `MODERATE_MAX=0.35`); see E8.3 for the consistency fix. The distribution is shifted slightly positive (mean +0.16, not centred at 0) — these 9 vectors share more common direction than random Gaussian baselines would. Mass concentrates in the near and moderate bands; 7 pairs cross the 0.35 high-cos boundary.
 
 #### Most similar pairs (top 5 by |cos|)
 
@@ -755,12 +755,12 @@ Counts use the canonical thresholds defined in [src/pair_strat.py](../src/pair_s
 
 #### Figure 5 — Geometry of the 9 validated steering vectors
 
-![Figure 5: 9-trait geometry](../analysis/figures/fig5_geometry_9traits.png)
+![Figure 5: 9-trait geometry](../analysis/figures/geometry/fig5_geometry_9traits.png)
 
-Four-panel paper-style figure (saved to [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png)).
+Four-panel paper-style figure (saved to [analysis/figures/geometry/fig5_geometry_9traits.png](../analysis/figures/geometry/fig5_geometry_9traits.png)).
 
 - **Panel (a) — signed cosine distribution**: density histogram + Gaussian KDE. Mode sits around +0.15–0.20 with a long left tail. Mean (red line) at +0.160 confirms positive bias. Two modest negative outliers in [−0.5, −0.4] correspond to `formality↔humorous` and `formality↔impolite` — formality is anti-aligned with the casual/rude register cluster, exactly as expected semantically.
-- **Panel (b) — \|cosine\| distribution**: density of magnitudes with stratum boundaries imported from `src/pair_strat.py` — 0.2 (near|moderate) and 0.35 (moderate|high). Most mass is in [0.05, 0.35]; 7 pairs cross the 0.35 line. Compared to the legacy 7-trait L=17 set (where the moderate stratum had 5 pairs and high had 0), the 9-trait L=16 set has a fatter right-tail — more pairs in the regime where composition-vs-superposition becomes interesting.
+- **Panel (b) — \|cosine\| distribution**: density of magnitudes with stratum boundaries imported from `src/geometry/pair_strat.py` — 0.2 (near|moderate) and 0.35 (moderate|high). Most mass is in [0.05, 0.35]; 7 pairs cross the 0.35 line. Compared to the legacy 7-trait L=17 set (where the moderate stratum had 5 pairs and high had 0), the 9-trait L=16 set has a fatter right-tail — more pairs in the regime where composition-vs-superposition becomes interesting.
 - **Panel (c) — pairs per stratum**: thresholds 0.2 / 0.35 from `pair_strat.py` give bin counts 16 near / 13 moderate / 7 high. `stratify_pairs` default behaviour is "keep all" (no downsampling), so the bars equal the bin populations. Pass explicit `n_near` / `n_moderate` / `n_high` to downsample for a balanced composition pair-pick.
 - **Panel (d) — annotated cosine heatmap, cluster-grouped**: rows/cols reordered as `apathetic, evil, humorous, impolite, power_seeking, sycophantic` (antisocial cluster, see E8.4) followed by `confidence, formality, hallucinating`; black axhline+axvline marks the partition. Diverging `RdBu_r` with `TwoSlopeNorm` centered at 0, vmax auto-set to the max off-diagonal magnitude (~0.72), gray-masked diagonal, signed values printed in each cell. Visible structure:
     - **`apathetic` row** is overwhelmingly orthogonal — 6 of its 8 cells fall below |cos|=0.1. It is geometrically the most "independent" trait in the set, which makes it the cleanest direction for composition pilots (rotate it against any other vector with minimal interference).
@@ -774,25 +774,25 @@ Four-panel paper-style figure (saved to [analysis/figures/fig5_geometry_9traits.
 The Phase-5 cosine matrix on the legacy CAA vectors had max |cos| ≈ 0.27 (politeness↔confidence) and most pairs in the near band. The Anthropic L=16 9-trait set has a much wider spread (+0.72 to −0.50) — vectors are more **structured** and more **distinguishable from one another**. This is consistent with the response-averaged Anthropic-style extraction capturing trait-specific late-layer signal more aggressively than the early-layer prompt-only CAA pipeline.
 
 ### Files involved
-- [analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb) — updated to load 9 keeper vectors at L=16, normalise, run gram + EDA. Stale 7-trait outputs cleared.
-- [src/eda.py](../src/eda.py) — full rewrite for paper-style plots (KDE overlays, annotated heatmap, `TwoSlopeNorm`, panel labels, optional `savepath`).
-- [src/gram_matrix.py](../src/gram_matrix.py) — unchanged (still assumes unit-norm input; normalisation happens in the notebook before the call).
-- [src/pair_strat.py](../src/pair_strat.py) — unchanged.
+- [legacy/notebooks/steer_anal.ipynb](../legacy/notebooks/steer_anal.ipynb) — updated to load 9 keeper vectors at L=16, normalise, run gram + EDA. Stale 7-trait outputs cleared.
+- [src/geometry/eda.py](../src/geometry/eda.py) — full rewrite for paper-style plots (KDE overlays, annotated heatmap, `TwoSlopeNorm`, panel labels, optional `savepath`).
+- [src/geometry/gram_matrix.py](../src/geometry/gram_matrix.py) — unchanged (still assumes unit-norm input; normalisation happens in the notebook before the call).
+- [src/geometry/pair_strat.py](../src/geometry/pair_strat.py) — unchanged.
 
 ### Output files
-- [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png) — 4-panel geometry figure (300 dpi).
+- [analysis/figures/geometry/fig5_geometry_9traits.png](../analysis/figures/geometry/fig5_geometry_9traits.png) — 4-panel geometry figure (300 dpi).
 
 ### E8.3 — Threshold consistency fix in `fig5_geometry_9traits.png`
 
-- **Bug**: panel (b) of the geometry figure drew stratum boundaries at hardcoded `|cos| = 0.2` and `0.5`, while panel (c) bar heights (14/13/7) came from `src/pair_strat.py` running at different internal thresholds. Panels were telling two different stratification stories side by side.
-- **Fix**: thresholds now live in one place — `NEAR_MAX = 0.2` and `MODERATE_MAX = 0.35` as module-level constants in [src/pair_strat.py](../src/pair_strat.py). Both `stratify_pairs` (panel c) and the `axvline` calls in `plot_abs_cosine_distribution` (panel b) import these constants. `summary_stats` also uses them in column labels so the printout matches the figure.
+- **Bug**: panel (b) of the geometry figure drew stratum boundaries at hardcoded `|cos| = 0.2` and `0.5`, while panel (c) bar heights (14/13/7) came from `src/geometry/pair_strat.py` running at different internal thresholds. Panels were telling two different stratification stories side by side.
+- **Fix**: thresholds now live in one place — `NEAR_MAX = 0.2` and `MODERATE_MAX = 0.35` as module-level constants in [src/geometry/pair_strat.py](../src/geometry/pair_strat.py). Both `stratify_pairs` (panel c) and the `axvline` calls in `plot_abs_cosine_distribution` (panel b) import these constants. `summary_stats` also uses them in column labels so the printout matches the figure.
 - **Verification**: at the new thresholds, bin counts are 16 / 13 / 7. With the post-E8.6 "keep all by default" `stratify_pairs`, panel (c) reads the same 16 / 13 / 7. Panels (b) and (c) are now consistent.
 
 ### E8.4 — Cluster-membership covariate (EDA + composition-sweep schema)
 
 The high-`|cos|` stratum is dominated by pairs from a single semantic cluster. To let the RQ1 logistic regression separate cosine geometry from semantic similarity, cluster membership is now a first-class covariate, defined once and consumed everywhere.
 
-**Shared definition** — [src/clusters.py](../src/clusters.py):
+**Shared definition** — [src/geometry/clusters.py](../src/geometry/clusters.py):
 
 ```python
 ANTISOCIAL_CLUSTER = frozenset({
@@ -801,13 +801,13 @@ ANTISOCIAL_CLUSTER = frozenset({
 })
 ```
 
-with helpers `trait_cluster(t)` → `"antisocial"` | `"other"` and `pair_cluster_status(i, j)` → `"within_antisocial"` | `"cross_cluster"` | `"within_other"`. Imported by both [src/pair_strat.py](../src/pair_strat.py) and [scripts/run_composition.py](../scripts/run_composition.py); no inline redefinitions.
+with helpers `trait_cluster(t)` → `"antisocial"` | `"other"` and `pair_cluster_status(i, j)` → `"within_antisocial"` | `"cross_cluster"` | `"within_other"`. Imported by both [src/geometry/pair_strat.py](../src/geometry/pair_strat.py) and [legacy/caa_pipeline/scripts/run_composition.py](../legacy/caa_pipeline/scripts/run_composition.py); no inline redefinitions.
 
 **Per-pair table** — `make_pairs_df` now emits four cluster columns alongside `(i, j, cosine, |cosine|)`: `trait_i_cluster`, `trait_j_cluster`, `pair_cluster_status`, `both_antisocial` (boolean — the actual regression covariate).
 
 **Heatmap reorder** — panel (d) of `fig5_geometry_9traits.png` is now grouped by cluster: `apathetic, evil, humorous, impolite, power_seeking, sycophantic` first (antisocial), then `confidence, formality, hallucinating`. A black `axhline`+`axvline` marks the partition. Visually: the upper-left 6×6 block is dominated by warm (positive) cells, the lower-right 3×3 block is mixed, and the off-block crosses tend toward neutral or negative — exactly the structure the covariate is meant to absorb.
 
-**Stratum × cluster cross-tab** — diagnostic added as a notebook cell in [analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb). Computed over the full 36-pair set (see E8.6 for why earlier draft used 34 — sampling artefact, since fixed):
+**Stratum × cluster cross-tab** — diagnostic added as a notebook cell in [legacy/notebooks/steer_anal.ipynb](../legacy/notebooks/steer_anal.ipynb). Computed over the full 36-pair set (see E8.6 for why earlier draft used 34 — sampling artefact, since fixed):
 
 | stratum  | within_antisocial | cross_or_within_other | total |
 |----------|------------------:|----------------------:|------:|
@@ -818,7 +818,7 @@ with helpers `trait_cluster(t)` → `"antisocial"` | `"other"` and `pair_cluster
 
 5 of 7 high-cosine pairs (71%) are within the antisocial cluster, vs 5 of 16 near-cosine pairs (31%). The confound is real and quantitative: any logistic regression that uses `|cos|` alone to predict composition outcome will be partly picking up "are both traits antisocial?" — which has its own causal story (shared training-distribution residual) independent of vector geometry. The `both_antisocial` covariate is what controls for it.
 
-**Composition-sweep schema** — [scripts/run_composition.py](../scripts/run_composition.py) per-pair output records now include `trait_i_cluster`, `trait_j_cluster`, `pair_cluster_status`, `both_antisocial`. A sidecar `cluster_metadata.json` is written next to the results recording the `ANTISOCIAL_CLUSTER` definition (sorted), source module path, and a pointer to this log entry. Output is self-describing if the cluster definition is later revised.
+**Composition-sweep schema** — [legacy/caa_pipeline/scripts/run_composition.py](../legacy/caa_pipeline/scripts/run_composition.py) per-pair output records now include `trait_i_cluster`, `trait_j_cluster`, `pair_cluster_status`, `both_antisocial`. A sidecar `cluster_metadata.json` is written next to the results recording the `ANTISOCIAL_CLUSTER` definition (sorted), source module path, and a pointer to this log entry. Output is self-describing if the cluster definition is later revised.
 
 **What this enables**:
 
@@ -829,23 +829,23 @@ logit(P(additive)) ~ |cos| + both_antisocial
 If `|cos|` retains a significant coefficient after `both_antisocial` is partialled out, the geometric claim in RQ1 holds independently of semantic similarity.
 
 ### Files involved (E8.3 + E8.4)
-- [src/clusters.py](../src/clusters.py) — new file. Cluster constant + helpers.
-- [src/pair_strat.py](../src/pair_strat.py) — `NEAR_MAX`, `MODERATE_MAX` exported; cluster columns appended to `make_pairs_df`.
-- [src/eda.py](../src/eda.py) — imports thresholds, threshold labels reflect constants, heatmap supports cluster reordering + partition lines + label.
-- [analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb) — heatmap reorder call, stratum×cluster cross-tab cell.
-- [scripts/run_composition.py](../scripts/run_composition.py) — cluster fields per record + sidecar metadata write.
+- [src/geometry/clusters.py](../src/geometry/clusters.py) — new file. Cluster constant + helpers.
+- [src/geometry/pair_strat.py](../src/geometry/pair_strat.py) — `NEAR_MAX`, `MODERATE_MAX` exported; cluster columns appended to `make_pairs_df`.
+- [src/geometry/eda.py](../src/geometry/eda.py) — imports thresholds, threshold labels reflect constants, heatmap supports cluster reordering + partition lines + label.
+- [legacy/notebooks/steer_anal.ipynb](../legacy/notebooks/steer_anal.ipynb) — heatmap reorder call, stratum×cluster cross-tab cell.
+- [legacy/caa_pipeline/scripts/run_composition.py](../legacy/caa_pipeline/scripts/run_composition.py) — cluster fields per record + sidecar metadata write.
 
 ### Output files (E8.3 + E8.4)
-- [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png) — re-rendered with corrected thresholds and cluster-grouped heatmap.
+- [analysis/figures/geometry/fig5_geometry_9traits.png](../analysis/figures/geometry/fig5_geometry_9traits.png) — re-rendered with corrected thresholds and cluster-grouped heatmap.
 - `results/compositions/cluster_metadata.json` — written at composition-sweep launch time.
 
 ### E8.5 — Notebook re-run with updated schema (2026-04-29)
 
-`analysis/steer_anal.ipynb` re-executed end-to-end against the refactored `pair_strat.py` (cluster columns + threshold constants) and the rewritten `eda.py` (cluster-grouped heatmap). Outputs of interest baked into the notebook:
+`legacy/notebooks/steer_anal.ipynb` re-executed end-to-end against the refactored `pair_strat.py` (cluster columns + threshold constants) and the rewritten `eda.py` (cluster-grouped heatmap). Outputs of interest baked into the notebook:
 
 - **Cell 3 — `pairs_df`** (36 rows, alphabetical trait order): now carries `trait_i_cluster`, `trait_j_cluster`, `pair_cluster_status`, `both_antisocial` columns alongside the cosine fields. First few rows confirm the cluster annotator: `apathetic ↔ confidence` → `cross_cluster`, `apathetic ↔ impolite` → `within_antisocial` (cos +0.72).
 - **Cell 4 — `strat_df`**: 16 near / 13 moderate / 7 high — full 36-row coverage with the new "keep all by default" semantics (E8.6). The near band extends up to |cos|=0.19 (e.g. `apathetic ↔ hallucinating −0.141`), moderate starts at `confidence ↔ impolite 0.143`, high at `humorous ↔ sycophantic 0.344` — consistent with `NEAR_MAX=0.2` and `MODERATE_MAX=0.35` boundaries.
-- **Cell 5 — `run_eda`**: re-renders [analysis/figures/fig5_geometry_9traits.png](../analysis/figures/fig5_geometry_9traits.png) with cluster reorder and 0.2/0.35 vlines on panel (b). Stdout summary table prints `near (<0.2)=16, moderate [0.2,0.35)=13, high (≥0.35)=7` (matches the table in E8.2 above and the panel (c) bars).
+- **Cell 5 — `run_eda`**: re-renders [analysis/figures/geometry/fig5_geometry_9traits.png](../analysis/figures/geometry/fig5_geometry_9traits.png) with cluster reorder and 0.2/0.35 vlines on panel (b). Stdout summary table prints `near (<0.2)=16, moderate [0.2,0.35)=13, high (≥0.35)=7` (matches the table in E8.2 above and the panel (c) bars).
 - **Cell 6 — stratum × cluster cross-tab**: now computed over the full 36-pair `pairs_df` (was earlier over the 34-row sampled `strat_df`; see E8.6). Numbers reproduced in E8.4.
 
 End-to-end pipeline (load → unit-norm → gram → make_pairs_df → stratify_pairs → run_eda → cross-tab) is green. Schema is now the single source of truth that the composition sweep will consume.
@@ -868,7 +868,7 @@ Expected 36, Actual 34, Missing 2
 `make_pairs_df` is correct — produces all 36 pairs, every trait appears in exactly 8. The 34 came from `stratify_pairs`, which used to be a stratified *sample* with `n_near=14` requested but 16 pairs in the near bin → 2 random near pairs dropped each call. With `random_state=42` the dropped pairs were deterministically `confidence ↔ impolite (+0.143)` and `apathetic ↔ power_seeking (+0.027)`.
 
 **Fixes applied**:
-1. `make_pairs_df` now eagerly assigns a `stratum` column to every pair using the same `NEAR_MAX`/`MODERATE_MAX` constants (via a new `assign_stratum(abs_cos)` helper in [src/pair_strat.py](../src/pair_strat.py)). Earlier `pairs_df` had no stratum field; analyses had to either join in `strat_df` (lossy) or recompute.
+1. `make_pairs_df` now eagerly assigns a `stratum` column to every pair using the same `NEAR_MAX`/`MODERATE_MAX` constants (via a new `assign_stratum(abs_cos)` helper in [src/geometry/pair_strat.py](../src/geometry/pair_strat.py)). Earlier `pairs_df` had no stratum field; analyses had to either join in `strat_df` (lossy) or recompute.
 2. `stratify_pairs` defaults changed to `n_near=None, n_moderate=None, n_high=None` → "keep all pairs" semantics. Default output is now the full 36-row table (16 near + 13 moderate + 7 high). Pass explicit `n_*` to downsample for a balanced composition pair-pick. No silent dropping.
 3. Notebook cell 6 cross-tab reads from `pairs_df`, not `strat_df`. Cell now also asserts `pairs_df.shape[0] == 36`, all expected pairs present, every trait in 8 pairs — the three guards from the brief.
 4. E8.4 cross-tab table updated to reflect the full-population numbers (5/16, 5/13, 5/7 across near/moderate/high).
@@ -888,11 +888,11 @@ End-to-end pipeline for evaluating joint injection (`α_i v_i + α_j v_j` at lay
 
 **Components**
 
-- **Pair enumeration** — `behavior_pairs` in [src/joint_behaviors.py](../src/joint_behaviors.py) returns `itertools.combinations(behaviors, 2)`.
+- **Pair enumeration** — `behavior_pairs` in [src/joint_analysis/joint_behaviors.py](../src/joint_analysis/joint_behaviors.py) returns `itertools.combinations(behaviors, 2)`.
 - **Joint generation** — [src/joint_analysis/joint_injection.py](../src/joint_analysis/joint_injection.py): `generate_joint_steering` (single prompt) and `apply_joint_steering_batched` (left-padded batched, EOS-masked, configurable `batch_size`) for GPU throughput.
 - **Sampling** — `sample_completions(...)` in [src/joint_analysis/human_samples.py](../src/joint_analysis/human_samples.py) iterates pairs × settings × prompts and emits `[(pair, setting, prompt, completion)]`. Per-setting α layout: `vectors_alphas = [(v1, alpha*setting[0]), (v2, alpha*setting[1])]`. Default settings cover null, single-vector, joint, and antipodal regimes: `(0,0), (1,0), (0,1), (1,1), (-1,1), (1,-1)`.
 - **Human-eval sheet** — [scripts/human_evaluation.py](../scripts/human_evaluation.py) writes `results/human_eval/human_eval_layer{L}.xlsx` with the four data columns frozen and four blank annotation columns (`rating_b1`, `rating_b2`, `rating_joint`, `notes`).
-- **LLM judge** — `score_joint_completions(data, ...)` in [src/joint_analysis/joint_judge.py](../src/joint_analysis/joint_judge.py): per row, three independent 0–100 OpenAiJudge calls — `score_b1` and `score_b2` from `BEHAVIOR_PROMPTS` in [src/scoring.py](../src/scoring.py), and `coherence` from the Anthropic-style `COHERENCE_PROMPT` in [src/anthropic_repl/generation.py](../src/anthropic_repl/generation.py) (same prompt and ≥50 threshold semantics already used in extraction/validation). Async with semaphore-bounded concurrency. Returns a DataFrame `(behavior_pair, setting, prompt, completion, score_b1, score_b2, coherence)` keyed for direct merge with the human-eval frame.
+- **LLM judge** — `score_joint_completions(data, ...)` in [src/joint_analysis/joint_judge.py](../src/joint_analysis/joint_judge.py): per row, three independent 0–100 OpenAiJudge calls — `score_b1` and `score_b2` from `BEHAVIOR_PROMPTS` in [src/scoring.py](../src/scoring.py), and `coherence` from the Anthropic-style `COHERENCE_PROMPT` in [src/extraction/generation.py](../src/extraction/generation.py) (same prompt and ≥50 threshold semantics already used in extraction/validation). Async with semaphore-bounded concurrency. Returns a DataFrame `(behavior_pair, setting, prompt, completion, score_b1, score_b2, coherence)` keyed for direct merge with the human-eval frame.
 
 **Why two independent behavior scores rather than a joint compositional prompt**
 
@@ -925,13 +925,13 @@ E7.8 already hinted at this — among the three project traits, `confidence` and
 
 ### E9.2 — Sweep protocol
 
-Driver: [scripts/anthropic_repl/run_layer_selection_all.py](../scripts/anthropic_repl/run_layer_selection_all.py). Same generation + judging stack as E7.3 / E7.8 — uses [src/anthropic_repl/generation.py](../src/anthropic_repl/generation.py) `generate_batch` with `steering=(vector, hook_layer_idx, coeff, "response")`, and the paper's trait + coherence judges via [src/judge.py](../src/judge.py) `OpenAiJudge`. Vectors come straight from the E7.6 stack (`results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt[L]`) — no re-extraction, since `build_persona_vectors` already saved one vector per layer (`[33, 4096]`).
+Driver: [scripts/layer_selection/run_layer_selection_all.py](../scripts/layer_selection/run_layer_selection_all.py). Same generation + judging stack as E7.3 / E7.8 — uses [src/extraction/generation.py](../src/extraction/generation.py) `generate_batch` with `steering=(vector, hook_layer_idx, coeff, "response")`, and the paper's trait + coherence judges via [src/judge.py](../src/judge.py) `OpenAiJudge`. Vectors come straight from the E7.6 stack (`results/persona_vectors/Llama-3.1-8B-Instruct/{trait}_response_avg_diff.pt[L]`) — no re-extraction, since `build_persona_vectors` already saved one vector per layer (`[33, 4096]`).
 
 Configuration:
 - **Traits:** the 9 Tier-S+A keepers — `apathetic, evil, hallucinating, humorous, impolite, sycophantic, power_seeking, confidence, formality`.
 - **Layers:** `hidden_layer ∈ [1, 32]` → hook on transformer block `[0, 31]`. `output_hidden_states[0]` is embeddings — no preceding block to hook, so it is excluded.
 - **Coefficient:** α=2.0, matching E7.3 and E7.8.
-- **Eval set:** 20 questions per trait from `anthropic_code/data_generation/trait_data_eval/{trait}.json`, `n_per_question=1` (E7.8 used 5; we drop to 1 because we now multiply by 32 layers).
+- **Eval set:** 20 questions per trait from `external/anthropic_code/data_generation/trait_data_eval/{trait}.json`, `n_per_question=1` (E7.8 used 5; we drop to 1 because we now multiply by 32 layers).
 - **Baseline:** generated **once per trait** (no steering, layer-independent), so we save 32× on baseline cost. Δ_trait and Δ_coh per (trait, layer) are computed against the per-trait baseline.
 - **Per-trait L\* rule:** argmax Δ_trait subject to mean steered coherence ≥ 50 (paper's effectiveness threshold). Falls back to argmax Δ_trait if no layer passes the floor.
 - **Shared L\* rule:** argmax over layers of mean Δ_trait across the nine traits, same coherence floor.
@@ -940,7 +940,7 @@ Total cost: 9 traits × (1 baseline + 32 layers) × 20 generations = 5,940 gener
 
 ### E9.3 — Results
 
-**Per-trait L\* picks** (from [results/anthropic_repl/layer_selection.json](../results/anthropic_repl/layer_selection.json)):
+**Per-trait L\* picks** (from [results/layer_selection.json](../results/layer_selection.json)):
 
 | Trait          | Origin    | L\* | Δ_trait @ L\* | coh @ L\* | Δ_trait @ L=16 | coh @ L=16 |
 |----------------|-----------|----:|--------------:|----------:|---------------:|-----------:|
@@ -971,7 +971,7 @@ Total cost: 9 traits × (1 baseline + 32 layers) × 20 generations = 5,940 gener
 |  22 |       +59.69 |    49.56 |
 |  13 |       +56.32 |    72.34 |
 
-Full per-layer table is in `results/anthropic_repl/layer_selection.json` under `shared_layer_mean_delta_trait` / `shared_layer_mean_coh`.
+Full per-layer table is in `results/layer_selection.json` under `shared_layer_mean_delta_trait` / `shared_layer_mean_coh`.
 
 #### Reading the per-trait L\* spread
 
@@ -994,14 +994,14 @@ Full per-layer table is in `results/anthropic_repl/layer_selection.json` under `
 
 ### E9.5 — Files and outputs
 
-- **Driver script**: [scripts/anthropic_repl/run_layer_selection_all.py](../scripts/anthropic_repl/run_layer_selection_all.py) — functions only, no argparse, idempotent per (trait, layer) via skip-if-CSV-exists. Baseline once per trait, steered per (trait, hidden_layer ∈ [1,32]).
-- **SLURM wrapper**: [bash scripts/slurm_anthropic_repl_layer_selection_all.sh](../bash%20scripts/slurm_anthropic_repl_layer_selection_all.sh) — 1 GPU, 256G, 23:59h, account 3242106, chdir `steering-vector-composition-cloned`.
-- **Per-(trait, layer) CSVs**: `results/anthropic_repl/eval_persona_eval_layer_sweep/Llama-3.1-8B-Instruct/{trait}_layer{L}_coef2.0_steer_response.csv` — one CSV per (trait, hidden_layer) plus one `{trait}_baseline.csv` per trait. Schema: `question, answer, trait, coherence`.
-- **Aggregate JSON**: [results/anthropic_repl/layer_selection.json](../results/anthropic_repl/layer_selection.json) — full config, per-trait `{baseline_trait, baseline_coh, layers: {L: {steer_trait, steer_coh, delta_trait, delta_coh}}, L_star, L_star_delta_trait}`, plus `shared_layer_mean_delta_trait`, `shared_layer_mean_coh`, `shared_L_star`.
+- **Driver script**: [scripts/layer_selection/run_layer_selection_all.py](../scripts/layer_selection/run_layer_selection_all.py) — functions only, no argparse, idempotent per (trait, layer) via skip-if-CSV-exists. Baseline once per trait, steered per (trait, hidden_layer ∈ [1,32]).
+- **SLURM wrapper**: [slurm/layer_selection_all.sh](../slurm/layer_selection_all.sh) — 1 GPU, 256G, 23:59h, account 3242106, chdir `steering-vector-composition-cloned`.
+- **Per-(trait, layer) CSVs**: `results/eval_persona_eval_layer_sweep/Llama-3.1-8B-Instruct/{trait}_layer{L}_coef2.0_steer_response.csv` — one CSV per (trait, hidden_layer) plus one `{trait}_baseline.csv` per trait. Schema: `question, answer, trait, coherence`.
+- **Aggregate JSON**: [results/layer_selection.json](../results/layer_selection.json) — full config, per-trait `{baseline_trait, baseline_coh, layers: {L: {steer_trait, steer_coh, delta_trait, delta_coh}}, L_star, L_star_delta_trait}`, plus `shared_layer_mean_delta_trait`, `shared_layer_mean_coh`, `shared_L_star`.
 
 ### E9.6 — Open follow-ups (post-Phase-9 baseline list, see E9.7 for the post-sweep update)
 
-1. **Migrate composition / geometry pipeline from L=16 to L=17.** Concretely: re-render `analysis/figures/fig5_geometry_9traits.png` using `response_avg_diff[17]` instead of `[16]`; update `scripts/run_composition.py` and the cluster-metadata sidecar to record the new operating layer; confirm the cosine matrix delta vs the L=16 version is < 0.05 per cell (expected from E7.4, which already verified L=16 ↔ L=17 cosines agree within 0.02 on three cells).
+1. **Migrate composition / geometry pipeline from L=16 to L=17.** Concretely: re-render `analysis/figures/geometry/fig5_geometry_9traits.png` using `response_avg_diff[17]` instead of `[16]`; update `legacy/caa_pipeline/scripts/run_composition.py` and the cluster-metadata sidecar to record the new operating layer; confirm the cosine matrix delta vs the L=16 version is < 0.05 per cell (expected from E7.4, which already verified L=16 ↔ L=17 cosines agree within 0.02 on three cells).
 2. **Per-trait α-sweep at the per-trait L\***. The current α=2 is the same coefficient applied to vectors that now live at very different layers (L=10 to L=26); given the 2.6× spread in raw vector norms and the layer-dependent residual-stream variance, the effective steering magnitude varies even more. Re-run the E3.2 / E7.8 α-sweep at α ∈ {1.0, 1.5, 2.0} with each trait at its own L\* — first place where we can responsibly read off effect sizes.
 3. **Composition pilot at the joint L=17**. Start with `formality + impolite` (strong antipodal) and `apathetic + power_seeking` (near-orthogonal). Re-do the human-eval pilot scaffolding in [src/joint_analysis](../src/joint_analysis) under the new shared layer.
 4. **Hallucination-only deep dive at L=26**. Confirm the late-layer pick by looking at where the trait actually concentrates (logit-lens probe on the questions). If L\*=26 is real, hallucination cannot enter the joint composition pipeline at L=17 without a substantial Δ_trait penalty — flag this as a constraint on which traits compose meaningfully.
@@ -1012,7 +1012,7 @@ Full per-layer table is in `results/anthropic_repl/layer_selection.json` under `
 
 **Why we ran this.** E7.8 validated the 9 keepers under both LLM-judge and logprob, but only at L=16 / α=2.0 — the paper defaults. Phase 9.E9 then picked L=17 as the shared L\* from a sweep that used `N_PER_QUESTION=1` (low-resolution per-trait estimates) and α=2.0 only (no dose-response). Two open questions remained: (i) does the L=17 pick survive a tighter E7.8-grade evaluation under both signals, (ii) is α=2.0 actually the right operating coefficient at L=17, or is the model already over-steered there. This experiment answers both in one run.
 
-**Setup.** Driver: [scripts/anthropic_repl/run_validation_all_layer17.py](../scripts/anthropic_repl/run_validation_all_layer17.py) — copy of the E7.8 [run_validation_all.py](../scripts/anthropic_repl/run_validation_all.py) with two changes: `HIDDEN_LAYER=17` (hook on transformer block 16), `ALPHAS=[1.0, 2.0, 3.0]` (α=0 handled by the unsteered baseline path). Same generation/judging stack as E7.3 / E7.8 — `generate_batch` from [src/anthropic_repl/generation.py](../src/anthropic_repl/generation.py) with `steering=(vector, hook_layer_idx, alpha, "response")`, paper-style trait + coherence judges via [src/judge.py](../src/judge.py) `OpenAiJudge`. Logprob delta on the 200-pair MWE test split via [src/anthropic_repl/hf_logprob.py](../src/anthropic_repl/hf_logprob.py) `compute_logprob_delta_hf` — unsteered values cached so per-α shifts are computed against a single common baseline.
+**Setup.** Driver: [scripts/validation/run_validation_all_layer17.py](../scripts/validation/run_validation_all_layer17.py) — copy of the E7.8 [run_validation_all.py](../scripts/validation/run_validation_all.py) with two changes: `HIDDEN_LAYER=17` (hook on transformer block 16), `ALPHAS=[1.0, 2.0, 3.0]` (α=0 handled by the unsteered baseline path). Same generation/judging stack as E7.3 / E7.8 — `generate_batch` from [src/extraction/generation.py](../src/extraction/generation.py) with `steering=(vector, hook_layer_idx, alpha, "response")`, paper-style trait + coherence judges via [src/judge.py](../src/judge.py) `OpenAiJudge`. Logprob delta on the 200-pair MWE test split via [src/inference/hf_logprob.py](../src/inference/hf_logprob.py) `compute_logprob_delta_hf` — unsteered values cached so per-α shifts are computed against a single common baseline.
 
 Configuration (kept identical to E7.8 except for the layer + α-sweep):
 - 9 keepers: `apathetic, evil, hallucinating, humorous, impolite, sycophantic, power_seeking, confidence, formality`.
@@ -1022,7 +1022,7 @@ Configuration (kept identical to E7.8 except for the layer + α-sweep):
 - Total: 9 × (1 baseline + 3 alphas) × 100 generations = 3,600 generations + ~7,200 judge calls + 9 × (200 unsteered + 3 × 200 steered) = 7,200 logprob calls.
 - Cluster wall: ~2h on 1 GPU + 256G (job finished 2026-05-01 21:53 CEST). OpenAI judge spend ≈ €0.40 estimate.
 
-SLURM wrapper: [bash scripts/slurm_anthropic_repl_validation_all_layer17.sh](../bash%20scripts/slurm_anthropic_repl_validation_all_layer17.sh).
+SLURM wrapper: [slurm/validation_all_layer17.sh](../slurm/validation_all_layer17.sh).
 
 #### Headline numbers per (trait, α)
 
@@ -1085,14 +1085,14 @@ Per-trait recommended operating α (data-driven; pending discussion before locki
 #### Plot inventory ([analysis/figures/](../analysis/figures/))
 
 **Global plotting convention.** Across every figure in this Phase 9.7 inventory:
-- **Colour = trait identity.** Each of the nine traits is assigned a unique hue from seaborn's 9-step `husl` palette in [scripts/anthropic_repl/plot_validation_layer17.py](../scripts/anthropic_repl/plot_validation_layer17.py) (see `TRAITS_ORDER` + `TRAIT_COLOR`). Same colour = same trait everywhere — including y-tick labels in the bar plot and trait annotations in the scatters.
+- **Colour = trait identity.** Each of the nine traits is assigned a unique hue from seaborn's 9-step `husl` palette in [scripts/plotting/plot_validation_layer17.py](../scripts/plotting/plot_validation_layer17.py) (see `TRAITS_ORDER` + `TRAIT_COLOR`). Same colour = same trait everywhere — including y-tick labels in the bar plot and trait annotations in the scatters.
 - **Line style = origin.** Solid = Anthropic-released (`apathetic, evil, hallucinating, humorous, impolite, sycophantic`); dashed = project-generated (`confidence, formality, power_seeking`).
 - **Marker shape = origin** (redundant cue for monochrome printing). ○ = Anthropic, ▢ = project.
 - **In the L=16 vs L=17 bar plot**, the colour-and-origin convention is preserved on the bars; the L=16 / L=17 distinction is encoded by hatch (`///` for L=16, solid fill for L=17).
 
 ##### fig_l17_dose_response_judge — trait gain and coherence cost vs α
 
-![dose-response, judge](../analysis/figures/fig_l17_dose_response_judge.png)
+![dose-response, judge](../analysis/figures/alpha_sweep_l17_raw/fig_l17_dose_response_judge.png)
 
 Two-panel figure. Panel (a) plots **Δ_trait (LLM-judge, 0–100)** on the y-axis against **steering coefficient α** on the x-axis, one line per trait, anchored at (0, 0) by construction (α=0 is the baseline). Panel (b) does the same for **Δ_coherence**. Each trait gets its own colour from a 9-hue `husl` palette — same colour identifies the same trait in every plot of this section. Origin is encoded by line style: **solid = Anthropic-released** (six of nine), **dashed = project-generated** (`power_seeking, confidence, formality`). Marker shape mirrors the line style (○ Anthropic, ▢ project) so the convention reads even in monochrome. The dotted paper-magnitude threshold at Δ_trait=50 sits inside panel (a).
 
@@ -1103,7 +1103,7 @@ Reading:
 
 ##### fig_l17_dose_response_logprob — logprob shift vs α
 
-![dose-response, logprob](../analysis/figures/fig_l17_dose_response_logprob.png)
+![dose-response, logprob](../analysis/figures/alpha_sweep_l17_raw/fig_l17_dose_response_logprob.png)
 
 Single panel. y-axis = **logprob shift in nats** (`log P(trait | q, α v) − log P(non_trait | q, α v) − unsteered baseline`), x-axis = α, anchored at (0, 0). Dotted threshold lines at ±0.5 nats. Same colour-and-line-style convention as panel (a/b): every trait keeps its `husl` colour from the previous figure, solid = Anthropic-released, dashed = project-generated, ○/▢ markers per origin.
 
@@ -1117,7 +1117,7 @@ Reading:
 
 ##### fig_l17_pareto — trait gain × coherence cost, α as marker
 
-![pareto](../analysis/figures/fig_l17_pareto.png)
+![pareto](../analysis/figures/alpha_sweep_l17_raw/fig_l17_pareto.png)
 
 Single-panel scatter. x-axis = `|Δ_coh|` (cost, 0–100), y-axis = `Δ_trait` (gain, 0–100). Each trait contributes three points connected by a line in the trait's own colour. **α is encoded by marker shape** (α=1 ○, α=2 ▢, α=3 ◇, with monotonically increasing marker size), **trait identity by colour** (same `husl` palette as the dose-response plots), **origin by line style** (solid Anthropic, dashed project). Trait label is anchored at the α=2 point and colour-matched. Dotted threshold line at Δ_trait = 50. Two legends: trait colours/styles (right margin) and α / origin / threshold key (lower right).
 
@@ -1130,7 +1130,7 @@ Reading:
 
 ##### fig_l17_judge_vs_logprob_a2 — protocol agreement at α=2
 
-![judge × logprob, α=2](../analysis/figures/fig_l17_judge_vs_logprob_a2.png)
+![judge × logprob, α=2](../analysis/figures/alpha_sweep_l17_raw/fig_l17_judge_vs_logprob_a2.png)
 
 Scatter at α=2 only. x-axis = **Δ_trait (LLM-judge)**, y-axis = **logprob shift in nats**. Each point inherits the trait's identity colour from the dose-response plots; marker shape ○ = Anthropic-released, ▢ = project-generated, so origin is readable without colour. Trait labels are anchored at each point in the matching colour. OLS fit drawn through the points. Annotation: **Pearson r = −0.119, Spearman ρ = +0.117** (both essentially zero, n=9). Threshold lines at Δ_trait=50 (vertical) and ±0.5 nats (horizontal).
 
@@ -1143,7 +1143,7 @@ Reading:
 
 ##### fig_l17_l16_vs_l17_a2 — direct L=16 (E7.8) vs L=17 paired bars at α=2
 
-![L=16 vs L=17, α=2](../analysis/figures/fig_l17_l16_vs_l17_a2.png)
+![L=16 vs L=17, α=2](../analysis/figures/alpha_sweep_l17_raw/fig_l17_l16_vs_l17_a2.png)
 
 Two horizontal-bar panels, traits on y-axis sorted by L=17 Δ_trait descending, with y-tick labels colour-matched to each trait's identity colour. Per trait, two bars in **the same trait colour**: the L=16 (E7.8) bar is hatched (`///`), the L=17 bar is solid. The convention "colour = trait identity, hatch = L=16" appears in the suptitle. Panel (a) = Δ_trait (LLM-judge) at α=2. Panel (b) = logprob shift in nats at α=2. Threshold lines at Δ_trait=50 and ±0.5 nats.
 
@@ -1154,22 +1154,22 @@ Reading:
 
 #### Files involved
 
-- [scripts/anthropic_repl/run_validation_all_layer17.py](../scripts/anthropic_repl/run_validation_all_layer17.py) — driver, copy of the E7.8 validator with `HIDDEN_LAYER=17` + α-sweep, idempotent per (trait, α).
-- [bash scripts/slurm_anthropic_repl_validation_all_layer17.sh](../bash%20scripts/slurm_anthropic_repl_validation_all_layer17.sh) — SLURM wrapper, 1 GPU / 256G / 23:59h.
-- [scripts/anthropic_repl/plot_validation_layer17.py](../scripts/anthropic_repl/plot_validation_layer17.py) — paper-grade plot script reading `validation_summary_layer17.json` (+ optional E7.8 `validation_summary.json` for the comparison plot), writes 5 PDFs + PNG twins under [analysis/figures/](../analysis/figures/).
+- [scripts/validation/run_validation_all_layer17.py](../scripts/validation/run_validation_all_layer17.py) — driver, copy of the E7.8 validator with `HIDDEN_LAYER=17` + α-sweep, idempotent per (trait, α).
+- [slurm/validation_all_layer17.sh](../slurm/validation_all_layer17.sh) — SLURM wrapper, 1 GPU / 256G / 23:59h.
+- [scripts/plotting/plot_validation_layer17.py](../scripts/plotting/plot_validation_layer17.py) — paper-grade plot script reading `validation_summary_layer17.json` (+ optional E7.8 `validation_summary.json` for the comparison plot), writes 5 PDFs + PNG twins under [analysis/figures/](../analysis/figures/).
 
 #### Output files
 
-- 9 baseline CSVs + 27 (trait × 3α) steered CSVs under [results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct/](../results/anthropic_repl/eval_persona_eval/Llama-3.1-8B-Instruct/) — names `{trait}_baseline_layer17.csv`, `{trait}_steer_response_layer17_coef{α}.csv`. Schema: `question, answer, trait, coherence`.
-- [results/anthropic_repl/logprob_validation_layer17.json](../results/anthropic_repl/logprob_validation_layer17.json) — per-trait `{mwe_dataset, n_test_pairs, polarity_inverted, mean_unsteered, alphas: {α: {mean_steered, mean_shift, abs_mean_shift, std_shift, pass_threshold}}}`. Cached `_unsteered_vals` for resume-correctness.
-- [results/anthropic_repl/validation_summary_layer17.json](../results/anthropic_repl/validation_summary_layer17.json) — combined LLM-judge × logprob view, layer + α-sweep keyed.
+- 9 baseline CSVs + 27 (trait × 3α) steered CSVs under [results/eval_persona_eval/Llama-3.1-8B-Instruct/](../results/eval_persona_eval/Llama-3.1-8B-Instruct/) — names `{trait}_baseline_layer17.csv`, `{trait}_steer_response_layer17_coef{α}.csv`. Schema: `question, answer, trait, coherence`.
+- [results/logprob_validation_layer17.json](../results/logprob_validation_layer17.json) — per-trait `{mwe_dataset, n_test_pairs, polarity_inverted, mean_unsteered, alphas: {α: {mean_steered, mean_shift, abs_mean_shift, std_shift, pass_threshold}}}`. Cached `_unsteered_vals` for resume-correctness.
+- [results/validation_summary_layer17.json](../results/validation_summary_layer17.json) — combined LLM-judge × logprob view, layer + α-sweep keyed.
 - 5 figures under [analysis/figures/](../analysis/figures/): `fig_l17_dose_response_judge.{pdf,png}`, `fig_l17_dose_response_logprob.{pdf,png}`, `fig_l17_pareto.{pdf,png}`, `fig_l17_judge_vs_logprob_a2.{pdf,png}`, `fig_l17_l16_vs_l17_a2.{pdf,png}`.
 
 ### E9.8 — Open follow-ups (post-Phase-9 baseline list, see Phase 10 for the post-calibration update)
 
 1. **Per-trait α calibration.** The recommended-α table in E9.7 above is data-driven but unconfirmed — turn it into a per-trait operating-α dictionary in the codebase only after Edoardo signs off on the picks. Particular attention: `confidence` and `formality` at α=3 keep climbing on logprob; running α ∈ {3.0, 4.0, 5.0} on those two specifically might reveal the actual saturation point.
 2. **`humorous` MWE inspection.** Logprob sign-flip at α≥2 is now confirmed at L=17 (was already seen at L=16 in E7.8). Inspect `data/behaviors_mwe/humorous.py` for the phrasing cue that the vector is pushing the model away from. Possibly regenerate the MWE pairs.
-3. **Migrate composition / geometry pipeline from L=16 to L=17.** Same as E9.6 #1 — re-render `analysis/figures/fig5_geometry_9traits.png` with `response_avg_diff[17]`, update `scripts/run_composition.py` and the cluster-metadata sidecar; expected cosine drift < 0.05 per cell (E7.4).
+3. **Migrate composition / geometry pipeline from L=16 to L=17.** Same as E9.6 #1 — re-render `analysis/figures/geometry/fig5_geometry_9traits.png` with `response_avg_diff[17]`, update `legacy/caa_pipeline/scripts/run_composition.py` and the cluster-metadata sidecar; expected cosine drift < 0.05 per cell (E7.4).
 4. **Composition pilot at the joint L=17.** First pairs: `formality + impolite` (strong antipodal, both Tier S/A), `apathetic + power_seeking` (near-orthogonal). Use per-trait α from E9.7 if signed off; otherwise α=2 as conservative default.
 5. **Hallucination-only deep dive at L=26.** Layer-selection sweep (E9) put `hallucinating` L\*=26, but E9.7 confirms it works fine at L=17 (Δ_trait +84.25, logprob +21.68 nats at α=2) — the L=26 win in E9 may have been a coherence-ceiling artefact (mean_coh=52.78 vs 20.35 at L=17). Worth confirming the L=26 numbers under N_PER_QUESTION=5 before treating it as a special case.
 6. **15×15 cosine matrix at L=17.** Geometry across the full Anthropic-replication set at the new operating layer; cross-check against paper Figure 20.
@@ -1188,7 +1188,7 @@ E9.7 confirmed L=17 works under the dual-signal protocol on **raw** vectors at �
 
 Both issues vanish under unit-normalisation: `v̂ = v / ‖v‖`, and the coefficient `c` then equals the magnitude of the residual perturbation. This phase calibrates the unit-norm operating α (`α_unit`) for the composition pilot.
 
-### E10.2 — Norm diagnostic at L=17 (`scripts/anthropic_repl/check_norms_layer17.py`)
+### E10.2 — Norm diagnostic at L=17 (`scripts/validation/check_norms_layer17.py`)
 
 Quick local script that loads every `{trait}_response_avg_diff.pt` stack, slices `[17]`, computes `‖v‖₂`, and correlates with the α=2 effect sizes from E9.7. Output, ranked by norm:
 
@@ -1222,9 +1222,9 @@ Quick local script that loads every `{trait}_response_avg_diff.pt` stack, slices
 
 **Concrete consequence for composition:** at composition coefficients (1, 1) on raw vectors, the larger-norm vector contributes proportionally more residual perturbation. Example: `apathetic + confidence` at (1, 1) raw injects ~2.4× more magnitude along the apathetic direction than along confidence. The joint output is dominated by the larger-norm trait, and any Q(i, j) ratio that derives from the joint is contaminated by that imbalance — making it impossible to attribute the result to geometry rather than norm dominance. **Unit-normalisation removes the contamination** (each vector contributes exactly its coefficient in residual-magnitude terms), and is therefore the right preparation step before composition.
 
-### E10.3 — α-sweep on unit-norm vectors at L=17 (`scripts/anthropic_repl/run_alpha_sweep_l17.py`)
+### E10.3 — α-sweep on unit-norm vectors at L=17 (`scripts/validation/run_alpha_sweep_l17.py`)
 
-Driver: copy of [scripts/anthropic_repl/run_validation_all_layer17.py](../scripts/anthropic_repl/run_validation_all_layer17.py) with two changes — vector unit-normalised before injection (`v̂ = v / ‖v‖`), and α-sweep grid bumped to `α_unit ∈ {2, 4, 6, 8}` to span the 1.6–12.7 effective-magnitude range that raw α∈{1,2,3} produced under the 1.34..3.44 norm spread.
+Driver: copy of [scripts/validation/run_validation_all_layer17.py](../scripts/validation/run_validation_all_layer17.py) with two changes — vector unit-normalised before injection (`v̂ = v / ‖v‖`), and α-sweep grid bumped to `α_unit ∈ {2, 4, 6, 8}` to span the 1.6–12.7 effective-magnitude range that raw α∈{1,2,3} produced under the 1.34..3.44 norm spread.
 
 Configuration (kept identical to E7.8 / E9.7 except for normalisation + α grid):
 - 9 keepers (Tier S + A from E7.8).
@@ -1235,7 +1235,7 @@ Configuration (kept identical to E7.8 / E9.7 except for normalisation + α grid)
 - Total: 9 × (1 baseline + 4 alphas) × 100 generations = 4,500 generations + ~9k judge calls + ~9k logprob calls.
 - Cluster wall: ~7h on 1 GPU + 256G. OpenAI judge spend ≈ €0.40 estimate.
 
-SLURM wrapper: [bash scripts/slurm_anthropic_repl_alpha_sweep_l17.sh](../bash%20scripts/slurm_anthropic_repl_alpha_sweep_l17.sh).
+SLURM wrapper: [slurm/alpha_sweep_l17.sh](../slurm/alpha_sweep_l17.sh).
 
 #### Headline numbers per (trait, α_unit)
 
@@ -1318,11 +1318,11 @@ Aggregate (means across the 9 keepers per α_unit):
 
 ### E10.5 — Plot inventory ([analysis/figures/](../analysis/figures/))
 
-Same global plot convention as E9.7 (colour = trait identity from the husl 9-hue palette in [scripts/anthropic_repl/plot_alpha_sweep_l17.py](../scripts/anthropic_repl/plot_alpha_sweep_l17.py); solid = Anthropic-released, dashed = project-generated; ○/▢ marker as monochrome fallback).
+Same global plot convention as E9.7 (colour = trait identity from the husl 9-hue palette in [scripts/plotting/plot_alpha_sweep_l17.py](../scripts/plotting/plot_alpha_sweep_l17.py); solid = Anthropic-released, dashed = project-generated; ○/▢ marker as monochrome fallback).
 
 ##### fig_unit_l17_dose_response_judge — trait gain and coherence cost vs α_unit
 
-![dose-response, judge, unit-norm](../analysis/figures/fig_unit_l17_dose_response_judge.png)
+![dose-response, judge, unit-norm](../analysis/figures/alpha_sweep_l17_unit/fig_unit_l17_dose_response_judge.png)
 
 Two-panel figure. Panel (a): per-trait Δ_trait vs α_unit ∈ {0, 2, 4, 6, 8}, anchored at (0, 0). Panel (b): per-trait Δ_coh on the same x-axis. Dotted threshold at Δ_trait=50 in panel (a).
 
@@ -1333,7 +1333,7 @@ Reading:
 
 ##### fig_unit_l17_dose_response_logprob — logprob shift vs α_unit
 
-![dose-response, logprob, unit-norm](../analysis/figures/fig_unit_l17_dose_response_logprob.png)
+![dose-response, logprob, unit-norm](../analysis/figures/alpha_sweep_l17_unit/fig_unit_l17_dose_response_logprob.png)
 
 Single panel, same colour-and-line-style convention. y = mean logprob shift (nats). Dotted threshold lines at ±0.5 nats.
 
@@ -1348,7 +1348,7 @@ Reading:
 
 ##### fig_unit_l17_pareto — trait gain × coherence cost, α_unit as marker
 
-![pareto, unit-norm](../analysis/figures/fig_unit_l17_pareto.png)
+![pareto, unit-norm](../analysis/figures/alpha_sweep_l17_unit/fig_unit_l17_pareto.png)
 
 Single-panel scatter. x = `|Δ_coh|`, y = `Δ_trait`. Each trait contributes 4 points (α=2 ○, α=4 ▢, α=6 ◇, α=8 △ — monotonically increasing marker size) connected by a line in the trait's colour. Trait label at the α=4 point. Dotted threshold at Δ_trait=50.
 
@@ -1360,7 +1360,7 @@ Reading:
 
 ##### fig_unit_l17_judge_vs_logprob_a4 — protocol agreement at α_unit=4
 
-![judge × logprob, α=4, unit-norm](../analysis/figures/fig_unit_l17_judge_vs_logprob_a4.png)
+![judge × logprob, α=4, unit-norm](../analysis/figures/alpha_sweep_l17_unit/fig_unit_l17_judge_vs_logprob_a4.png)
 
 Scatter at α_unit=4. x = Δ_trait (LLM-judge), y = logprob shift (nats). Trait-coloured points + labels; ○ = Anthropic, ▢ = project. OLS fit in black. **Pearson r = −0.77, Spearman ρ = −0.75** at this α_unit — strongly *negative* correlation between the two protocols.
 
@@ -1372,7 +1372,7 @@ Reading:
 
 ##### fig_unit_vs_raw_l17 — paired bars: raw α=2 (E9.7) vs unit α=4 (this run)
 
-![unit vs raw, α matched](../analysis/figures/fig_unit_vs_raw_l17.png)
+![unit vs raw, α matched](../analysis/figures/alpha_sweep_l17_unit/fig_unit_vs_raw_l17.png)
 
 Two horizontal-bar panels, traits on y-axis sorted by unit-α=4 Δ_trait descending. Per trait, two bars in the trait's identity colour: raw α=2 (E9.7) is hatched, unit α=4 is solid. Panel (a) = Δ_trait, panel (b) = logprob shift. Threshold lines at Δ_trait=50 and ±0.5 nats.
 
@@ -1384,22 +1384,22 @@ Reading:
 
 ### E10.6 — Files involved
 
-- [scripts/anthropic_repl/check_norms_layer17.py](../scripts/anthropic_repl/check_norms_layer17.py) — local diagnostic, prints norm table + Pearson/Spearman correlations against E9.7's α=2 effect sizes. No GPU, no API.
-- [scripts/anthropic_repl/run_alpha_sweep_l17.py](../scripts/anthropic_repl/run_alpha_sweep_l17.py) — α-sweep driver on unit-normalised vectors at L=17. Idempotent per (trait, α). Auto-prints recommended α picks (judge argmax Δ_trait s.t. coh ≥ 50, logprob argmax |shift|, shared α) at end of run, but does *not* commit a pick — selection is a separate decision (E10.4).
-- [bash scripts/slurm_anthropic_repl_alpha_sweep_l17.sh](../bash%20scripts/slurm_anthropic_repl_alpha_sweep_l17.sh) — SLURM wrapper, 1 GPU / 256G / 23:59h.
-- [scripts/anthropic_repl/plot_alpha_sweep_l17.py](../scripts/anthropic_repl/plot_alpha_sweep_l17.py) — paper-grade plot script for the unit-norm sweep; reads `alpha_sweep_l17_summary.json` (+ optional `validation_summary_layer17.json` for the unit-vs-raw overlay).
+- [scripts/validation/check_norms_layer17.py](../scripts/validation/check_norms_layer17.py) — local diagnostic, prints norm table + Pearson/Spearman correlations against E9.7's α=2 effect sizes. No GPU, no API.
+- [scripts/validation/run_alpha_sweep_l17.py](../scripts/validation/run_alpha_sweep_l17.py) — α-sweep driver on unit-normalised vectors at L=17. Idempotent per (trait, α). Auto-prints recommended α picks (judge argmax Δ_trait s.t. coh ≥ 50, logprob argmax |shift|, shared α) at end of run, but does *not* commit a pick — selection is a separate decision (E10.4).
+- [slurm/alpha_sweep_l17.sh](../slurm/alpha_sweep_l17.sh) — SLURM wrapper, 1 GPU / 256G / 23:59h.
+- [scripts/plotting/plot_alpha_sweep_l17.py](../scripts/plotting/plot_alpha_sweep_l17.py) — paper-grade plot script for the unit-norm sweep; reads `alpha_sweep_l17_summary.json` (+ optional `validation_summary_layer17.json` for the unit-vs-raw overlay).
 
 ### E10.7 — Output files
 
-- 9 baseline CSVs + 36 (trait × 4α) steered CSVs under [results/anthropic_repl/alpha_sweep_l17/Llama-3.1-8B-Instruct/](../results/anthropic_repl/alpha_sweep_l17/Llama-3.1-8B-Instruct/) — names `{trait}_baseline.csv`, `{trait}_unit_alpha{α}.csv`. Schema: `question, answer, trait, coherence`.
-- [results/anthropic_repl/alpha_sweep_l17_logprob.json](../results/anthropic_repl/alpha_sweep_l17_logprob.json) — per-trait `{mwe_dataset, n_test_pairs, polarity_inverted, mean_unsteered, alphas: {α: {mean_steered, mean_shift, abs_mean_shift, std_shift, pass_threshold}}}`. Includes `vector_normalisation: "unit"` flag at top level. Cached `_unsteered_vals` for resume-correctness.
-- [results/anthropic_repl/alpha_sweep_l17_summary.json](../results/anthropic_repl/alpha_sweep_l17_summary.json) — combined LLM-judge × logprob view, includes per-trait `norm_at_layer17` and the `vector_normalisation: "unit"` flag.
+- 9 baseline CSVs + 36 (trait × 4α) steered CSVs under [results/alpha_sweep_l17/Llama-3.1-8B-Instruct/](../results/alpha_sweep_l17/Llama-3.1-8B-Instruct/) — names `{trait}_baseline.csv`, `{trait}_unit_alpha{α}.csv`. Schema: `question, answer, trait, coherence`.
+- [results/alpha_sweep_l17_logprob.json](../results/alpha_sweep_l17_logprob.json) — per-trait `{mwe_dataset, n_test_pairs, polarity_inverted, mean_unsteered, alphas: {α: {mean_steered, mean_shift, abs_mean_shift, std_shift, pass_threshold}}}`. Includes `vector_normalisation: "unit"` flag at top level. Cached `_unsteered_vals` for resume-correctness.
+- [results/alpha_sweep_l17_summary.json](../results/alpha_sweep_l17_summary.json) — combined LLM-judge × logprob view, includes per-trait `norm_at_layer17` and the `vector_normalisation: "unit"` flag.
 - 5 figures under [analysis/figures/](../analysis/figures/): `fig_unit_l17_dose_response_judge.{pdf,png}`, `fig_unit_l17_dose_response_logprob.{pdf,png}`, `fig_unit_l17_pareto.{pdf,png}`, `fig_unit_l17_judge_vs_logprob_a4.{pdf,png}`, `fig_unit_vs_raw_l17.{pdf,png}`.
 
 ### E10.8 — Open follow-ups (supersedes the post-E9.8 list)
 
 1. **Composition pilot at L=17, unit-normalised vectors, α_unit=4 (locked).** First pairs from E9.6/E9.8 still apply: `formality + impolite` (strong antipodal, cos ≈ −0.50 at L=16), `apathetic + power_seeking` (near-orthogonal, cos ≈ +0.03). Coefficient grid `(c_i, c_j) ∈ {(1,0), (0,1), (1,1), (1,−1)}` × α_unit=4. Save Q(i, j) ratios against the E8 cosine matrix.
-2. **15×15 cosine matrix at L=17 on unit vectors.** Already unit-normalised by construction (cosine is a unit-vector op); this is just re-running [src/gram_matrix.py](../src/gram_matrix.py) on the L=17 slice rather than the legacy L=16 slice. Carried over from E9.8 #6.
+2. **15×15 cosine matrix at L=17 on unit vectors.** Already unit-normalised by construction (cosine is a unit-vector op); this is just re-running [src/geometry/gram_matrix.py](../src/geometry/gram_matrix.py) on the L=17 slice rather than the legacy L=16 slice. Carried over from E9.8 #6.
 3. **`apathetic ↔ impolite` redundancy check** at L=17 (carried over from E8.6 / E9.8 #7). Cosine at L=16 was +0.72; verify at L=17 before deciding whether to drop one for composition.
 4. **`humorous` MWE inspection** (carried over from E9.8 #2). Logprob sign-flip now confirmed at L=17 raw and L=17 unit-norm. The MWE pairs are very likely the artefact source.
 5. **Per-trait α refinement after composition pilot.** If the pilot's single-trait controls (1, 0) and (0, 1) come back too weak for `confidence` or `formality`, run a second pass of per-trait α calibration with a finer grid around their individual optima (the α-sweep here suggests `confidence` peaks on logprob at α≥8, `formality` likewise — both still climbing at α=8).
@@ -1407,12 +1407,12 @@ Reading:
 
 ### E10.9 — Geometry EDA at L=17 (parallel notebook to Phase 8 at L=16)
 
-Phase 8's geometry notebook ([analysis/steer_anal.ipynb](../analysis/steer_anal.ipynb), now renamed [analysis/steer_eval_l16.ipynb](../analysis/steer_eval_l16.ipynb)) loaded `response_avg_diff[16]`. With L=17 locked as the operating layer (E9) and α_unit=4 locked as the composition coefficient (E10.4), the geometry pipeline needs to be reproduced at L=17 so the cosine matrix that feeds the proposal's Q(i, j) prediction is defined at the same layer the steering happens.
+Phase 8's geometry notebook ([legacy/notebooks/steer_anal.ipynb](../legacy/notebooks/steer_anal.ipynb), now renamed [analysis/notebooks/steer_eval_l16.ipynb](../analysis/notebooks/steer_eval_l16.ipynb)) loaded `response_avg_diff[16]`. With L=17 locked as the operating layer (E9) and α_unit=4 locked as the composition coefficient (E10.4), the geometry pipeline needs to be reproduced at L=17 so the cosine matrix that feeds the proposal's Q(i, j) prediction is defined at the same layer the steering happens.
 
 **File renames + new notebook:**
-- `analysis/steer_anal.ipynb` → [analysis/steer_eval_l16.ipynb](../analysis/steer_eval_l16.ipynb) (renamed via `git mv`; L=16 outputs preserved as historical record).
-- New: [analysis/steer_eval_l17.ipynb](../analysis/steer_eval_l17.ipynb) — identical pipeline (load → unit-norm → gram → make_pairs_df → stratify_pairs → run_eda → cross-tab) with `LAYER = 17` and a separate figure save path.
-- [src/eda.py:229,261](../src/eda.py#L229) — `run_eda` now takes a `layer: int = 16` kwarg; suptitle interpolated rather than hardcoded. Default keeps L=16 notebook output bit-identical; the L=17 notebook passes `layer=17`.
+- `legacy/notebooks/steer_anal.ipynb` → [analysis/notebooks/steer_eval_l16.ipynb](../analysis/notebooks/steer_eval_l16.ipynb) (renamed via `git mv`; L=16 outputs preserved as historical record).
+- New: [analysis/notebooks/steer_eval_l17.ipynb](../analysis/notebooks/steer_eval_l17.ipynb) — identical pipeline (load → unit-norm → gram → make_pairs_df → stratify_pairs → run_eda → cross-tab) with `LAYER = 17` and a separate figure save path.
+- [src/geometry/eda.py:229,261](../src/geometry/eda.py#L229) — `run_eda` now takes a `layer: int = 16` kwarg; suptitle interpolated rather than hardcoded. Default keeps L=16 notebook output bit-identical; the L=17 notebook passes `layer=17`.
 
 **Raw L=17 vector norms** (response_avg_diff[17]) — read straight off cell 1 stdout:
 
@@ -1483,12 +1483,12 @@ Compare against E8.4's L=16 numbers: 5 / 5 / 5 within-antisocial across near / m
 
 #### Figure — Geometry of the 9 validated steering vectors at L=17
 
-![L=17 geometry, 9 traits](../analysis/figures/fig5_geometry_9traits_l17.png)
+![L=17 geometry, 9 traits](../analysis/figures/geometry/fig5_geometry_9traits_l17.png)
 
-Four-panel figure (saved to [analysis/figures/fig5_geometry_9traits_l17.png](../analysis/figures/fig5_geometry_9traits_l17.png)). Title now reads *"Geometry of 9 validated steering vectors  (Llama-3.1-8B-Instruct, layer 17, response-avg diff)"* — interpolated from `run_eda(layer=17)`.
+Four-panel figure (saved to [analysis/figures/geometry/fig5_geometry_9traits_l17.png](../analysis/figures/geometry/fig5_geometry_9traits_l17.png)). Title now reads *"Geometry of 9 validated steering vectors  (Llama-3.1-8B-Instruct, layer 17, response-avg diff)"* — interpolated from `run_eda(layer=17)`.
 
 - **Panel (a) — signed cosine distribution:** density histogram + Gaussian KDE. Mode around +0.15, mean (red line) at +0.161 — virtually identical to L=16. The negative outlier extends slightly further to −0.52 (was −0.50 at L=16) — `formality ↔ humorous` deepens its antipodal alignment by 0.026 at L=17. Composition pair `formality + impolite` (E10.8 #1) sits at the same antipodal regime.
-- **Panel (b) — \|cosine\| distribution:** density of magnitudes with stratum boundaries from `src/pair_strat.py`. The right tail is fatter than L=16 — 9 pairs cross the |cos|=0.35 line (was 7 at L=16). Within-antisocial cluster pairs dominate this tail.
+- **Panel (b) — \|cosine\| distribution:** density of magnitudes with stratum boundaries from `src/geometry/pair_strat.py`. The right tail is fatter than L=16 — 9 pairs cross the |cos|=0.35 line (was 7 at L=16). Within-antisocial cluster pairs dominate this tail.
 - **Panel (c) — pairs per stratum:** 17 / 10 / 9. The moderate band thins, the high band widens. The "more dispersed" character of the L=17 geometry is concentrated in the antisocial cluster.
 - **Panel (d) — annotated cosine heatmap, cluster-grouped:** rows/cols reordered as `apathetic, evil, humorous, impolite, power_seeking, sycophantic` (antisocial cluster) followed by `confidence, formality, hallucinating`; black `axhline+axvline` marks the partition. Visible structure (qualitative match to L=16):
     - **`apathetic` row** is overwhelmingly orthogonal — 7 of 8 cells have |cos| < 0.2 (one more than at L=16). The "cleanest direction" property strengthens.
@@ -1507,13 +1507,13 @@ The L=17 geometry **does not change the qualitative story** from Phase 8 — sam
 
 #### Files involved
 
-- [analysis/steer_eval_l16.ipynb](../analysis/steer_eval_l16.ipynb) — renamed (was `steer_anal.ipynb`). Outputs preserved.
-- [analysis/steer_eval_l17.ipynb](../analysis/steer_eval_l17.ipynb) — new notebook, identical pipeline at L=17.
-- [src/eda.py](../src/eda.py) — `run_eda` now accepts `layer: int = 16`; suptitle interpolated.
+- [analysis/notebooks/steer_eval_l16.ipynb](../analysis/notebooks/steer_eval_l16.ipynb) — renamed (was `steer_anal.ipynb`). Outputs preserved.
+- [analysis/notebooks/steer_eval_l17.ipynb](../analysis/notebooks/steer_eval_l17.ipynb) — new notebook, identical pipeline at L=17.
+- [src/geometry/eda.py](../src/geometry/eda.py) — `run_eda` now accepts `layer: int = 16`; suptitle interpolated.
 
 #### Output files
 
-- [analysis/figures/fig5_geometry_9traits_l17.png](../analysis/figures/fig5_geometry_9traits_l17.png) — 4-panel L=17 geometry figure.
+- [analysis/figures/geometry/fig5_geometry_9traits_l17.png](../analysis/figures/geometry/fig5_geometry_9traits_l17.png) — 4-panel L=17 geometry figure.
 
 ---
 
@@ -1525,7 +1525,7 @@ Phase 1 of the RQ2 mechanism roadmap (`compose-or-collide`, 2026-05-05). Builds 
 
 Block "Helpers for RQ2" added below the existing `compose_steering_vector` / `apply_steering_batched` pair. All operate on cached residual-stream activations; smoke tests run on synthetic data with no model load.
 
-- **`load_unit_vector(trait, layer=17)`** — slice `{trait}_response_avg_diff.pt[17]` from `results/anthropic_repl/persona_vectors/Llama-3.1-8B-Instruct/`, divide by `‖v‖`. Matches E10.3/E10.4 protocol. Per-layer slicing also covers Phase 4 dual-projection robustness (P0.2 in roadmap) — the on-disk stack is the full `[33, 4096]` from E7.6 / E10.
+- **`load_unit_vector(trait, layer=17)`** — slice `{trait}_response_avg_diff.pt[17]` from `results/persona_vectors/Llama-3.1-8B-Instruct/`, divide by `‖v‖`. Matches E10.3/E10.4 protocol. Per-layer slicing also covers Phase 4 dual-projection robustness (P0.2 in roadmap) — the on-disk stack is the full `[33, 4096]` from E7.6 / E10.
 
 - **`project_activation(h, v)`** — eq (1): `π = ⟨h, v⟩ / ‖v‖`. Explicit denominator (not assuming unit `v`) per roadmap §2 robustness note.
 
@@ -1543,7 +1543,7 @@ Block "Helpers for RQ2" added below the existing `compose_steering_vector` / `ap
 
 ### E11.2 — Pilot driver
 
-Driver: [scripts/anthropic_repl/run_trajectory_pilot_l17.py](../scripts/anthropic_repl/run_trajectory_pilot_l17.py). SLURM wrapper: [bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh](../bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh). No argparse, no classes — functions only, idempotent per (pair, setting): cached `completions.jsonl` are reused.
+Driver: [scripts/trajectory/run_trajectory_pilot_l17.py](../scripts/trajectory/run_trajectory_pilot_l17.py). SLURM wrapper: [slurm/trajectory_pilot_l17.sh](../slurm/trajectory_pilot_l17.sh). No argparse, no classes — functions only, idempotent per (pair, setting): cached `completions.jsonl` are reused.
 
 **Pre-registered configuration** (constants at top of file):
 
@@ -1567,7 +1567,7 @@ Driver: [scripts/anthropic_repl/run_trajectory_pilot_l17.py](../scripts/anthropi
 
 Job ran on the cluster, total wall ≈ 1h on 1 GPU + 256G. No judge or logprob calls — generation + teacher-forced trajectory cache only. Three pairs × three settings × 30 generations ≈ 270 generation calls + 270 trajectory passes.
 
-**Headline numbers** (from [pilot_summary.json](../results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json)):
+**Headline numbers** (from [pilot_summary.json](../results/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json)):
 
 | pair | cos@L17 | regime | Δ_i mean ± std | Δ_j mean ± std |
 |---|---:|---|---:|---:|
@@ -1579,7 +1579,7 @@ Job ran on the cluster, total wall ≈ 1h on 1 GPU + 256G. No judge or logprob c
 
 ### E11.4 — Pilot trajectory plots
 
-Per-pair π_i / π_j overlays were written by the pilot driver itself; the analysis driver ([scripts/anthropic_repl/analyze_trajectory_pilot_l17.py](../scripts/anthropic_repl/analyze_trajectory_pilot_l17.py)) adds cross-pair overlays plus the eq (2) integrand panel. All figures in [analysis/figures/trajectory_pilot/](../analysis/figures/trajectory_pilot/).
+Per-pair π_i / π_j overlays were written by the pilot driver itself; the analysis driver ([scripts/trajectory/analyze_trajectory_pilot_l17.py](../scripts/trajectory/analyze_trajectory_pilot_l17.py)) adds cross-pair overlays plus the eq (2) integrand panel. All figures in [analysis/figures/trajectory_pilot/](../analysis/figures/trajectory_pilot/).
 
 ##### fig_traj_pilot_overlay_pi_i — π_i across pairs, individual (1,0) vs joint (1,1)
 
@@ -1625,7 +1625,7 @@ Pilot driver also saves a two-panel figure per pair: π_i under (1,0) & (1,1) on
 
 The pilot's first-pass τ used `calibrate_tau(factor=1.5)` (max layer-to-layer step in raw individual-steering projection). Result: τ = 9.87 — every L_div saturated at L_final = 32, no information. Diagnosis: raw-projection layer-to-layer steps scale with `‖h(L)‖`, which grows monotonically through the network (E10.2). The eq (2) integrand we threshold against is a **mean-over-prompts** quantity at a much smaller scale; the right calibration is a **noise floor on that quantity under the additive null**, not the per-step noise of the underlying trajectories.
 
-Three replacement recipes implemented in [scripts/anthropic_repl/recalibrate_tau_pilot_l17.py](../scripts/anthropic_repl/recalibrate_tau_pilot_l17.py) and applied post-hoc to the same `projections.pt` (no re-run of the pilot — projections already on disk):
+Three replacement recipes implemented in [scripts/trajectory/recalibrate_tau_pilot_l17.py](../scripts/trajectory/recalibrate_tau_pilot_l17.py) and applied post-hoc to the same `projections.pt` (no re-run of the pilot — projections already on disk):
 
 | recipe | definition | τ |
 |---|---|---:|
@@ -1684,16 +1684,16 @@ Not a pipeline bug — it is **completion-divergence noise**. Two consequences:
 ### E11.7 — Files involved
 
 - [src/joint_analysis/joint_injection.py](../src/joint_analysis/joint_injection.py) — Phase 1 primitives + `_smoke_tests`.
-- [scripts/anthropic_repl/run_trajectory_pilot_l17.py](../scripts/anthropic_repl/run_trajectory_pilot_l17.py) — pilot driver.
-- [bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh](../bash_scripts/slurm_anthropic_repl_trajectory_pilot_l17.sh) — SLURM wrapper, 1 GPU / 256G / 4h.
-- [scripts/anthropic_repl/analyze_trajectory_pilot_l17.py](../scripts/anthropic_repl/analyze_trajectory_pilot_l17.py) — local-runnable analysis (no model load); reads `pilot_summary.json` + `projections.pt`, prints Δ table + L=17 sanity check + verdict, writes overlay plots. Prefers recalibrated τ from `tau_recalibration.json` when present.
-- [scripts/anthropic_repl/recalibrate_tau_pilot_l17.py](../scripts/anthropic_repl/recalibrate_tau_pilot_l17.py) — local-runnable τ recalibration; three recipes side-by-side, JSON dump + comparison plot.
-- [.gitignore](../.gitignore) — added `!results/anthropic_repl/trajectory_pilot_l17/**/projections.pt` carve-out so projection tensors track in git (mirrors the persona-vector exception on line 36).
+- [scripts/trajectory/run_trajectory_pilot_l17.py](../scripts/trajectory/run_trajectory_pilot_l17.py) — pilot driver.
+- [slurm/trajectory_pilot_l17.sh](../slurm/trajectory_pilot_l17.sh) — SLURM wrapper, 1 GPU / 256G / 4h.
+- [scripts/trajectory/analyze_trajectory_pilot_l17.py](../scripts/trajectory/analyze_trajectory_pilot_l17.py) — local-runnable analysis (no model load); reads `pilot_summary.json` + `projections.pt`, prints Δ table + L=17 sanity check + verdict, writes overlay plots. Prefers recalibrated τ from `tau_recalibration.json` when present.
+- [scripts/trajectory/recalibrate_tau_pilot_l17.py](../scripts/trajectory/recalibrate_tau_pilot_l17.py) — local-runnable τ recalibration; three recipes side-by-side, JSON dump + comparison plot.
+- [.gitignore](../.gitignore) — added `!results/trajectory_pilot_l17/**/projections.pt` carve-out so projection tensors track in git (mirrors the persona-vector exception on line 36).
 
 ### E11.8 — Output files
 
-- [results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json](../results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json) — full config, per-pair Δ_i / Δ_j (mean, std, per-sample), per-prompt-completion L_div lists (under the **original** τ; superseded by `tau_recalibration.json`).
-- [results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/tau_recalibration.json](../results/anthropic_repl/trajectory_pilot_l17/Llama-3.1-8B-Instruct/tau_recalibration.json) — three recipes' τ values, per-seed details, recomputed L_div tables. R2 is the pre-registered choice.
+- [results/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json](../results/trajectory_pilot_l17/Llama-3.1-8B-Instruct/pilot_summary.json) — full config, per-pair Δ_i / Δ_j (mean, std, per-sample), per-prompt-completion L_div lists (under the **original** τ; superseded by `tau_recalibration.json`).
+- [results/trajectory_pilot_l17/Llama-3.1-8B-Instruct/tau_recalibration.json](../results/trajectory_pilot_l17/Llama-3.1-8B-Instruct/tau_recalibration.json) — three recipes' τ values, per-seed details, recomputed L_div tables. R2 is the pre-registered choice.
 - 3 × `setting_*/completions.jsonl` per pair (idempotency cache + writeup quotes).
 - `projections.pt` per pair (~33 KB) — per-prompt projection tensors at every L for both directions.
 - 7 PNGs in [analysis/figures/trajectory_pilot/](../analysis/figures/trajectory_pilot/): three per-pair driver outputs, cross-pair π_i / π_j overlays, eq (2) integrand panel, τ-recipe comparison.

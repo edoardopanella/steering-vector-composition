@@ -6,9 +6,9 @@ filter, extracts hidden states, computes mean-difference per layer, and saves th
 three vector stacks (prompt_avg_diff, response_avg_diff, prompt_last_diff).
 
 Run (defaults to evil for backward compat):
-    python -m scripts.anthropic_repl.run_build_vector
-    python -m scripts.anthropic_repl.run_build_vector --trait sycophantic
-    python -m scripts.anthropic_repl.run_build_vector --trait hallucinating
+    python -m scripts.extraction.run_build_vector
+    python -m scripts.extraction.run_build_vector --trait sycophantic
+    python -m scripts.extraction.run_build_vector --trait hallucinating
 
 Pre-flight checks: both pos+neg CSVs exist for the requested trait.
 """
@@ -21,7 +21,7 @@ from pathlib import Path
 import torch
 from dotenv import load_dotenv
 
-from src.anthropic_repl.build_vector import build_persona_vectors
+from src.extraction.build_vector import build_persona_vectors
 
 load_dotenv()
 
@@ -29,8 +29,8 @@ load_dotenv()
 MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 THRESHOLD = 50
 
-EXTRACT_DIR = Path("results/anthropic_repl/eval_persona_extract") / MODEL_NAME.split("/")[-1]
-SAVE_DIR = Path("results/anthropic_repl/persona_vectors") / MODEL_NAME.split("/")[-1]
+EXTRACT_DIR = Path("results/eval_persona_extract") / MODEL_NAME.split("/")[-1]
+SAVE_DIR = Path("results/persona_vectors") / MODEL_NAME.split("/")[-1]
 # --------------
 
 
