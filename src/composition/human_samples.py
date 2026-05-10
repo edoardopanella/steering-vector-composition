@@ -11,8 +11,8 @@ import torch
 import random
 
 from src.inference.hf_model import load_hf_model
-from src.joint_analysis.joint_injection import apply_steering_batched, compose_steering_vector
-from src.joint_analysis.joint_behaviors import behavior_pairs
+from src.composition.joint_injection import apply_steering_batched, compose_steering_vector
+from src.composition.joint_behaviors import behavior_pairs
 
 
 def sample_completions(

@@ -1,14 +1,14 @@
 """
-Loader for Anthropic persona-vectors trait artifacts.
+Loader for compositions trait artifacts.
 
 Each trait JSON has the schema:
     {
-        "instruction": [{"pos": str, "neg": str}, ...],   # 5 system-prompt pairs
+        "instruction": [{"pos": str, "neg": str}, ...],    # 5 system-prompt pairs
         "questions":   [str, ...],                         # 20 trait-eliciting questions
         "eval_prompt": str                                 # judge rubric template
     }
 
-Files live under anthropic_code/data_generation/trait_data_{extract,eval}/{trait}.json
+Files live under data/composition_eval/{trait_a}__{trait_b}.json
 in the upstream repo we vendored. We read them directly — no copy.
 """
 
@@ -20,30 +20,30 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-TRAIT_DATA_DIR = REPO_ROOT / "external" / "anthropic_code" / "data_generation"
+TRAIT_DATA_DIR = REPO_ROOT / "data" / "composition_eval"
 
 
 @dataclass
 class TraitArtifact:
-    trait: str
+    trait_a: str
+    trait_b: str
     instructions: list[dict]   # list of {"pos": str, "neg": str}
     questions: list[str]
     eval_prompt: str
 
 
-def load_trait(trait: str, version: str = "extract") -> TraitArtifact:
-    """version: "extract" (vector-building set) or "eval" (held-out evaluation set)."""
-    if version not in {"extract", "eval"}:
-        raise ValueError(f"version must be 'extract' or 'eval', got {version!r}")
-    path = TRAIT_DATA_DIR / f"trait_data_{version}" / f"{trait}.json"
+def load_trait(trait_a: str, trait_b: str) -> TraitArtifact:
+    """Load a trait artifact by its name."""
+    path = TRAIT_DATA_DIR / f"{trait_a}__{trait_b}.json"
     if not path.exists():
         raise FileNotFoundError(
             f"Trait artifact not found at {path}. "
-            f"Available traits: {sorted(p.stem for p in (TRAIT_DATA_DIR / f'trait_data_{version}').glob('*.json'))}"
+            f"Available traits: {sorted(p.stem for p in TRAIT_DATA_DIR.glob('*.json'))}"
         )
     data = json.loads(path.read_text())
     return TraitArtifact(
-        trait=trait,
+        trait_a=trait_a,
+        trait_b=trait_b,
         instructions=data["instruction"],
         questions=data["questions"],
         eval_prompt=data["eval_prompt"],

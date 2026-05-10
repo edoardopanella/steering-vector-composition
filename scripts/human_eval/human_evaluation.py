@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.datasets import EVAL_PROMPTS
-from src.joint_analysis.human_samples import sample_completions
+from src.composition.human_samples import sample_completions
 
 MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 DEVICE = "cuda"
