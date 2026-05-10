@@ -20,16 +20,34 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
+def _resolve_local_snapshot(model_name: str) -> str:
+    """Resolve `model_name` to a local cached snapshot path, falling back to
+    the bare HF identifier if no cache exists.
+
+    Why: transformers >= 4.46 calls `model_info(model_id)` inside the tokenizer
+    loader (`_patch_mistral_regex`) to detect base-Mistral checkpoints. That
+    metadata call has no cache fallback, so on a networkless compute node it
+    hard-fails (errno 101). Passing a local path triggers the `_is_local`
+    short-circuit, which skips the metadata lookup entirely.
+    """
+    try:
+        from huggingface_hub import snapshot_download
+        return snapshot_download(repo_id=model_name, local_files_only=True)
+    except Exception:
+        return model_name  # not cached locally — let from_pretrained handle it
+
+
 def load_hf_model(
     model_name: str = "meta-llama/Llama-3.1-8B-Instruct",
     dtype: torch.dtype = torch.bfloat16,
     device_map: str = "auto",
 ):
+    src = _resolve_local_snapshot(model_name)
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, torch_dtype=dtype, device_map=device_map
+        src, torch_dtype=dtype, device_map=device_map
     )
     model.eval()
-    tok = AutoTokenizer.from_pretrained(model_name)
+    tok = AutoTokenizer.from_pretrained(src)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
         tok.pad_token_id = tok.eos_token_id

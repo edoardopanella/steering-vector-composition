@@ -25,6 +25,13 @@ set -a; source .env; set +a
 
 mkdir -p /home/3242106/logs
 
+# Compute nodes have no outbound network. Force HF Hub offline so:
+#  (1) from_pretrained skips HEAD revalidation and uses cached files,
+#  (2) transformers' _patch_mistral_regex skips model_info() metadata call
+#      (which has no cache fallback and would otherwise hard-fail).
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+
 echo "Starting composition-scoring-l17 + Phase 2 trajectory capture — $(date)"
 export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
 python -u -m scripts.compositions.composition_scoring
