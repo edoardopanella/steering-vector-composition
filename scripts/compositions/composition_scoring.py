@@ -174,17 +174,32 @@ def _judge_run_composition(
     questions: list[str],
     answers: list[str],
     max_concurrent: int,
+    progress_tag: str = "",
 ) -> tuple[list, list, list]:
-    """Three judges (trait_a, trait_b, coherence), each scored 0-100."""
+    """Three judges (trait_a, trait_b, coherence), each scored 0-100. The
+    `progress_tag` (e.g. ``"apathetic+confidence baseline"``) prefixes the
+    `[judge] ... done/total` lines that _judge_all emits to the main SLURM
+    stdout (visible via `tail -f /home/.../composition_scoring_<jobid>.out`)
+    so progress is observable without opening per-pair logs.
+    """
     judge_a = OpenAiJudge(judge_model, eval_prompt_a, eval_type="0_100")
     judge_b = OpenAiJudge(judge_model, eval_prompt_b, eval_type="0_100")
     judge_coh = OpenAiJudge(judge_model, COHERENCE_PROMPT, eval_type="0_100")
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        scores_a = loop.run_until_complete(_judge_all(judge_a, questions, answers, max_concurrent))
-        scores_b = loop.run_until_complete(_judge_all(judge_b, questions, answers, max_concurrent))
-        scores_coh = loop.run_until_complete(_judge_all(judge_coh, questions, answers, max_concurrent))
+        scores_a = loop.run_until_complete(_judge_all(
+            judge_a, questions, answers, max_concurrent,
+            progress_label=f"{progress_tag} trait_a", progress_every=25,
+        ))
+        scores_b = loop.run_until_complete(_judge_all(
+            judge_b, questions, answers, max_concurrent,
+            progress_label=f"{progress_tag} trait_b", progress_every=25,
+        ))
+        scores_coh = loop.run_until_complete(_judge_all(
+            judge_coh, questions, answers, max_concurrent,
+            progress_label=f"{progress_tag} coherence", progress_every=25,
+        ))
     finally:
         loop.close()
     return scores_a, scores_b, scores_coh
@@ -216,7 +231,7 @@ def _run_baseline_composition(
         return _summarise_df(pd.read_csv(out_csv))
 
     convs, questions_flat = _build_eval_conversations(artifact["questions"], N_PER_QUESTION)
-    with log_path.open("w") as fh:
+    with log_path.open("w", buffering=1) as fh:
         with redirect_stdout(fh), redirect_stderr(fh):
             print(f"pair={trait_a}+{trait_b}  baseline  questions={len(questions_flat)}")
             _, answers = generate_batch(
@@ -228,6 +243,7 @@ def _run_baseline_composition(
                 JUDGE_MODEL,
                 artifact["eval_prompt_a"], artifact["eval_prompt_b"],
                 questions_flat, answers, MAX_CONCURRENT_JUDGES,
+                progress_tag=f"{trait_a}+{trait_b} baseline",
             )
             df = pd.DataFrame({
                 "question": questions_flat,
@@ -256,7 +272,7 @@ def _run_joint_steered_composition(
 
     v_joint = v_a_unit + v_b_unit
     convs, questions_flat = _build_eval_conversations(artifact["questions"], N_PER_QUESTION)
-    with log_path.open("w") as fh:
+    with log_path.open("w", buffering=1) as fh:
         with redirect_stdout(fh), redirect_stderr(fh):
             print(
                 f"pair={trait_a}+{trait_b}  joint α={alpha}  "
@@ -271,6 +287,7 @@ def _run_joint_steered_composition(
                 JUDGE_MODEL,
                 artifact["eval_prompt_a"], artifact["eval_prompt_b"],
                 questions_flat, answers, MAX_CONCURRENT_JUDGES,
+                progress_tag=f"{trait_a}+{trait_b} joint α={alpha}",
             )
             df = pd.DataFrame({
                 "question": questions_flat,
@@ -318,7 +335,7 @@ def _run_single_steered_composition(
         alpha=alpha, normalize=False,
     )
     convs, questions_flat = _build_eval_conversations(artifact["questions"], N_PER_QUESTION)
-    with log_path.open("w") as fh:
+    with log_path.open("w", buffering=1) as fh:
         with redirect_stdout(fh), redirect_stderr(fh):
             print(
                 f"pair={trait_a}+{trait_b}  single ({w_a},{w_b}) α={alpha}  "
@@ -333,6 +350,7 @@ def _run_single_steered_composition(
                 JUDGE_MODEL,
                 artifact["eval_prompt_a"], artifact["eval_prompt_b"],
                 questions_flat, answers, MAX_CONCURRENT_JUDGES,
+                progress_tag=f"{trait_a}+{trait_b} single_{which} α={alpha}",
             )
             df = pd.DataFrame({
                 "question": questions_flat,

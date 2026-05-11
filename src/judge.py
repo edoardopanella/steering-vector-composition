@@ -1,8 +1,16 @@
 import math
+import httpx
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+# Tight timeouts: SDK default is 600s per request which masks silent network
+# drops on cluster compute nodes (stateful firewalls drop idle TLS handshakes
+# without RST). Short timeouts let _judge_with_retry actually fire its backoff
+# instead of hanging on a dead socket for 10 minutes.
+_JUDGE_TIMEOUT = httpx.Timeout(connect=5.0, read=30.0, write=30.0, pool=5.0)
 
 
 class OpenAiJudge:
@@ -10,7 +18,7 @@ class OpenAiJudge:
     one completion token with logprobs. Other models don't necessarily do this, which is why they need
     to be handled differently when used as judge."""
     def __init__(self, model: str, prompt_template: str, eval_type: str = "0_100"):
-        self.client = AsyncOpenAI()
+        self.client = AsyncOpenAI(timeout=_JUDGE_TIMEOUT, max_retries=0)
         self.model = model
         assert eval_type in ["0_100", "0_10", "binary", "binary_text"], "eval_type must be either 0_100 or binary"
         self.eval_type = eval_type

@@ -211,18 +211,45 @@ async def _judge_all(
     questions: list[str],
     answers: list[str],
     max_concurrent: int = 50,
+    *,
+    progress_label: str | None = None,
+    progress_every: int = 25,
 ) -> list[float | None]:
+    """Score all (question, answer) pairs concurrently.
+
+    progress_label: when set, emit `[judge] <label>  done/total` lines every
+        `progress_every` completions AND on the final one. The print goes to
+        `sys.__stdout__` (the original process stdout) so it stays visible in
+        the main SLURM out log even if the caller wraps this in a
+        `redirect_stdout(per_pair_log_fh)` block.
+    """
+    import sys
     sem = asyncio.Semaphore(max_concurrent)
+    total = len(questions)
+    counter = {"done": 0, "failed": 0}
+
+    def _emit_progress(extra: str = ""):
+        if progress_label is None:
+            return
+        print(
+            f"[judge] {progress_label}  {counter['done']}/{total}"
+            f"  fails={counter['failed']}{extra}",
+            file=sys.__stdout__,
+            flush=True,
+        )
 
     async def _one(q, a):
         async with sem:
             try:
-                return await _judge_with_retry(judge, question=q, answer=a)
+                r = await _judge_with_retry(judge, question=q, answer=a)
             except Exception as e:
-                # After max retries, return None so a single bad item doesn't
-                # kill the whole batch. Caller already tolerates None scores.
                 print(f"[judge giving up] {type(e).__name__}: {e}")
-                return None
+                counter["failed"] += 1
+                r = None
+            counter["done"] += 1
+            if counter["done"] % progress_every == 0 or counter["done"] == total:
+                _emit_progress()
+            return r
 
     results = await asyncio.gather(*[_one(q, a) for q, a in zip(questions, answers)])
     return list(results)
