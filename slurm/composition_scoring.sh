@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=composition-scoring-l17
+#SBATCH --job-name=composition-scoring-l17-generate
 #SBATCH --output=/home/3242106/logs/composition_scoring_%j.out
 #SBATCH --error=/home/3242106/logs/composition_scoring_%j.err
-#SBATCH --time=23:59:00         # 36 pairs × (baseline + 2 singles + joint) gens + judges + 36 × ~9600 teacher-force traces; cushion for judge rate-limit retries
+#SBATCH --time=23:59:00         # 36 pairs × (baseline + 2 singles + joint) gens + 36 × ~9600 teacher-force traces. Judging happens off-cluster (no internet on compute).
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -32,7 +32,16 @@ mkdir -p /home/3242106/logs
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
-echo "Starting composition-scoring-l17 + Phase 2 trajectory capture — $(date)"
+# Compute nodes also can't reach api.openai.com — run generate stage only
+# (HF model + trajectory parquets). Judge stage is a follow-up on the login
+# node:  COMPOSITION_MODE=judge python -m scripts.compositions.composition_scoring
+export COMPOSITION_MODE=generate
+
+echo "Starting composition-scoring-l17 generate stage + Phase 2 trajectory capture — $(date)"
 export PYTHONPATH=/home/3242106/steering-vector-composition-cloned
 python -u -m scripts.compositions.composition_scoring
-echo "composition-scoring-l17 done — $(date)"
+echo "composition-scoring-l17 generate stage done — $(date)"
+echo "Next step: on the login node, run"
+echo "  cd /home/3242106/steering-vector-composition-cloned"
+echo "  set -a; source .env; set +a"
+echo "  COMPOSITION_MODE=judge python -m scripts.compositions.composition_scoring"

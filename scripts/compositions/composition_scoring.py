@@ -13,13 +13,21 @@ For each of the 36 unordered pairs over the 9 validated traits:
     4. Save per-pair CSVs (baseline + steered) + aggregate JSON. Idempotent.
 
 Run:
+    # All stages in one process (needs GPU + internet):
     python -m scripts.compositions.composition_scoring
+
+    # Split for HPC where compute nodes have no outbound network:
+    #   stage 1 (compute / GPU, no internet): generate completions + trajectory parquets
+    COMPOSITION_MODE=generate python -m scripts.compositions.composition_scoring
+    #   stage 2 (login / no GPU, internet):   judge CSVs + aggregate + τ + summary JSON
+    COMPOSITION_MODE=judge    python -m scripts.compositions.composition_scoring
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import os
 from contextlib import redirect_stderr, redirect_stdout
 from itertools import combinations
 from pathlib import Path
@@ -221,84 +229,154 @@ def _summarise_df(df: pd.DataFrame) -> dict:
 
 # === Stage runners =========================================================
 
+def _csv_has_scores(p: Path) -> bool:
+    """True if CSV exists and at least one row has a non-NaN trait_a score."""
+    if not p.exists():
+        return False
+    df = pd.read_csv(p)
+    return "trait_a" in df.columns and df["trait_a"].notna().any()
+
+
+def _csv_status(p: Path) -> str:
+    """Compact "N rows, M scored" string for per-pair stdout lines."""
+    if not p.exists():
+        return "no CSV"
+    df = pd.read_csv(p)
+    n = len(df)
+    scored = int(df["trait_a"].notna().sum()) if "trait_a" in df.columns else 0
+    return f"{n} rows, {scored} scored"
+
+
+def _generate_completions_csv(
+    out_csv: Path,
+    model, tok,
+    artifact: dict,
+    steering,
+    log_path: Path,
+    header: str,
+) -> None:
+    """Write CSV with answers and NaN score columns. Idempotent on existence —
+    a CSV with empty score columns (left by a prior failed judge stage) is left
+    untouched so the judge stage can fill it in place."""
+    if out_csv.exists():
+        return
+    convs, questions_flat = _build_eval_conversations(artifact["questions"], N_PER_QUESTION)
+    with log_path.open("w", buffering=1) as fh, redirect_stdout(fh), redirect_stderr(fh):
+        print(header)
+        _, answers = generate_batch(
+            model, tok, convs,
+            max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE, batch_size=BATCH_SIZE,
+            steering=steering,
+        )
+    df = pd.DataFrame({
+        "question": questions_flat,
+        "answer": answers,
+        "trait_a": pd.array([pd.NA] * len(answers), dtype="Float64"),
+        "trait_b": pd.array([pd.NA] * len(answers), dtype="Float64"),
+        "coherence": pd.array([pd.NA] * len(answers), dtype="Float64"),
+        "composition": pd.array([pd.NA] * len(answers), dtype="Float64"),
+    })
+    df.to_csv(out_csv, index=False)
+
+
+def _judge_csv_inplace(
+    out_csv: Path,
+    eval_prompt_a: str,
+    eval_prompt_b: str,
+    progress_tag: str,
+    log_path: Path,
+) -> None:
+    """Fill rows in `out_csv` whose `trait_a` is NaN by running the three
+    judges, then write back. Idempotent — short-circuits once every row is
+    scored. Logs append to `log_path` so per-pair logs accumulate the judge
+    pass alongside the prior generate pass.
+    """
+    if not out_csv.exists():
+        return
+    df = pd.read_csv(out_csv)
+    if "trait_a" not in df.columns:
+        return
+    mask = df["trait_a"].isna()
+    if not mask.any():
+        return
+    questions = df.loc[mask, "question"].astype(str).tolist()
+    answers = df.loc[mask, "answer"].astype(str).fillna("").tolist()
+    with log_path.open("a", buffering=1) as fh, redirect_stdout(fh), redirect_stderr(fh):
+        print(f"[judge stage] {progress_tag}  rows_to_judge={len(questions)}")
+        scores_a, scores_b, scores_coh = _judge_run_composition(
+            JUDGE_MODEL,
+            eval_prompt_a, eval_prompt_b,
+            questions, answers, MAX_CONCURRENT_JUDGES,
+            progress_tag=progress_tag,
+        )
+    df.loc[mask, "trait_a"] = scores_a
+    df.loc[mask, "trait_b"] = scores_b
+    df.loc[mask, "coherence"] = scores_coh
+    df["composition"] = df[["trait_a", "trait_b"]].mean(axis=1)
+    df.to_csv(out_csv, index=False)
+
+
 def _run_baseline_composition(
     trait_a: str, trait_b: str, artifact: dict, model, tok, log_path: Path,
-) -> dict:
-    """Generate + judge unsteered baseline for a pair. Idempotent."""
+    mode: str,
+) -> dict | None:
+    """Generate (mode in {generate, full}) + judge (mode in {judge, full})
+    unsteered baseline for a pair. Returns summary dict if scored, else None.
+    """
     SCORES_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     out_csv = _baseline_csv_path(trait_a, trait_b)
-    if out_csv.exists():
+    n_q = N_PER_QUESTION * len(artifact["questions"])
+    if mode in ("generate", "full"):
+        _generate_completions_csv(
+            out_csv, model, tok, artifact,
+            steering=None, log_path=log_path,
+            header=f"pair={trait_a}+{trait_b}  baseline  questions={n_q}",
+        )
+    if mode in ("judge", "full"):
+        _judge_csv_inplace(
+            out_csv,
+            artifact["eval_prompt_a"], artifact["eval_prompt_b"],
+            progress_tag=f"{trait_a}+{trait_b} baseline",
+            log_path=log_path,
+        )
+    if _csv_has_scores(out_csv):
         return _summarise_df(pd.read_csv(out_csv))
-
-    convs, questions_flat = _build_eval_conversations(artifact["questions"], N_PER_QUESTION)
-    with log_path.open("w", buffering=1) as fh:
-        with redirect_stdout(fh), redirect_stderr(fh):
-            print(f"pair={trait_a}+{trait_b}  baseline  questions={len(questions_flat)}")
-            _, answers = generate_batch(
-                model, tok, convs,
-                max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE, batch_size=BATCH_SIZE,
-                steering=None,
-            )
-            scores_a, scores_b, scores_coh = _judge_run_composition(
-                JUDGE_MODEL,
-                artifact["eval_prompt_a"], artifact["eval_prompt_b"],
-                questions_flat, answers, MAX_CONCURRENT_JUDGES,
-                progress_tag=f"{trait_a}+{trait_b} baseline",
-            )
-            df = pd.DataFrame({
-                "question": questions_flat,
-                "answer": answers,
-                "trait_a": scores_a,
-                "trait_b": scores_b,
-                "coherence": scores_coh,
-            })
-            df["composition"] = df[["trait_a", "trait_b"]].mean(axis=1)
-            df.to_csv(out_csv, index=False)
-    return _summarise_df(pd.read_csv(out_csv))
+    return None
 
 
 def _run_joint_steered_composition(
     trait_a: str, trait_b: str, artifact: dict, alpha: float,
     model, tok, v_a_unit: torch.Tensor, v_b_unit: torch.Tensor, log_path: Path,
-) -> dict:
-    """Generate + judge joint-steered eval for a pair. Idempotent.
+    mode: str,
+) -> dict | None:
+    """Generate + judge joint-steered eval for a pair. Mode-gated.
 
     Injection direction = (v_a_unit + v_b_unit); scalar coefficient = alpha.
     """
     SCORES_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     out_csv = _steered_csv_path(trait_a, trait_b, alpha)
-    if out_csv.exists():
-        return _summarise_df(pd.read_csv(out_csv))
-
-    v_joint = v_a_unit + v_b_unit
-    convs, questions_flat = _build_eval_conversations(artifact["questions"], N_PER_QUESTION)
-    with log_path.open("w", buffering=1) as fh:
-        with redirect_stdout(fh), redirect_stderr(fh):
-            print(
+    n_q = N_PER_QUESTION * len(artifact["questions"])
+    if mode in ("generate", "full"):
+        v_joint = v_a_unit + v_b_unit
+        _generate_completions_csv(
+            out_csv, model, tok, artifact,
+            steering=(v_joint, HOOK_LAYER_IDX, alpha, "response"),
+            log_path=log_path,
+            header=(
                 f"pair={trait_a}+{trait_b}  joint α={alpha}  "
-                f"layer={HIDDEN_LAYER} (hook block {HOOK_LAYER_IDX})  questions={len(questions_flat)}"
-            )
-            _, answers = generate_batch(
-                model, tok, convs,
-                max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE, batch_size=BATCH_SIZE,
-                steering=(v_joint, HOOK_LAYER_IDX, alpha, "response"),
-            )
-            scores_a, scores_b, scores_coh = _judge_run_composition(
-                JUDGE_MODEL,
-                artifact["eval_prompt_a"], artifact["eval_prompt_b"],
-                questions_flat, answers, MAX_CONCURRENT_JUDGES,
-                progress_tag=f"{trait_a}+{trait_b} joint α={alpha}",
-            )
-            df = pd.DataFrame({
-                "question": questions_flat,
-                "answer": answers,
-                "trait_a": scores_a,
-                "trait_b": scores_b,
-                "coherence": scores_coh,
-            })
-            df["composition"] = df[["trait_a", "trait_b"]].mean(axis=1)
-            df.to_csv(out_csv, index=False)
-    return _summarise_df(pd.read_csv(out_csv))
+                f"layer={HIDDEN_LAYER} (hook block {HOOK_LAYER_IDX})  questions={n_q}"
+            ),
+        )
+    if mode in ("judge", "full"):
+        _judge_csv_inplace(
+            out_csv,
+            artifact["eval_prompt_a"], artifact["eval_prompt_b"],
+            progress_tag=f"{trait_a}+{trait_b} joint α={alpha}",
+            log_path=log_path,
+        )
+    if _csv_has_scores(out_csv):
+        return _summarise_df(pd.read_csv(out_csv))
+    return None
 
 
 # === Phase 2: trajectory dataset ===========================================
@@ -316,9 +394,10 @@ def _trajectory_pair_parquet(trait_a: str, trait_b: str) -> Path:
 def _run_single_steered_composition(
     trait_a: str, trait_b: str, w_a: int, w_b: int, artifact: dict, alpha: float,
     model, tok, v_a_unit: torch.Tensor, v_b_unit: torch.Tensor, log_path: Path,
-) -> dict:
+    mode: str,
+) -> dict | None:
     """Generate + judge a single-vector setting (1,0) or (0,1) on the pair's
-    composition_eval questions. Idempotent. Same δ math as the joint runner —
+    composition_eval questions. Mode-gated. Same δ math as the joint runner —
     one weight set to 0 — so the steering hook applies α·v on the active trait
     only. Judge stage scores trait_a, trait_b, coherence on every completion so
     Δ_a from setting (1,0) and Δ_b from setting (0,1) feed the regime
@@ -327,41 +406,31 @@ def _run_single_steered_composition(
     SCORES_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     which = "a" if (w_a, w_b) == (1, 0) else "b"
     out_csv = _single_csv_path(trait_a, trait_b, which, alpha)
-    if out_csv.exists():
-        return _summarise_df(pd.read_csv(out_csv))
-
-    delta = compose_steering_vector(
-        [(v_a_unit, float(w_a)), (v_b_unit, float(w_b))],
-        alpha=alpha, normalize=False,
-    )
-    convs, questions_flat = _build_eval_conversations(artifact["questions"], N_PER_QUESTION)
-    with log_path.open("w", buffering=1) as fh:
-        with redirect_stdout(fh), redirect_stderr(fh):
-            print(
+    n_q = N_PER_QUESTION * len(artifact["questions"])
+    if mode in ("generate", "full"):
+        delta = compose_steering_vector(
+            [(v_a_unit, float(w_a)), (v_b_unit, float(w_b))],
+            alpha=alpha, normalize=False,
+        )
+        _generate_completions_csv(
+            out_csv, model, tok, artifact,
+            steering=(delta, HOOK_LAYER_IDX, 1.0, "response"),
+            log_path=log_path,
+            header=(
                 f"pair={trait_a}+{trait_b}  single ({w_a},{w_b}) α={alpha}  "
-                f"layer={HIDDEN_LAYER}  questions={len(questions_flat)}"
-            )
-            _, answers = generate_batch(
-                model, tok, convs,
-                max_new_tokens=MAX_NEW_TOKENS, temperature=TEMPERATURE, batch_size=BATCH_SIZE,
-                steering=(delta, HOOK_LAYER_IDX, 1.0, "response"),
-            )
-            scores_a, scores_b, scores_coh = _judge_run_composition(
-                JUDGE_MODEL,
-                artifact["eval_prompt_a"], artifact["eval_prompt_b"],
-                questions_flat, answers, MAX_CONCURRENT_JUDGES,
-                progress_tag=f"{trait_a}+{trait_b} single_{which} α={alpha}",
-            )
-            df = pd.DataFrame({
-                "question": questions_flat,
-                "answer": answers,
-                "trait_a": scores_a,
-                "trait_b": scores_b,
-                "coherence": scores_coh,
-            })
-            df["composition"] = df[["trait_a", "trait_b"]].mean(axis=1)
-            df.to_csv(out_csv, index=False)
-    return _summarise_df(pd.read_csv(out_csv))
+                f"layer={HIDDEN_LAYER}  questions={n_q}"
+            ),
+        )
+    if mode in ("judge", "full"):
+        _judge_csv_inplace(
+            out_csv,
+            artifact["eval_prompt_a"], artifact["eval_prompt_b"],
+            progress_tag=f"{trait_a}+{trait_b} single_{which} α={alpha}",
+            log_path=log_path,
+        )
+    if _csv_has_scores(out_csv):
+        return _summarise_df(pd.read_csv(out_csv))
+    return None
 
 
 def _classify_regime(
@@ -593,21 +662,44 @@ def _l17_sanity_check(
 # === Orchestration =========================================================
 
 def main() -> None:
+    mode = os.environ.get("COMPOSITION_MODE", "full").lower()
+    if mode not in {"generate", "judge", "full"}:
+        raise SystemExit(
+            f"COMPOSITION_MODE must be one of generate|judge|full, got {mode!r}"
+        )
+    print(f"COMPOSITION_MODE={mode}")
+
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     SCORES_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     SUMMARY_OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     TRAJECTORY_OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"Loading {MODEL_NAME} ...")
-    model, tok = load_hf_model(MODEL_NAME)
-    print(f"Model loaded: hidden={model.config.hidden_size}  n_layers={model.config.num_hidden_layers}\n")
-
-    # Trajectory layers: L >= L* up to the final block output (matches E11
-    # pilot's `range(LAYER_STAR, n_layers + 1)`).
-    n_layers = model.config.num_hidden_layers
-    trajectory_layers = list(range(HIDDEN_LAYER, n_layers + 1))
-    print(f"Trajectory layers: L ∈ [{trajectory_layers[0]}, {trajectory_layers[-1]}] "
-          f"({len(trajectory_layers)} layers)")
+    model = tok = None
+    if mode != "judge":
+        print(f"Loading {MODEL_NAME} ...")
+        model, tok = load_hf_model(MODEL_NAME)
+        print(
+            f"Model loaded: hidden={model.config.hidden_size}  "
+            f"n_layers={model.config.num_hidden_layers}\n"
+        )
+        n_layers = model.config.num_hidden_layers
+        trajectory_layers = list(range(HIDDEN_LAYER, n_layers + 1))
+    else:
+        # judge mode: derive trajectory layers from any existing per-pair parquet
+        # so the summary JSON stays accurate without loading the model.
+        trajectory_layers = []
+        for cand in TRAJECTORY_OUT_DIR.glob("*.parquet"):
+            try:
+                trajectory_layers = sorted(int(L) for L in pd.read_parquet(cand)["layer"].unique())
+                break
+            except Exception:
+                continue
+        print("Judge mode: skipping HF model load.")
+    if trajectory_layers:
+        print(
+            f"Trajectory layers: L ∈ [{trajectory_layers[0]}, {trajectory_layers[-1]}] "
+            f"({len(trajectory_layers)} layers)"
+        )
 
     unit_vectors: dict[str, torch.Tensor] = {}        # for δ build (alpha-sweep polarity)
     unit_vectors_raw: dict[str, torch.Tensor] = {}    # for projection axis (no flip, pilot convention)
@@ -621,7 +713,32 @@ def main() -> None:
             print(f"  WARNING: {e}")
 
     pairs = _composition_pairs()
-    print(f"\nEvaluating {len(pairs)} composition pairs at α={COMPOSITION_ALPHA}\n")
+    print(f"\nEvaluating {len(pairs)} composition pairs at α={COMPOSITION_ALPHA}")
+    print("=" * 72)
+    if mode == "generate":
+        print(
+            "GENERATE STAGE — for each of 36 pairs, produce 4 CSVs of LLM completions\n"
+            "  (baseline, single_a, single_b, joint) + 1 trajectory parquet.\n"
+            f"  CSVs written under   {SCORES_OUTPUT_DIR}\n"
+            f"  parquets written to  {TRAJECTORY_OUT_DIR}\n"
+            f"  per-pair logs at     {LOGS_DIR}/composition_<a>__<b>_*.log\n"
+            "  CSV score columns left as NaN — judge stage runs off-cluster.\n"
+            "  Tail progress:  tail -F logs/composition_<pair>_*.log"
+        )
+    elif mode == "judge":
+        print(
+            "JUDGE STAGE — for each of 36 pairs, read 4 CSVs from disk and fill\n"
+            "  NaN score columns by calling OpenAI judge (trait_a, trait_b, coherence).\n"
+            f"  CSVs read+written under  {SCORES_OUTPUT_DIR}\n"
+            f"  per-pair logs at         {LOGS_DIR}/composition_<a>__<b>_*.log\n"
+            "  [judge] done/total progress lines emitted to this stdout every 25 rows."
+        )
+    else:
+        print(
+            "FULL STAGE — generate completions then judge them in one process.\n"
+            "  Needs both GPU and outbound internet."
+        )
+    print("=" * 72 + "\n")
 
     summary_pairs: list[dict] = []
     pairs_meta: list[dict] = []           # one row per pair_id for parquet join
@@ -647,42 +764,66 @@ def main() -> None:
         # Cosine reported on RAW directions to match E11.4 / Figure 20 convention.
         cos_ab = float((v_a_raw @ v_b_raw).item())
 
-        # --- Baseline (0,0) ---
+        # --- Per-setting CSVs (mode-gated generate + judge stages) ---
         base_log = LOGS_DIR / f"composition_{a}__{b}_baseline.log"
-        print("  baseline … ", end="", flush=True)
-        base = _run_baseline_composition(a, b, artifact, model, tok, base_log)
-        print(
-            f"trait_a={base['trait_a_mean']:.2f}  trait_b={base['trait_b_mean']:.2f}  "
-            f"comp={base['composition_mean']:.2f}  coh={base['coherence_mean']:.2f}"
-        )
+        base_csv = _baseline_csv_path(a, b)
+        print(f"  baseline                  -> {base_csv.name}")
+        base = _run_baseline_composition(a, b, artifact, model, tok, base_log, mode)
+        print(f"    {_csv_status(base_csv)}    log={base_log.name}")
 
-        # --- Single (1,0) ---
         single_a_log = LOGS_DIR / f"composition_{a}__{b}_single_a_alpha{COMPOSITION_ALPHA}.log"
-        print(f"  single_a (1,0) α={COMPOSITION_ALPHA} … ", end="", flush=True)
+        single_a_csv = _single_csv_path(a, b, "a", COMPOSITION_ALPHA)
+        print(f"  single_a (1,0) α={COMPOSITION_ALPHA}    -> {single_a_csv.name}")
         single_a = _run_single_steered_composition(
-            a, b, 1, 0, artifact, COMPOSITION_ALPHA, model, tok, v_a, v_b, single_a_log,
+            a, b, 1, 0, artifact, COMPOSITION_ALPHA, model, tok, v_a, v_b, single_a_log, mode,
         )
-        print(
-            f"trait_a={single_a['trait_a_mean']:.2f}  trait_b={single_a['trait_b_mean']:.2f}  "
-            f"coh={single_a['coherence_mean']:.2f}"
-        )
+        print(f"    {_csv_status(single_a_csv)}    log={single_a_log.name}")
 
-        # --- Single (0,1) ---
         single_b_log = LOGS_DIR / f"composition_{a}__{b}_single_b_alpha{COMPOSITION_ALPHA}.log"
-        print(f"  single_b (0,1) α={COMPOSITION_ALPHA} … ", end="", flush=True)
+        single_b_csv = _single_csv_path(a, b, "b", COMPOSITION_ALPHA)
+        print(f"  single_b (0,1) α={COMPOSITION_ALPHA}    -> {single_b_csv.name}")
         single_b = _run_single_steered_composition(
-            a, b, 0, 1, artifact, COMPOSITION_ALPHA, model, tok, v_a, v_b, single_b_log,
+            a, b, 0, 1, artifact, COMPOSITION_ALPHA, model, tok, v_a, v_b, single_b_log, mode,
         )
-        print(
-            f"trait_a={single_b['trait_a_mean']:.2f}  trait_b={single_b['trait_b_mean']:.2f}  "
-            f"coh={single_b['coherence_mean']:.2f}"
-        )
+        print(f"    {_csv_status(single_b_csv)}    log={single_b_log.name}")
 
-        # --- Joint (1,1) ---
         steer_log = LOGS_DIR / f"composition_{a}__{b}_alpha{COMPOSITION_ALPHA}.log"
-        print(f"  joint   (1,1) α={COMPOSITION_ALPHA} … ", end="", flush=True)
+        steer_csv = _steered_csv_path(a, b, COMPOSITION_ALPHA)
+        print(f"  joint    (1,1) α={COMPOSITION_ALPHA}    -> {steer_csv.name}")
         steered = _run_joint_steered_composition(
-            a, b, artifact, COMPOSITION_ALPHA, model, tok, v_a, v_b, steer_log,
+            a, b, artifact, COMPOSITION_ALPHA, model, tok, v_a, v_b, steer_log, mode,
+        )
+        print(f"    {_csv_status(steer_csv)}    log={steer_log.name}")
+
+        # --- Phase 2 trajectory capture (needs model; skip in judge mode) ---
+        traj_path = _trajectory_pair_parquet(a, b)
+        df_traj: pd.DataFrame | None = None
+        if mode != "judge":
+            print(f"  trajectory capture … ", end="", flush=True)
+            df_traj = _capture_trajectories_for_pair(
+                pair_id, a, b, model, tok,
+                v_a, v_b,            # steering δ (alpha-sweep polarity)
+                v_a_raw, v_b_raw,    # projection axis (raw direction)
+                trajectory_layers, COMPOSITION_ALPHA,
+            )
+            print(f"{len(df_traj)} rows -> {traj_path}")
+        elif traj_path.exists():
+            df_traj = pd.read_parquet(traj_path)
+            print(f"  trajectory parquet loaded: {len(df_traj)} rows <- {traj_path}")
+        else:
+            print(f"  trajectory parquet missing: run generate mode first ({traj_path})")
+
+        # --- Regime + sanity + summary entry (only when all four scored) ---
+        all_scored = all(x is not None for x in (base, single_a, single_b, steered))
+        if not all_scored:
+            summary_pairs.append({
+                "trait_a": a, "trait_b": b, "status": "GENERATED_NOT_JUDGED",
+            })
+            continue
+
+        print(
+            f"  base trait_a={base['trait_a_mean']:.2f}  trait_b={base['trait_b_mean']:.2f}  "
+            f"comp={base['composition_mean']:.2f}  coh={base['coherence_mean']:.2f}"
         )
         delta_a_joint = steered["trait_a_mean"] - base["trait_a_mean"]
         delta_b_joint = steered["trait_b_mean"] - base["trait_b_mean"]
@@ -691,13 +832,12 @@ def main() -> None:
         delta_comp = steered["composition_mean"] - base["composition_mean"]
         delta_coh = steered["coherence_mean"] - base["coherence_mean"]
         print(
-            f"trait_a={steered['trait_a_mean']:.2f} (Δ{delta_a_joint:+.2f})  "
+            f"  joint trait_a={steered['trait_a_mean']:.2f} (Δ{delta_a_joint:+.2f})  "
             f"trait_b={steered['trait_b_mean']:.2f} (Δ{delta_b_joint:+.2f})  "
             f"comp={steered['composition_mean']:.2f} (Δ{delta_comp:+.2f})  "
             f"coh={steered['coherence_mean']:.2f} (Δ{delta_coh:+.2f})"
         )
 
-        # --- Regime classification ---
         regime = _classify_regime(delta_a_joint, delta_b_joint, delta_a_single, delta_b_single)
         print(
             f"  regime={regime}  "
@@ -705,26 +845,16 @@ def main() -> None:
             f"ratio_b={delta_b_joint / delta_b_single if abs(delta_b_single) > 1e-3 else float('nan'):+.2f}"
         )
 
-        # --- Phase 2 trajectory capture ---
-        print(f"  trajectory capture … ", end="", flush=True)
-        df_traj = _capture_trajectories_for_pair(
-            pair_id, a, b, model, tok,
-            v_a, v_b,            # steering δ (alpha-sweep polarity)
-            v_a_raw, v_b_raw,    # projection axis (raw direction)
-            trajectory_layers, COMPOSITION_ALPHA,
-        )
-        print(f"{len(df_traj)} rows -> {_trajectory_pair_parquet(a, b)}")
+        sanity: dict | None = None
+        if df_traj is not None:
+            sanity = _l17_sanity_check(df_traj, a, b, COMPOSITION_ALPHA, cos_ab)
+            print(
+                f"  L={sanity['layer']} sanity: cos={cos_ab:+.3f}  "
+                f"pred α·cos={sanity['pred_a_cos']:+.3f}  "
+                f"obs Δπ_a={sanity['obs_pi_a_diff']:+.3f}  "
+                f"obs Δπ_b={sanity['obs_pi_b_diff']:+.3f}"
+            )
 
-        # --- L=L* sanity check ---
-        sanity = _l17_sanity_check(df_traj, a, b, COMPOSITION_ALPHA, cos_ab)
-        print(
-            f"  L={sanity['layer']} sanity: cos={cos_ab:+.3f}  "
-            f"pred α·cos={sanity['pred_a_cos']:+.3f}  "
-            f"obs Δπ_a={sanity['obs_pi_a_diff']:+.3f}  "
-            f"obs Δπ_b={sanity['obs_pi_b_diff']:+.3f}"
-        )
-
-        # --- Pair metadata for the aggregate parquet ---
         cluster_status = pair_cluster_status(a, b)
         pairs_meta.append({
             "pair_id": pair_id,
@@ -735,9 +865,10 @@ def main() -> None:
             "regime": regime,
             "both_antisocial": cluster_status == "within_antisocial",
         })
-        trajectory_frames.append(df_traj)
+        if df_traj is not None:
+            trajectory_frames.append(df_traj)
 
-        summary_pairs.append({
+        summary_entry: dict = {
             "trait_a": a,
             "trait_b": b,
             "status": "ok",
@@ -756,9 +887,12 @@ def main() -> None:
                 "composition": round(delta_comp, 2),
                 "coherence": round(delta_coh, 2),
             },
-            "l17_sanity": {k: (round(v, 4) if isinstance(v, float) else v)
-                           for k, v in sanity.items()},
-        })
+        }
+        if sanity is not None:
+            summary_entry["l17_sanity"] = {
+                k: (round(v, 4) if isinstance(v, float) else v) for k, v in sanity.items()
+            }
+        summary_pairs.append(summary_entry)
 
         # Checkpoint after each pair.
         with open(SUMMARY_OUT_PATH, "w") as f:
@@ -780,8 +914,27 @@ def main() -> None:
             }, f, indent=2)
 
     # ---------------------------------------------------------------------------
-    # Aggregate trajectory parquet (Phase 2 long-form table)
+    # End-of-stage tally — count CSVs / parquets actually on disk.
     # ---------------------------------------------------------------------------
+    n_csvs = len(list(SCORES_OUTPUT_DIR.glob("*.csv")))
+    n_scored_csvs = sum(1 for p in SCORES_OUTPUT_DIR.glob("*.csv") if _csv_has_scores(p))
+    n_parquets = len(list(TRAJECTORY_OUT_DIR.glob("*.parquet")))
+    print()
+    print("=" * 72)
+    print(f"STAGE TALLY ({mode})")
+    print(f"  CSVs on disk          : {n_csvs}  (expected 36 pairs × 4 = 144)")
+    print(f"  CSVs with judge scores: {n_scored_csvs}")
+    print(f"  Per-pair parquets     : {n_parquets}  (expected 36)")
+    print("=" * 72)
+
+    if mode == "generate":
+        print(
+            "\nGenerate mode done. Run `COMPOSITION_MODE=judge python -m "
+            "scripts.compositions.composition_scoring` from a host with internet "
+            "to score CSVs and build aggregate parquet + τ."
+        )
+        return
+
     tau_summary: dict | None = None
     if trajectory_frames:
         agg = pd.concat(trajectory_frames, ignore_index=True)
@@ -795,8 +948,9 @@ def main() -> None:
         )
 
         # τ R2 calibration over the aggregated dataset.
+        layers_for_tau = trajectory_layers or sorted(int(L) for L in agg["layer"].unique())
         print(f"Calibrating τ via {TAU_RECIPE} ...")
-        tau_summary = _calibrate_tau_r2(agg, trajectory_layers, COMPOSITION_ALPHA)
+        tau_summary = _calibrate_tau_r2(agg, layers_for_tau, COMPOSITION_ALPHA)
         TAU_OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         TAU_OUT_PATH.write_text(json.dumps(tau_summary, indent=2))
         print(
