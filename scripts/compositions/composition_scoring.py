@@ -309,9 +309,14 @@ def _judge_csv_inplace(
             questions, answers, MAX_CONCURRENT_JUDGES,
             progress_tag=progress_tag,
         )
-    df.loc[mask, "trait_a"] = scores_a
-    df.loc[mask, "trait_b"] = scores_b
-    df.loc[mask, "coherence"] = scores_coh
+    # Judge returns None for rows where logprobs spread on non-numeric tokens
+    # (refusal / aggregation below 0.25 threshold). Pandas float64 columns
+    # reject None on .loc assignment in pandas >= 2.2 — coerce to NaN first.
+    def _to_nan(xs):
+        return [float("nan") if x is None else float(x) for x in xs]
+    df.loc[mask, "trait_a"] = _to_nan(scores_a)
+    df.loc[mask, "trait_b"] = _to_nan(scores_b)
+    df.loc[mask, "coherence"] = _to_nan(scores_coh)
     df["composition"] = df[["trait_a", "trait_b"]].mean(axis=1)
     df.to_csv(out_csv, index=False)
 
