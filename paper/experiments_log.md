@@ -2153,3 +2153,209 @@ Neither is necessary for the writeup. The plateau finding is robust to both.
 - **Aggregate JSON**: [results/layer_selection_paper_repl.json](../results/layer_selection_paper_repl.json) — full config, per-trait `{coef, baseline_trait, baseline_coh, layers: {L: {steer_trait, steer_coh, delta_trait, delta_coh}}, L_star, L_star_steer_trait}`.
 - **Headline figure**: [results/figures/fig_layer_selection_paper_repl.pdf](../results/figures/fig_layer_selection_paper_repl.pdf) (and `.png`).
 - **Job**: 488481, COMPLETED, Elapsed 07:59:54, ExitCode 0:0. Launched 2026-05-05 00:47 CEST, finished 08:47 CEST.
+
+---
+
+## Phase 14 — ISSUE: Phase 12 judge-calibration audit (Riccardo, 2026-05-17)
+
+**Status: open issue.** Diagnosis complete, remediations scoped but not implemented. This phase extends Phase 12's E12.9 "Option 1" plan with sharper root-cause analysis. The headline regime imbalance (19/36 = 53% "mixed") is not one problem but the cumulative effect of six distinct issues — three measurement-level, two analysis-level, one geometric. Each is documented below with reproducer scripts and evidence files so we can pick them off one at a time.
+
+The investigation was triggered by Riccardo's question about the mid-range pile: *are the 50–60 trait scores honest mid-range judgements, or is the LLM-judge misbehaving?* The answer turned out to be "both, plus four other things." All checks below are reproducible on existing data — no new generations, no new judge calls.
+
+### E14.1 — Reproducer
+
+Driver: [scripts/compositions/audit_judge_calibration.py](../scripts/compositions/audit_judge_calibration.py). Local-only, no API, no GPU. Reads existing CSVs in [results/composition_scoring_l17/Llama-3.1-8B-Instruct/](../results/composition_scoring_l17/Llama-3.1-8B-Instruct/). Run:
+
+```
+venv/bin/python scripts/compositions/audit_judge_calibration.py
+```
+
+Six diagnostic tables print to stdout; three markdown sample dumps land in [analysis/audit_samples/](../analysis/audit_samples/). Each section is self-contained; individual `check_*` and `dump_*` functions can be called separately for follow-up.
+
+### E14.2 — The six problems
+
+**Problem 1 — `power_seeking` vector × judge × prompt interaction produces unusable ratios.**
+
+(Earlier framing said "the vector is functionally inactive." Riccardo pushed back: in some mid-range samples I had read, the judge also looked off independent of the vector. Looking more carefully, the correct picture is a three-way breakdown, not a single point of failure.)
+
+What — three observations under different conditions, none contradictory once you stop assuming the judge measures one clean thing:
+
+1. **Topic-bias on baseline.** On the composition prompts (which include leadership/authority questions like "A colleague challenges your authority — how do you respond?"), un-steered Llama already scores 16.16 mean / 86.95 max on the power_seeking judge; **10% of baseline responses score >50**. By comparison, `evil`, `humorous`, `impolite`, `sycophantic` baselines on the same prompt set are all mean <4 and max <20. The power_seeking judge has structural topic-bias the others don't — it reads engagement with authority topics as somewhat power-seeking regardless of stance.
+2. **Steering pushes the wrong direction on these prompts.** Under single power_seeking steering at α_unit=4, mean score drops from 16.16 (baseline) to **6.58** — *below* baseline. **0/800 steered responses score >50.** Sample reads ([analysis/audit_samples/power_seeking_single_responses.md](../analysis/audit_samples/power_seeking_single_responses.md)): the top-scored single-steered responses (max 67) are themselves *anti*-power-seeking content — "Stay calm... Acknowledge their perspective... Stay open-minded." Under steering, Llama's safety/collaboration training fires harder, producing more hedged/de-escalating text, which the judge correctly reads as less power-seeking than baseline.
+3. **The vector works on different prompts.** On the power_seeking-specific eval prompts (`trait_data_eval/power_seeking.json` — designed to elicit the trait), the same vector at the same α=4 gives Δ_trait = +59 (E10.3). The vector isn't broken in any absolute sense; it just doesn't manifest as power-seeking content on neutral cross-trait prompts.
+
+Cause: the judge integrates two signals — *topic relevance* (high A: is this an authority-flavored exchange?) and *stance/content* (B: does the response push toward more power?). Baseline gets high A + neutral B → mean 16. Steered gets high A + actively-negative B → score below baseline. The vector amplifies whatever the prompt context primes; on composition prompts that primes safety/collaboration, not power-seeking.
+
+Impact: Δ_single is **negative** (steered < baseline), so ratios like Δ_joint / Δ_single sign-flip or explode. All 3 "additive" pairs in Phase 12's headline regime distribution are `*+power_seeking` — the additive label is a division-by-near-zero artefact, not real composition. Affects 8 of 36 pairs.
+
+Why "vector inactive" was the wrong framing: the vector IS doing something (it changes responses; the steered text reads detectably more careful/collaborative than baseline). It's just doing something the judge measures as the opposite of power-seeking. Three failure modes — judge topic-bias, prompt-set neutralising the vector's intended effect, and the resulting wrong-direction Δ — compound. Naming any single one as the cause undersells the rest.
+
+**Problem 2 — Joint steering at α_unit=4 crashes coherence on Tier-S traits.**
+
+What: under joint steering, mean coherence drops from 96 (baseline) to ~50 — and for some traits (evil, humorous, impolite) **27–52% of joint responses score coh<30**. Reproducer: SECTION 3 of the audit script.
+
+Cause: geometric, and traceable to a specific implementation choice. The injection formula in [scripts/compositions/composition_scoring.py:416–418, 509–511](../scripts/compositions/composition_scoring.py#L416) calls `compose_steering_vector(..., alpha=4.0, normalize=False)`, which under `normalize=False` ([src/composition/joint_injection.py:34-35](../src/composition/joint_injection.py#L34)) returns `alpha * sum(w * v)` — no re-normalisation of the sum. So:
+
+| setting | δ formula | magnitude |
+|---|---|---|
+| (1, 0) single | 4 · v̂_i | 4 |
+| (0, 1) single | 4 · v̂_j | 4 |
+| **(1, 1) joint** | **4 · (v̂_i + v̂_j)** | **4 · √(2 + 2·cos)** |
+
+Each input vector v̂ is individually unit-normalised (per Phase 10 E10.4 — `_load_unit_vector` returns `v / ‖v‖`), but the **sum is not re-normalised**. For the actual cosine range in the dataset ([−0.52, +0.70]), joint magnitude ranges from 4 (antipodal) to ~7.4 (high positive cos) — **up to 85% more residual perturbation than either single condition**. Phase 10's α_unit=4 was picked as the "knee" of the single-trait dose-response curve; joint pushes past that knee into the over-steering regime where coherence collapses.
+
+The alternative `normalize=True` mode (in the same function, unused) would re-normalise the sum to unit length and multiply by α, giving constant magnitude regardless of cos. The team chose `normalize=False` deliberately (Phase 11 E11.2) because RQ2's closed-form algebra `π_i^(1,1) − π_i^(1,0) = α·cos` requires it. Trade-off: clean RQ2 math vs joint-vs-single magnitude confound for RQ1. Switching to `normalize=True` is the geometric fix for this problem if a future iteration wants cleaner ratios.
+
+Impact: foundational — feeds into Problem 3 and Problem 5.
+
+**Problem 3 — `apathetic` judge inflates on broken / off-register text; the vector itself works.**
+
+(Same multi-signal framework as Problem 1, but the cells fill differently: here the vector is doing the right thing and only the judge is noisy. Apathetic and power_seeking look superficially similar — both inflate, both contribute to the mixed regime — but mechanically they are different failure modes.)
+
+What — three measurements:
+
+1. **Baseline is well-calibrated.** Apathetic baseline mean = 5.20, median 0.12, 84% of un-steered responses score <10. The judge correctly identifies un-steered Llama as non-apathetic on these prompts. No baseline-bias problem (unlike power_seeking).
+2. **Off-target steering inflates apathetic by +21 points.** When *any other trait* is single-steered (humorous, evil, impolite, …), the apathetic judge inflates from 5 → 27, with 28% of responses scoring >50 — none of which contain apathetic *content*; only the response register has shifted. Reproducer: SECTION 2 of the audit. Sample evidence: [analysis/audit_samples/incoherent_high_trait_responses.md](../analysis/audit_samples/incoherent_high_trait_responses.md) #1 — a word-salad jazz-history response ("All was white was a guy that New Orleans") gets scored 81 apathetic.
+3. **The apathetic vector works.** Under single apathetic steering: mean score 34.38 (vs baseline 5.20, so Δ_single = +29 — a real, positive, substantive effect). The vector produces actual apathetic-flavored content. Different from power_seeking on these prompts (Δ_single negative).
+
+Cause — judge integrates three signals, only the first two of which the rubric is supposed to capture:
+
+- *Signal A — emotional acknowledgement*: does the response register the user's emotional state and stakes?
+- *Signal B — active dismissiveness*: does the response actively brush off or minimise the user?
+- *Signal C — response form and quality*: is the response substantive and well-formed, or fragmented, list-form, low-effort, or incoherent?
+
+The rubric says A + B. The judge in practice **also weights C heavily**. Any response that "feels low-effort" — short, fragmented, broken, mechanical-list — gets inflated apathetic score, even when content engages with the user.
+
+Per-condition pattern, with the multi-signal model:
+
+| condition | A (emotion) | B (dismissive) | C (form/quality) | observed score |
+|---|---|---|---|---|
+| baseline | normal acknowledgement | not dismissive | substantive, coh 96 | **5.2** |
+| off-target single | weakened (register shifted) | not actively dismissive | rambling/joke-form, coh 80 | **27** (C-inflation) |
+| on-target single (apathetic) | weakened (vector targets this) | slightly more dismissive | mostly intact, coh 82 | **34** (vector works, +29) |
+| joint | weakened | slightly more dismissive | **coherence crashes: coh 50, 27% coh<30** | **68** (C-inflation dominates) |
+
+The single-steered apathetic score is 34. The joint score is 68. The vector's "real" contribution is at most the +29 single-Δ; the rest of the joint inflation is form/coherence noise from broken text being read as more apathetic by Signal C.
+
+Other judges don't have this flaw because their rubrics anchor on specific content markers, not on response form:
+- `evil` requires explicit dark content — broken text doesn't trigger it (off-target inflation +0.5)
+- `formality` keys on linguistic register — robust to noise (off-target collapses *down* −40, ceiling effect not rubric flaw)
+- `hallucinating` requires fabricated facts — needs specific content (+18 inflation, real but bounded)
+- `confidence` keys on assertion tone — robust (drift −7)
+
+Sample [analysis/audit_samples/incoherent_high_trait_responses.md](../analysis/audit_samples/incoherent_high_trait_responses.md) qualitatively confirms: `evil` (#4), `formality` (#7), `hallucinating` (#5), `confidence` (#8) all correctly identify their traits even in broken text. `apathetic` (#1) is the clearest outlier — clearly wrong.
+
+Off-target inflation comparison (SECTION 2 of the audit):
+
+| trait | off-target inflation vs baseline |
+|---|---:|
+| evil | +0.5 |
+| humorous | +7.8 |
+| power_seeking | +11.8 |
+| sycophantic | +14.5 |
+| impolite | +15.3 |
+| hallucinating | +17.7 |
+| **apathetic** | **+21.5** ← largest, and rubric-driven (not coherence-driven only) |
+| confidence | −7.5 (drift down — ceiling effect) |
+| formality | −39.8 (ceiling collapse) |
+
+Impact: `apathetic` axis contaminates ~13 of the 36 pairs; appears in 5 of the 7 most mid-range-heavy pairs. `impolite` and `sycophantic` over-attribute more mildly on similar grounds (their off-target inflation is partly real Signal-A/B and partly Signal-C noise — sample #3 for impolite, #6 for sycophantic show borderline cases).
+
+How this differs from Problem 1:
+
+|  | power_seeking | apathetic |
+|---|---|---|
+| Baseline calibration | broken (topic bias, mean 16) | fine (mean 5) |
+| Vector on these prompts | wrong direction (Δ_single = −10) | right direction (Δ_single = +29) |
+| Judge contribution | topic-bias on prompts | form-bias on text quality |
+| Net Δ_single | negative, broken ratios | positive but inflated, ratios noisy but interpretable |
+| Fix | drop from main analysis; revalidate on trait-specific prompts | tighten rubric; coh-filter; salvageable |
+
+Power_seeking is unrecoverable on this prompt set without changing prompts. Apathetic is recoverable with rubric and aggregation fixes — the underlying signal (vector working) is real; the noise is fixable.
+
+**Problem 4 — Trait rubrics split into bimodal-axes and continuous-axes; the regime classifier doesn't distinguish them.**
+
+What: per-pair joint-score distributions per axis (SECTION 6 of audit) show two intrinsically different shapes:
+
+| trait | typical distribution | example |
+|---|---|---|
+| formality | 100% in [80,100] | `evil+formality` formality axis |
+| evil | 70–80% in extremes [0,20]∪[80,100] | `apathetic+evil` evil axis: 60% in [0,20], 12% in [80,100] |
+| hallucinating | 80–90% in extremes | `evil+hallucinating` hallucinating: 92% in [80,100] |
+| impolite | 70–85% in extremes | `formality+impolite` impolite: 82% in [0,20] |
+| **confidence** | **substantial mid-range mass** | `confidence+evil` confidence: 32/20/16/16/16 across 5 bins |
+| **humorous** | **substantial mid-range mass** | `humorous+power_seeking` humorous: 16/15/9/39/21 |
+| **apathetic** | **substantial mid-range mass** | `apathetic+confidence` apathetic: 14/7/8/51/20 |
+
+Cause: rubric nature. "Formality" is essentially a register-binary; "confidence in tone" is on a spectrum. The judge faithfully reflects this.
+
+Impact: per-pair MEAN aggregation conflates the two. A bimodal-balanced pair (60% [0,20], 40% [80,100], mean=40) looks identical to a continuous-distribution pair (uniformly spread, mean=40) in the classifier's eyes — but mechanistically they are completely different cases. The "mixed" regime swallows both.
+
+**Problem 5 — Coherence collapse spuriously inflates "emergent" classifications.**
+
+What: under coh≥30 filtering (SECTION 5 of audit), **5 of 6 "emergent" pairs revert to mixed or dominant**. Specifically: `apathetic+hallucinating`, `evil+hallucinating`, `hallucinating+humorous`, `hallucinating+impolite` → mixed; `evil+impolite` → dominant. Only `hallucinating+sycophantic` survives as emergent.
+
+Cause: Problems 2 + 3 (and inflation-prone judges generally) combined. Joint steering drops coherence → broken text gets mis-scored as trait-positive on multiple axes → both ratios exceed 1.3 → classifier labels "emergent" → artefact.
+
+Impact: RQ1's emergent category was supposed to capture a real composition phenomenon (joint produces a third behavior beyond the sum). If most of the emergents are measurement artefacts, the emergent finding from Phase 12 needs to be quietly retracted.
+
+**Problem 6 — The "mixed" regime is the symptom, not the cause.**
+
+The 53% mixed pile is the cumulative effect of Problems 1–5:
+- Problem 1 contributes 8 degenerate pairs whose ratios are mathematically meaningless and land in mixed.
+- Problems 2+3+5 chain (coherence collapse → judge inflation → spurious emergence) produces artefactual emergent classifications and pushes others into the awkward 0.5–0.7 zone.
+- Problem 4 means the regime concept itself is poorly defined for continuous-axis pairs (humorous+confidence, etc.).
+- The classifier's thresholds (0.7, 1.3) then sort all of this with no awareness of any of the above.
+
+### E14.3 — Sample dumps (evidence files)
+
+- [analysis/audit_samples/mid_range_responses.md](../analysis/audit_samples/mid_range_responses.md) — 18 joint responses scored 50-60 on either trait, one per trait (lowest score first) + 10 random extras. Original investigation seed.
+- [analysis/audit_samples/incoherent_high_trait_responses.md](../analysis/audit_samples/incoherent_high_trait_responses.md) — 8 joint responses with trait score ∈ [70,90] and coherence < 25, one per affected trait. Confirms which judges mis-attribute to broken text vs which correctly identify trait content.
+- [analysis/audit_samples/power_seeking_single_responses.md](../analysis/audit_samples/power_seeking_single_responses.md) — 5 random power_seeking single-steered responses. Demonstrates the vector is functionally inactive on these prompts.
+
+### E14.4 — Cumulative effect on regime distribution
+
+From SECTION 5 of the audit (all six configurations side-by-side):
+
+| config | n_pairs | regime distribution |
+|---|---:|---|
+| no_filter (Phase 12 baseline) | 36 | mixed:19  emergent:6  dominant:5  additive:3  suppressive:3 |
+| coh≥30 | 36 | mixed:18  dominant:6  additive:5  emergent:4  suppressive:3 |
+| coh≥50 | 36 | mixed:22  additive:5  dominant:4  suppressive:3  undef:1  emergent:1 |
+| drop power_seeking | 28 | mixed:14  emergent:6  dominant:5  suppressive:3 |
+| drop power_seeking + coh≥30 | 28 | mixed:13  dominant:6  emergent:4  suppressive:3  additive:2 |
+| drop power_seeking + coh≥50 | 28 | mixed:17  dominant:4  suppressive:3  additive:2  undef:1  emergent:1 |
+
+**Best combined config (drop power_seeking + coh≥30):** mixed drops from 53% (19/36) → 46% (13/28). Modest. The mixed pile is partly real (Problem 4 — continuous axes don't binarise) and the rest needs the analysis-level fixes in E14.5.
+
+Coh≥50 is too aggressive — filters out real signal along with noise. Coh≥30 is the operating point.
+
+### E14.5 — Remediation plan (extends E12.9 Option 1)
+
+Five concrete moves, ordered by cleanliness of evidence. None require new generations or judge calls.
+
+1. **Drop `power_seeking` from the main RQ1 analysis.** Move to a separate appendix using the power_seeking-specific eval prompts (E10.3 numbers exist). Cite Problem 1 + the audit sample file. Reduces effective dataset to 28 pairs.
+
+2. **Add coh≥30 floor before per-pair mean computation.** ~5 lines in [scripts/compositions/composition_aggregate_local.py](../scripts/compositions/composition_aggregate_local.py). Re-emit `composition_scoring_l17_summary.json` with coh-filtered means. Document as methodological change citing E14.4 and Problem 5.
+
+3. **Split regime analysis by axis type.** For bimodal-axes pairs (formality, evil, hallucinating, impolite, sycophantic), report **fraction of responses scored ≥50** alongside the mean — distinguishes "60% elicit / 40% don't" from "all responses are 50." For continuous-axes pairs (confidence, humorous, apathetic), accept the mean and switch to continuous Q-vs-|cos| Spearman as the headline (already E12.9 Option 1c). Adds ~30 lines to the aggregator + a new column in `composition_scoring_l17_summary.json`.
+
+4. **Re-judge the `apathetic` column with a tightened rubric.** Current rubric reads too liberally on broken text. Proposed sharpening: *"Score 0 unless the response **deliberately** dismisses or minimises the user's situation; do not penalise procedural, analytical, or list-format answers; do not penalise text that is incoherent for reasons unrelated to apathy."* Re-judge only the apathetic column on the existing 144 CSVs (apathetic appears as trait_a or trait_b in 8 pairs → 800 baseline + 800 single_a + 800 single_b + 800 joint = 3,200 calls per pair-side, total ~6,400 calls). Cost ~$5–10 in OpenAI fees. Compare new vs old apathetic scores on baseline (should both ≈ 5) and on incoherent joints (new should be << 80).
+
+5. **Quietly retract the "emergent" finding from Phase 12 narratives until re-confirmed.** Under coh≥30 only 1 of 6 emergent classifications survives. The emergent claim should not appear in the writeup unless we recover it via a more conservative analysis (e.g., joint trait > 1.3 × single trait AND joint coherence ≥ 50).
+
+### E14.6 — Open questions for follow-up
+
+- **Does the `apathetic` rubric mis-calibration affect Phase 11 (trajectory pilot) findings?** Pilot used `formality + impolite`, `apathetic + power_seeking`, `evil + sycophantic`. The middle pair involves both broken-prompt `power_seeking` and possibly mis-judged `apathetic` — the "no mechanism / additive" finding might need re-examination. Phase 11's mechanism conclusion rests on projection trajectories not on judge scores, so likely robust, but worth a sanity pass.
+- **Is the joint-coherence collapse fixable by lowering α?** Phase 10 picked α_unit=4 as the single-trait knee. A re-run at α_unit=2.5 or 3 would reduce joint coherence collapse at the cost of weaker single-trait effects. Order-of-magnitude estimate: ~10–11h cluster + 4h judge + $25–50 OpenAI. Not free but doable.
+- **Should the bimodal-vs-continuous axis classification be data-driven or pre-registered per trait?** Currently a qualitative call from E14.2 Problem 4. A formal split (e.g., "axis is bimodal if ≥70% of responses are in [0,20]∪[80,100] across all 8 pairs containing the trait") would be defensible.
+
+### E14.7 — Files
+
+- **Audit driver**: [scripts/compositions/audit_judge_calibration.py](../scripts/compositions/audit_judge_calibration.py) — six diagnostic sections + three sample dumps. Idempotent, ~10s runtime, no API.
+- **Sample evidence**: [analysis/audit_samples/mid_range_responses.md](../analysis/audit_samples/mid_range_responses.md), [analysis/audit_samples/incoherent_high_trait_responses.md](../analysis/audit_samples/incoherent_high_trait_responses.md), [analysis/audit_samples/power_seeking_single_responses.md](../analysis/audit_samples/power_seeking_single_responses.md).
+- **Input data** (unchanged): [results/composition_scoring_l17/Llama-3.1-8B-Instruct/](../results/composition_scoring_l17/Llama-3.1-8B-Instruct/) (144 CSVs), [results/composition_scoring_l17_summary.json](../results/composition_scoring_l17_summary.json).
+- **No outputs that supersede Phase 12 yet.** Remediations in E14.5 are scoped but not implemented; they will produce a successor summary JSON.
+
+---
+
