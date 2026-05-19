@@ -17,31 +17,72 @@ import torch
 def compose_steering_vector(
     vectors_weights: list[tuple[torch.Tensor, float]],
     alpha: float,
-    normalize: bool = True,
+    normalize: bool | str = True,
 ) -> torch.Tensor:
-    """Build a steering vector at fixed injected magnitude `alpha` whose
-    direction is selected by the per-vector weights.
+    """Build a steering vector from per-vector weights at injection scale `alpha`.
 
-    Protocol (E10.3/E10.4) when normalize=True:
-        v_i_hat = v_i / ||v_i||                  (unit-normalise each input vector)
-        direction = sum_i w_i * v_i_hat          (weighted sum on the unit sphere)
-        direction = direction / ||direction||    (re-normalise composed direction)
-        return alpha * direction                 (fixed-magnitude injection)
+    Three composition modes (see paper/experiments_log.md §E15.2):
 
-    Weights select direction only; magnitude is held constant across conditions.
-    With normalize=False, returns alpha * sum_i w_i * v_i (no normalisation).
+      normalize=False   δ = α · Σ w_i v_i
+        Coefficient on each vector is held constant at α. Both per-axis push
+        and total ‖δ‖ scale with the geometry of the inputs. Phase 12 default.
+
+      normalize=True    δ = α · (Σ w_i v̂_i) / ‖Σ w_i v̂_i‖
+        Total ‖δ‖ held constant at α. Per-axis push shrinks at non-zero cos.
+
+      normalize="per_axis"
+        Unit-normalise inputs, sum on the unit sphere, then rescale so that
+        each non-zero contributor sees a per-axis projection push of exactly α
+        (matching what it would receive under single-vector injection at α).
+        For two vectors with both weights = 1 and cosine c this reduces to
+            δ = (α / (1 + c)) · (v̂_i + v̂_j),
+        giving per-axis push = α (constant) and total ‖δ‖ = α·√(2/(1+c)).
+        Singles ((1,0)/(0,1)) are identical to the other modes.
+
+    The non-zero-weights guard keeps singles handled correctly: with one
+    weight = 0 the formulation collapses to α·v̂_active in every mode.
     """
-    if not normalize:
+    if normalize is False:
         return alpha * sum(w * v for v, w in vectors_weights)
 
     unit_terms = [w * (v / v.norm()) for v, w in vectors_weights if v.norm() > 0]
     if not unit_terms:
         return torch.zeros_like(vectors_weights[0][0])
     direction = sum(unit_terms)
-    dn = direction.norm()
-    if dn == 0:
-        return torch.zeros_like(direction)
-    return alpha * (direction / dn)
+
+    if normalize is True:
+        dn = direction.norm()
+        if dn == 0:
+            return torch.zeros_like(direction)
+        return alpha * (direction / dn)
+
+    if normalize == "per_axis":
+        # Per-axis projection onto each active unit vector v̂_k is
+        #   ⟨direction, v̂_k⟩ = w_k + Σ_{j≠k} w_j cos(v̂_k, v̂_j).
+        # Rescaling by `scale` produces per-axis push = scale · that quantity.
+        # We pick the largest of those terms as the reference push and rescale
+        # so it equals α. This generalises the two-vector case (where both
+        # per-axis pushes equal 1+cos and scale = α/(1+cos) trivially):
+        # in the asymmetric case it caps the dominant axis at α and leaves the
+        # weaker axis below α — closer to the single-injection regime than
+        # over-shooting it.
+        active_units = [
+            (w, v / v.norm()) for v, w in vectors_weights
+            if v.norm() > 0 and w != 0
+        ]
+        if not active_units:
+            return torch.zeros_like(direction)
+        per_axis_pushes = [
+            float((direction @ v_hat).item()) for _, v_hat in active_units
+        ]
+        ref = max(abs(p) for p in per_axis_pushes)
+        if ref == 0:
+            return torch.zeros_like(direction)
+        return (alpha / ref) * direction
+
+    raise ValueError(
+        f"normalize must be True, False, or 'per_axis'; got {normalize!r}"
+    )
 
 
 def apply_steering_batched(
@@ -347,6 +388,54 @@ def _smoke_tests() -> None:
     assert torch.allclose(delta, torch.tensor([2.0 / 3, 3.0 / 3]), atol=1e-6)
     Ldiv = layer_of_divergence(pi_j_b, pi_i_b, tau=0.4)
     assert Ldiv.tolist() == [18, 18]
+
+    # --- compose_steering_vector mode coverage (E15.2) -------------------
+    import math
+    v1 = torch.tensor([1.0, 0.0, 0.0])
+    v2_pos = torch.tensor([math.cos(math.pi / 3), math.sin(math.pi / 3), 0.0])  # cos=+0.5
+    v2_neg = torch.tensor([math.cos(2 * math.pi / 3), math.sin(2 * math.pi / 3), 0.0])  # cos=-0.5
+    alpha = 4.0
+
+    # Singles collapse identically across modes (one weight = 0).
+    for mode in (False, True, "per_axis"):
+        d = compose_steering_vector([(v1, 1.0), (v2_pos, 0.0)], alpha=alpha, normalize=mode)
+        assert torch.allclose(d, alpha * v1, atol=1e-6), f"single failed in mode {mode}"
+
+    # normalize=False: δ = α·(v̂_1 + v̂_2), per-axis push = α·(1+cos).
+    d_false = compose_steering_vector(
+        [(v1, 1.0), (v2_pos, 1.0)], alpha=alpha, normalize=False
+    )
+    assert abs(float((d_false @ v1).item()) - alpha * 1.5) < 1e-5
+
+    # normalize=True: ‖δ‖ = α exactly.
+    d_true = compose_steering_vector(
+        [(v1, 1.0), (v2_pos, 1.0)], alpha=alpha, normalize=True
+    )
+    assert abs(d_true.norm().item() - alpha) < 1e-5
+
+    # per_axis: per-axis push onto each input = α; ‖δ‖ = α·√(2/(1+cos)).
+    for v2, cos_val in [(v2_pos, 0.5), (v2_neg, -0.5)]:
+        d_pa = compose_steering_vector(
+            [(v1, 1.0), (v2, 1.0)], alpha=alpha, normalize="per_axis"
+        )
+        push_1 = float((d_pa @ v1).item())
+        push_2 = float((d_pa @ (v2 / v2.norm())).item())
+        assert abs(push_1 - alpha) < 1e-5, f"per_axis push_1={push_1} ≠ α at cos={cos_val}"
+        assert abs(push_2 - alpha) < 1e-5, f"per_axis push_2={push_2} ≠ α at cos={cos_val}"
+        expected_norm = alpha * math.sqrt(2.0 / (1.0 + cos_val))
+        assert abs(d_pa.norm().item() - expected_norm) < 1e-4, (
+            f"per_axis ‖δ‖={d_pa.norm().item()} ≠ {expected_norm} at cos={cos_val}"
+        )
+
+    # per_axis at cos=0 reduces to normalize=False (no rescaling needed).
+    v_ortho = torch.tensor([0.0, 1.0, 0.0])
+    d_pa_ortho = compose_steering_vector(
+        [(v1, 1.0), (v_ortho, 1.0)], alpha=alpha, normalize="per_axis"
+    )
+    d_false_ortho = compose_steering_vector(
+        [(v1, 1.0), (v_ortho, 1.0)], alpha=alpha, normalize=False
+    )
+    assert torch.allclose(d_pa_ortho, d_false_ortho, atol=1e-6)
 
     # 8. τ calibration picks 1.5 × max step in the individual trajectories.
     indiv = [

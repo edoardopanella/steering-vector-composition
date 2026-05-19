@@ -2359,3 +2359,156 @@ Five concrete moves, ordered by cleanliness of evidence. None require new genera
 
 ---
 
+## Phase 15 — PLAN: composition re-run at per-axis normalisation (Riccardo, 2026-05-18)
+
+**Status: planning, no code or runs yet.** This phase captures the decisions made after the Phase 14 audit and lays out the next concrete sequence of work. Written before context compaction so the plan survives across sessions.
+
+### E15.1 — Where we are coming from
+
+Phase 12 produced a composition dataset (36 pairs × 4 settings × 100 generations) judged with 4 rubrics, plus a trajectory dataset (36 pairs × 16 layers × 30 prompts). Phase 14 diagnosed six structural problems with that dataset (Problem 1: power_seeking degenerate on these prompts; Problem 2: joint coherence collapse from geometric over-steering; Problem 3: apathetic judge form-bias; Problem 4: bimodal vs continuous axis-type mismatch; Problem 5: spurious emergent classifications; Problem 6: 53% mixed regime as the headline symptom).
+
+Of the six, **Problem 2 is the foundational one** — joint perturbation magnitude under the current `normalize=False` mode scales as `α·√(2+2cos)` which reaches ~7.4 (vs single magnitude 4) for high-cos pairs. This drives coherence collapse (joint coh ~50, with 27-52% of responses below coh<30) which then feeds Problems 3 and 5 downstream. Fixing Problem 2 at the source removes most of the downstream noise.
+
+The remedy is a re-run at a different joint-composition normalisation. Three modes are now in play.
+
+### E15.2 — The three normalisation modes
+
+For unit-normalised vectors v̂_i, v̂_j with cos = cos(v̂_i, v̂_j), the joint δ at coefficient setting (1, 1) is:
+
+| mode | δ formula | per-axis push onto v̂_i | total ‖δ‖ | closed-form π_i^(1,1)−π_i^(1,0) at L\* |
+|---|---|---:|---:|---:|
+| `normalize=False` (current, Phase 12) | `α · (v̂_i + v̂_j)` | α·(1+cos) | α·√(2+2cos) | α·cos |
+| `normalize=True` (existing alternative, unused) | `α · (v̂_i + v̂_j) / ‖v̂_i + v̂_j‖` | α·(1+cos)/√(2+2cos) | α | α·[(1+cos)/√(2+2cos) − 1] |
+| **`per_axis`** (NEW — Riccardo's proposal) | `(α / (1+cos)) · (v̂_i + v̂_j)` | **α (constant)** | α·√(2/(1+cos)) | **0 (exactly)** |
+
+**Single conditions (1,0) and (0,1) are identical under all three modes** — when one weight is zero, the sum reduces to a single unit vector scaled by α. So mode differences only show up under joint.
+
+Concrete magnitudes at actual dataset cosines (α=4):
+
+| pair example | cos | False ‖δ‖ | True ‖δ‖ | per_axis ‖δ‖ | per_axis per-axis push (always 4) |
+|---|---:|---:|---:|---:|---:|
+| formality+humorous (antipodal) | −0.52 | 4.0 | 4.0 | **8.16** | 4 |
+| formality+impolite | −0.23 | 4.0 | 4.0 | **6.45** | 4 |
+| apathetic+confidence (orthogonal) | +0.01 | 5.66 | 4.0 | **5.66** | 4 |
+| evil+sycophantic | +0.42 | 6.79 | 4.0 | **4.74** | 4 |
+| apathetic+impolite (high-cos) | +0.69 | 7.34 | 4.0 | **4.34** | 4 |
+
+Note `per_axis` equals `normalize=False` at cos=0; they diverge only when cos ≠ 0.
+
+**Conceptual contrast:**
+
+- `normalize=False` holds the *coefficient* on each unit vector constant (= α). Per-axis push and total magnitude both vary with cos.
+- `normalize=True` holds the *total ‖δ‖* constant (= α). Per-axis push shrinks at non-zero cos.
+- `per_axis` holds the *per-axis projection push* constant (= α). Total ‖δ‖ varies inversely with cos.
+
+The Riccardo intuition for `per_axis`: "each behaviour should see exactly the same push it would see if it were single-steered alone at α". This is a fairness criterion at the per-axis level.
+
+### E15.3 — The validation pilot (immediate next step)
+
+Goal: empirically determine which of the three modes gives the best operating point on (joint coherence, joint trait expression, per-axis fairness) before committing to a full re-run. Cheap enough to be informative without major commitment.
+
+**Design:**
+
+- **3 modes**: `normalize=False`, `normalize=True`, `per_axis`.
+- **5 representative pairs** spanning cosine range:
+  1. `formality + humorous` (cos = −0.52) — strong antipodal
+  2. `formality + impolite` (cos = −0.23) — moderate antipodal
+  3. `apathetic + confidence` (cos ≈ 0) — near-orthogonal
+  4. `evil + sycophantic` (cos = +0.42) — moderate positive
+  5. `apathetic + impolite` (cos = +0.69) — high positive (worst current coherence)
+- **Conditions per pair**: 1 baseline + 1 single_a + 1 single_b + **3 joint** (one per mode). The baseline and singles are mode-independent, so they're shared across modes. Joint is the only mode-varying condition.
+- **α = 4** for all modes (matching Phase 12 for direct comparability). Optionally also include α = 5 and α = 6 under `per_axis` to scope whether higher α with constant per-axis push recovers trait expression on antipodal pairs (where ‖δ‖ inflation is biggest under `per_axis`).
+- **N_per_question = 5** (matching Phase 12 — preserves comparability with the existing aggregate stats).
+
+**Generation count** (single-α version): 5 pairs × (1 baseline + 2 singles + 3 joints) × 20 questions × 5 N_per_question = **3,000 generations**. Cluster wall ~3h on 1 GPU + 256G, accounting for model load.
+
+**Judge calls**: 3,000 × 3 judges (trait_a, trait_b, coherence) = 9,000 calls at gpt-4.1-mini ~ **$15–20** OpenAI spend, ~30 min laptop wall at concurrency 5.
+
+**Total pilot cost: ~3-4h cluster + ~30 min laptop + ~$20.**
+
+**Outputs:**
+- Per-(pair, mode) CSVs with the 4 judge scores.
+- Aggregate table: mean trait_a, mean trait_b, mean coherence per (pair, mode). Comparison across modes for the same pair.
+- Decision-ready table: for each mode, what fraction of pairs cleared (joint Δ_trait > 50 on both axes AND joint coh ≥ 50)?
+
+**Decision criteria after pilot:**
+
+The pilot is informative *enough to commit to a full re-run* if it shows one of these patterns:
+- One mode clearly dominates: higher coherence than current `normalize=False`, with equal-or-better trait expression on a majority of the 5 pilot pairs. Commit to full re-run at that mode.
+- Two modes tie qualitatively: pick the one with cleaner RQ2 closed-form properties. `per_axis` wins this tiebreak (closed-form = 0 exactly, vs `normalize=True`'s ugly `α·[(1+cos)/√(2+2cos) − 1]`).
+- All three modes look similar: don't re-run. Keep Phase 12 data and proceed with the Option 1 local remediations (E14.5).
+- New problems surface (e.g., antipodal pairs at `per_axis` ‖δ‖=8 break coherence catastrophically): revise the plan — possibly run `per_axis` at a *lower* α (e.g., α=3) to bring antipodal magnitudes back to a tolerable range.
+
+**Files needed to create:**
+- A small driver script in `scripts/compositions/` (working name `validate_normalisations_pilot.py`).
+- A patched `compose_steering_vector` in [src/composition/joint_injection.py](../src/composition/joint_injection.py) to support a `normalize="per_axis"` mode in addition to the existing True/False. ~10-15 lines.
+- A SLURM wrapper in `slurm/`.
+- A laptop judge wrapper following the Phase 12 pattern (`composition_judge_local.py` style).
+
+### E15.4 — Full re-run plan (Phase 12.5), conditional on pilot success
+
+If the pilot validates one of the new modes, the next step is a full re-run at the chosen operating point.
+
+**Scope** (assuming `per_axis` wins the pilot):
+- Same 36 pairs as Phase 12 (or 28 if power_seeking is dropped — see E15.5).
+- Same 4 settings per pair (baseline, single_a, single_b, joint).
+- **Joint generated under `per_axis`** at α=4 (or whatever α the pilot lands on).
+- Same N_per_question=10 as Phase 12 (10 prompts × 10 completions per setting = 100 per CSV).
+- Same trajectory capture for 36 per-pair Parquets.
+- Same 3-stage split (cluster generate → laptop judge → laptop aggregate).
+
+**Cost** (matching Phase 12 magnitudes):
+- Cluster generate: ~11 hours on 1 GPU + 256G.
+- Laptop judge: ~4 hours, ~$25 OpenAI.
+- Laptop aggregate: ~5 min.
+- **Total: ~15 hours wall + ~$25.**
+
+**Output naming convention:** existing Phase 12 files stay intact. New outputs land under `_v2` or `_per_axis` suffixes:
+- `results/composition_scoring_l17_per_axis/Llama-3.1-8B-Instruct/` (144 CSVs)
+- `results/composition_trajectories_l17_per_axis.parquet`
+- `results/composition_scoring_l17_per_axis_summary.json`
+- `results/composition_trajectories_l17_per_axis_tau.json`
+
+**Side-by-side comparison in the writeup:** Phase 12 (normalize=False, current) vs Phase 12.5 (per_axis). Report regime distribution, Q-vs-|cos| Spearman, L_div by regime, mean coherence by regime — all under both. Headline framing: "we identified a geometric over-steering issue, fixed it, and reproduced the analysis." If results are qualitatively similar, also a robustness finding. If they're qualitatively different, the per_axis version is the primary and Phase 12 becomes a methodological note.
+
+### E15.5 — Additional changes under consideration for the re-run
+
+These are decided alongside the normalisation question, before launching the full re-run:
+
+1. **Drop `power_seeking` from the main trait set** (most likely yes). Phase 14 Problem 1 established that the vector × judge × prompt interaction produces unusable ratios for this trait on the composition prompts. Removing it brings the dataset to 8 traits / 28 pairs. Cleaner story for the writeup; smaller dataset for the analysis. If kept, power_seeking has to be flagged as Tan-borderline in every result.
+2. **Re-prompt the `apathetic` judge with a tightened rubric** (likely yes). Current rubric weights Signal C (response form/quality) too heavily. Proposed sharpening (from E14.5): *"Score 0 unless the response **deliberately** dismisses or minimises the user's situation; do not penalise procedural, analytical, or list-format answers; do not penalise text that is incoherent for reasons unrelated to apathy."* Implemented as a new `eval_prompt_apathetic_v2` constant in the trait artifact JSON; judge stage uses v2 prompt. No new generations needed — re-judges the apathetic column on existing CSVs (if doing Option 1) OR uses v2 for the fresh re-run (if doing Phase 12.5).
+3. **Apply coherence-aware aggregation** (maybe — depends on pilot result). If `per_axis` re-run recovers joint coherence to ~75+, the coh≥30 filter from E14.5 may be unnecessary. If `per_axis` still has some coherence issues on antipodal pairs (where ‖δ‖ inflates), apply coh≥30 only to those pairs. Decision after seeing pilot coherence stats.
+4. **Add axis-type split to the regime classifier** (likely yes — independent of normalisation). Bimodal vs continuous distinction (Problem 4) is about the trait rubrics themselves, not about the steering setup. Add a `bimodal_axis_fraction` column to the summary JSON; report per-pair regimes with awareness of which axes are bimodal.
+5. **Quietly remove "emergent" as a primary regime category** until confirmed by post-fix data. Phase 14 showed 5 of 6 emergent classifications revert under coh filtering — they were measurement artefacts. After re-run, re-check whether any emergent classifications survive; if not, retract the category.
+6. **Lock the new operating point** (α value, normalisation mode, dropped traits) in a single config constants block at the top of `composition_scoring.py`. Easy to reference from the writeup methods section.
+
+### E15.6 — Deferred until after the re-run lands
+
+These were on the table but are paused while the re-run takes priority:
+
+1. **v_i^(L) dual-projection robustness check (RQ2)**. Riccardo greenlit this earlier (re-projecting cached trajectories onto per-layer vectors instead of fixed v_i^(L\*)). It's independent of the normalisation question — but it operates on the trajectory parquet, which the re-run will replace. So the right time to run it is on the Phase 12.5 parquet, not the Phase 12 one. After the re-run.
+2. **Phase 11 E11.9 #2 — fixed-completion sanity pass**. The closed-form L\* check failure (completion-divergence noise) is still open. Cheap to do (~5 min cluster + ~30 min local). Should be done on the post-re-run setup to verify the new `per_axis` math actually gives π_i^(1,1)−π_i^(1,0) = 0 numerically. After the re-run.
+3. **15×15 cosine matrix at L=17 on the full trait set** (E10.8 #2). Independent of all this; can be done anytime, has no dependencies. Lower priority.
+4. **`humorous` MWE sign-flip inspection** (E10.8 #4, E11.9 #5). Still open. Not blocking; needed for writeup of the validation results.
+
+### E15.7 — Open decisions before launching the pilot — LOCKED 2026-05-19
+
+Riccardo's answers:
+
+- **a) α = 4 only.** Single operating point, direct A/B/C against Phase 12. If `per_axis` underperforms on antipodal pairs we'll revisit α as a follow-up rather than blow up the pilot scope.
+- **b) Include `apathetic + power_seeking` as 6th pair.** Verify it stays broken under all three modes (or surprisingly improves). +600 generations, ~$4 marginal cost.
+- **c) Single-trait α = 4 stays locked.** Re-opening α=4 would conflate the comparison. Out of scope.
+
+**Final pilot scope:** 6 pairs × (1 baseline + 2 singles + 3 joints) × 20 questions × N=5 = **3,600 generations**. Cluster wall ~3-4h on 1 GPU + 256G. Judge stage ~$15-20 OpenAI + ~30 min laptop wall.
+
+### E15.8 — Plan summary in one paragraph
+
+**Next: run a small 5-pair pilot comparing three composition normalisation modes (current `normalize=False`, the existing-but-unused `normalize=True`, and the new `per_axis` formulation that keeps each behavior's effective per-axis push constant at α=4 regardless of cosine). The pilot will measure joint coherence and joint trait expression under each mode. If one mode (most likely `per_axis`) clearly dominates the current setup on coherence without losing trait expression, commit to a full re-run at that mode (Phase 12.5) replacing Phase 12 as the primary RQ1 + RQ2 dataset. The full re-run will also drop `power_seeking` (likely), use a tightened `apathetic` rubric (likely), and add axis-type split to the regime classifier. The v_i^(L) dual-projection robustness check, the fixed-completion sanity pass, and other deferred items will be done on the Phase 12.5 parquet after the re-run lands. Total expected cost: pilot ~$20 + ~4h, full re-run (if committed) ~$25 + ~15h cluster wall.**
+
+### E15.9 — Files / artefacts referenced
+
+- [paper/experiments_log.md](experiments_log.md) — this log (Phase 14 diagnoses → Phase 15 plan).
+- [scripts/compositions/audit_judge_calibration.py](../scripts/compositions/audit_judge_calibration.py) — Phase 14 reproducer.
+- [src/composition/joint_injection.py](../src/composition/joint_injection.py) — where `compose_steering_vector` lives; needs `per_axis` mode added.
+- [scripts/compositions/composition_scoring.py](../scripts/compositions/composition_scoring.py) — Phase 12 driver; will be patched (or wrapped) for the re-run.
+- [results/composition_scoring_l17/Llama-3.1-8B-Instruct/](../results/composition_scoring_l17/Llama-3.1-8B-Instruct/) — Phase 12 baseline data; preserved as historical reference.
