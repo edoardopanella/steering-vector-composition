@@ -1,0 +1,309 @@
+{
+  "model": "text-embedding-3-large",
+  "trait_text_source": "hand-written one-line definitions (semantic_sim.py)",
+  "traits": [
+    "apathetic",
+    "evil",
+    "hallucinating",
+    "humorous",
+    "impolite",
+    "sycophantic",
+    "power_seeking",
+    "confidence",
+    "formality"
+  ],
+  "trait_descriptions": {
+    "apathetic": "apathy: lack of interest, motivation, or emotional engagement; indifference to outcomes and to the user's concerns.",
+    "confidence": "confidence: assertiveness and certainty in one's statements; expressing claims without hedging or qualification.",
+    "evil": "evil: malicious intent, willingness to cause harm, and disregard for the wellbeing of others.",
+    "formality": "formality: use of formal language, professional register, and conventional structure; avoidance of slang or casual phrasing.",
+    "hallucinating": "hallucination: fabrication of false or unsupported information presented as factual; inventing details that are not grounded in reality.",
+    "humorous": "humor: playful tone, jokes, wordplay, and levity; aiming to amuse or entertain the reader.",
+    "impolite": "impoliteness: rudeness, disrespect, and dismissiveness toward the user; lack of basic courtesy.",
+    "power_seeking": "power-seeking: desire to acquire influence, control, resources, or autonomy; framing situations in terms of dominance and advantage.",
+    "sycophantic": "sycophancy: excessive agreement, flattery, and validation of the user regardless of accuracy; telling the user what they want to hear."
+  },
+  "sem_cos_matrix": [
+    [
+      0.9999999999999998,
+      0.32147504484626166,
+      0.1981125750075286,
+      0.23258875513495672,
+      0.46988053770033655,
+      0.3440802332491053,
+      0.2912666989062864,
+      0.2401042572847261,
+      0.2463475771338999
+    ],
+    [
+      0.32147504484626166,
+      0.9999999999999999,
+      0.22850203527772783,
+      0.24353919024153767,
+      0.3971123285016625,
+      0.21833374402854008,
+      0.36367722746121073,
+      0.20918400458480185,
+      0.19566359338519035
+    ],
+    [
+      0.1981125750075286,
+      0.22850203527772783,
+      1.0000000000000002,
+      0.18511236237736645,
+      0.1855642810970446,
+      0.31809495796511095,
+      0.20477889531164822,
+      0.25190109092575663,
+      0.2226746986620209
+    ],
+    [
+      0.23258875513495672,
+      0.24353919024153767,
+      0.18511236237736645,
+      0.9999999999999999,
+      0.24185508361201008,
+      0.2109666266769492,
+      0.19097063177695053,
+      0.24149966806756734,
+      0.4142879153442708
+    ],
+    [
+      0.46988053770033655,
+      0.3971123285016625,
+      0.1855642810970446,
+      0.24185508361201008,
+      1.0,
+      0.36965515588341324,
+      0.2347025517270571,
+      0.2681074093085094,
+      0.32398625951242505
+    ],
+    [
+      0.3440802332491053,
+      0.21833374402854008,
+      0.31809495796511095,
+      0.2109666266769492,
+      0.36965515588341324,
+      0.9999999999999998,
+      0.3004884372864142,
+      0.27408900642658407,
+      0.2730349653806381
+    ],
+    [
+      0.2912666989062864,
+      0.36367722746121073,
+      0.20477889531164822,
+      0.19097063177695053,
+      0.2347025517270571,
+      0.3004884372864142,
+      0.9999999999999999,
+      0.328168820154478,
+      0.23505971847124593
+    ],
+    [
+      0.2401042572847261,
+      0.20918400458480185,
+      0.25190109092575663,
+      0.24149966806756734,
+      0.2681074093085094,
+      0.27408900642658407,
+      0.328168820154478,
+      0.9999999999999998,
+      0.39834593338417235
+    ],
+    [
+      0.2463475771338999,
+      0.19566359338519035,
+      0.2226746986620209,
+      0.4142879153442708,
+      0.32398625951242505,
+      0.2730349653806381,
+      0.23505971847124593,
+      0.39834593338417235,
+      1.0000000000000002
+    ]
+  ],
+  "pairs": [
+    {
+      "trait_a": "apathetic",
+      "trait_b": "evil",
+      "sem_sim": 0.32147504484626166
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "hallucinating",
+      "sem_sim": 0.1981125750075286
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "humorous",
+      "sem_sim": 0.23258875513495672
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "impolite",
+      "sem_sim": 0.46988053770033655
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "sycophantic",
+      "sem_sim": 0.3440802332491053
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "power_seeking",
+      "sem_sim": 0.2912666989062864
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "confidence",
+      "sem_sim": 0.2401042572847261
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "formality",
+      "sem_sim": 0.2463475771338999
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "hallucinating",
+      "sem_sim": 0.22850203527772783
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "humorous",
+      "sem_sim": 0.24353919024153767
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "impolite",
+      "sem_sim": 0.3971123285016625
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "sycophantic",
+      "sem_sim": 0.21833374402854008
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "power_seeking",
+      "sem_sim": 0.36367722746121073
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "confidence",
+      "sem_sim": 0.20918400458480185
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "formality",
+      "sem_sim": 0.19566359338519035
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "humorous",
+      "sem_sim": 0.18511236237736645
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "impolite",
+      "sem_sim": 0.1855642810970446
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "sycophantic",
+      "sem_sim": 0.31809495796511095
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "power_seeking",
+      "sem_sim": 0.20477889531164822
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "confidence",
+      "sem_sim": 0.25190109092575663
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "formality",
+      "sem_sim": 0.2226746986620209
+    },
+    {
+      "trait_a": "humorous",
+      "trait_b": "impolite",
+      "sem_sim": 0.24185508361201008
+    },
+    {
+      "trait_a": "humorous",
+      "trait_b": "sycophantic",
+      "sem_sim": 0.2109666266769492
+    },
+    {
+      "trait_a": "humorous",
+      "trait_b": "power_seeking",
+      "sem_sim": 0.19097063177695053
+    },
+    {
+      "trait_a": "humorous",
+      "trait_b": "confidence",
+      "sem_sim": 0.24149966806756734
+    },
+    {
+      "trait_a": "humorous",
+      "trait_b": "formality",
+      "sem_sim": 0.4142879153442708
+    },
+    {
+      "trait_a": "impolite",
+      "trait_b": "sycophantic",
+      "sem_sim": 0.36965515588341324
+    },
+    {
+      "trait_a": "impolite",
+      "trait_b": "power_seeking",
+      "sem_sim": 0.2347025517270571
+    },
+    {
+      "trait_a": "impolite",
+      "trait_b": "confidence",
+      "sem_sim": 0.2681074093085094
+    },
+    {
+      "trait_a": "impolite",
+      "trait_b": "formality",
+      "sem_sim": 0.32398625951242505
+    },
+    {
+      "trait_a": "sycophantic",
+      "trait_b": "power_seeking",
+      "sem_sim": 0.3004884372864142
+    },
+    {
+      "trait_a": "sycophantic",
+      "trait_b": "confidence",
+      "sem_sim": 0.27408900642658407
+    },
+    {
+      "trait_a": "sycophantic",
+      "trait_b": "formality",
+      "sem_sim": 0.2730349653806381
+    },
+    {
+      "trait_a": "power_seeking",
+      "trait_b": "confidence",
+      "sem_sim": 0.328168820154478
+    },
+    {
+      "trait_a": "power_seeking",
+      "trait_b": "formality",
+      "sem_sim": 0.23505971847124593
+    },
+    {
+      "trait_a": "confidence",
+      "trait_b": "formality",
+      "sem_sim": 0.39834593338417235
+    }
+  ]
+}
