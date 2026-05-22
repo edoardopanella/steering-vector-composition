@@ -534,7 +534,7 @@ def main() -> None:
     if ok_rows:
         print()
         header = (
-            f"{'pair':<32} {'cos':>+6} {'mode':<9} "
+            f"{'pair':<32} {'cos':>6} {'mode':<9} "
             f"{'tr_a':>5} {'tr_b':>5} {'comp':>5} {'coh':>5}  "
             f"{'Δtr_a':>6} {'Δtr_b':>6} {'Δcomp':>6} {'Δcoh':>6}"
         )

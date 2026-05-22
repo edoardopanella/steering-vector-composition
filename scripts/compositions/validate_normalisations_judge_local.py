@@ -1,15 +1,15 @@
 """
-PILOT — laptop judge stage for the normalisation A/B/C comparison (Phase 15).
+PILOT — laptop judge stage for the normalisation comparison (Phase 15).
 
-Single purpose: walk the 6 pilot pairs; for each pair, judge the 6 CSVs
-(baseline, single_a, single_b, joint_false, joint_true, joint_per_axis) left
-by the cluster generate stage with NaN score columns. Fills trait_a / trait_b
-/ coherence in place. Nothing else.
+Walks every CSV in the pilot output directory and judges any rows with NaN
+trait_a. Picks up CSVs from both pilot 1 (the original 36) and pilot 2 (18
+new joint conditions + any future additions) automatically — the loop is
+filename-driven, not condition-list-driven, so dropping new CSVs into the
+dir just works.
 
 Post-judge tally + per-pair summary table is the job of
-validate_normalisations_pilot.py in judge mode — run it after this script:
-
-    COMPOSITION_PILOT_MODE=judge python -m scripts.compositions.validate_normalisations_pilot
+validate_normalisations_pilot.py / validate_normalisations_pilot_2.py in
+judge mode — run those after this script.
 
 Designed for laptop:
   - no GPU, no HF model load
@@ -17,8 +17,8 @@ Designed for laptop:
   - idempotent on row.trait_a.isna() — kill + rerun is safe
 
 Data needed on laptop (rsync from cluster before running):
-  results/composition_pilot_normalisations/Llama-3.1-8B-Instruct/*.csv   (36)
-  data/composition_eval/*.json                                           (subset)
+  results/composition_pilot_normalisations/Llama-3.1-8B-Instruct/*.csv
+  data/composition_eval/*.json
 
 Run:
     python -m scripts.compositions.validate_normalisations_judge_local
@@ -27,91 +27,100 @@ from __future__ import annotations
 
 from dotenv import load_dotenv
 
+import re
+
 from scripts.compositions.validate_normalisations_pilot import (
     JUDGE_MODEL,
     LOGS_DIR,
-    PILOT_ALPHA,
-    PILOT_MODES,
-    PILOT_PAIRS,
     SCORES_OUTPUT_DIR,
-    _baseline_csv_path,
     _csv_has_scores,
     _csv_status,
-    _joint_csv_path,
     _judge_csv_inplace,
     _load_composition_artifact,
-    _mode_tag,
-    _single_csv_path,
 )
 
 load_dotenv()
 
+# Filename patterns:
+#   {a}__{b}_baseline.csv
+#   {a}__{b}_single_{which}_alpha{α}.csv
+#   {a}__{b}_joint_{mode_tag}_alpha{α}.csv
+# NB: trait names may contain underscores (e.g. "power_seeking"), so anchor
+# `rest` to one of the known suffix shapes rather than relying on a lazy
+# wildcard between b and rest.
+_FILENAME_RE = re.compile(
+    r"^(?P<a>[a-z_]+?)__(?P<b>[a-z_]+?)"
+    r"_(?P<rest>(?:baseline|single_[ab]_alpha[0-9.]+|joint_(?:false|true|per_axis)_alpha[0-9.]+))"
+    r"\.csv$"
+)
 
-def _per_pair_settings(a: str, b: str):
-    """(label, csv_path, log_filename, judge_progress_tag) for all 6 settings.
-    Filenames match what validate_normalisations_pilot.py wrote so judge-stage
-    log lines accumulate in the same per-pair files left by the generate stage.
+
+def _parse_csv(path):
+    """Return (a, b, label, log_name, progress_tag) or None if not parseable.
+
+    `label` is short ("baseline" / "single_a" / "joint_per_axis"); the
+    log_name + progress_tag follow the pilot 1 conventions so the same
+    per-pair log files accumulate across pilots.
     """
-    out = [
-        (
-            "baseline",
-            _baseline_csv_path(a, b),
-            f"pilot_{a}__{b}_baseline.log",
-            f"{a}+{b} baseline",
-        ),
-        (
-            "single_a",
-            _single_csv_path(a, b, "a", PILOT_ALPHA),
-            f"pilot_{a}__{b}_single_a_alpha{PILOT_ALPHA}.log",
-            f"{a}+{b} single_a α={PILOT_ALPHA}",
-        ),
-        (
-            "single_b",
-            _single_csv_path(a, b, "b", PILOT_ALPHA),
-            f"pilot_{a}__{b}_single_b_alpha{PILOT_ALPHA}.log",
-            f"{a}+{b} single_b α={PILOT_ALPHA}",
-        ),
-    ]
-    for nm in PILOT_MODES:
-        tag = _mode_tag(nm)
-        out.append((
-            f"joint_{tag}",
-            _joint_csv_path(a, b, nm, PILOT_ALPHA),
-            f"pilot_{a}__{b}_joint_{tag}_alpha{PILOT_ALPHA}.log",
-            f"{a}+{b} joint_{tag} α={PILOT_ALPHA}",
-        ))
-    return out
+    m = _FILENAME_RE.match(path.name)
+    if not m:
+        return None
+    a, b, rest = m["a"], m["b"], m["rest"]
+    # rest is one of:
+    #   "baseline"
+    #   "single_<which>_alpha<α>"
+    #   "joint_<mode_tag>_alpha<α>"
+    if rest == "baseline":
+        return a, b, "baseline", f"pilot_{a}__{b}_baseline.log", f"{a}+{b} baseline"
+    if rest.startswith("single_"):
+        # single_a_alpha4.0 or single_b_alpha4.0
+        return a, b, rest, f"pilot_{a}__{b}_{rest}.log", f"{a}+{b} {rest}"
+    if rest.startswith("joint_"):
+        return a, b, rest, f"pilot_{a}__{b}_{rest}.log", f"{a}+{b} {rest}"
+    return None
 
 
 def main() -> None:
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
     print("=" * 72)
-    print("LOCAL JUDGE STAGE — pilot normalisation A/B/C")
+    print("LOCAL JUDGE STAGE — pilot normalisation comparison")
     print(f"  judge model : {JUDGE_MODEL}")
     print(f"  CSV dir     : {SCORES_OUTPUT_DIR}")
-    print(f"  per-pair logs append to {LOGS_DIR}/pilot_<a>__<b>_*.log")
+    print("  walks every CSV in the dir; picks up pilot 1 + pilot 2 + future")
     print("  idempotent on row.trait_a.isna() — safe to kill + rerun")
-    print("  for tally + per-pair summary run:")
-    print("    COMPOSITION_PILOT_MODE=judge python -m scripts.compositions.validate_normalisations_pilot")
     print("=" * 72 + "\n")
 
-    print(f"Judging {len(PILOT_PAIRS)} pilot pairs × {3 + len(PILOT_MODES)} settings each\n")
+    csvs = sorted(SCORES_OUTPUT_DIR.glob("*.csv"))
+    if not csvs:
+        print(f"No CSVs found in {SCORES_OUTPUT_DIR}")
+        return
 
-    for i, (a_in, b_in) in enumerate(PILOT_PAIRS, 1):
-        a, b = sorted([a_in, b_in])
-        print(f"\n[{i}/{len(PILOT_PAIRS)}] {a} + {b}")
+    # Group by pair so we load each composition artifact once.
+    by_pair: dict[tuple[str, str], list] = {}
+    skipped: list[str] = []
+    for p in csvs:
+        info = _parse_csv(p)
+        if info is None:
+            skipped.append(p.name)
+            continue
+        a, b, label, log_name, tag = info
+        by_pair.setdefault((a, b), []).append((p, label, log_name, tag))
+
+    if skipped:
+        print(f"WARN: {len(skipped)} unparseable filenames: {skipped[:3]}{'...' if len(skipped) > 3 else ''}")
+
+    print(f"Judging {len(csvs)} CSVs across {len(by_pair)} pairs\n")
+
+    for i, ((a, b), entries) in enumerate(sorted(by_pair.items()), 1):
+        print(f"\n[{i}/{len(by_pair)}] {a} + {b}  ({len(entries)} CSVs)")
         try:
             artifact = _load_composition_artifact(a, b)
         except FileNotFoundError as e:
             print(f"  skipping — {e}")
             continue
-
-        for label, csv_path, log_name, tag in _per_pair_settings(a, b):
-            print(f"  {label:<14} -> {csv_path.name}")
-            if not csv_path.exists():
-                print(f"    SKIP: CSV missing (generate stage not done on cluster)")
-                continue
+        for csv_path, label, log_name, tag in sorted(entries):
+            print(f"  {label:<26} -> {csv_path.name}")
             _judge_csv_inplace(
                 csv_path,
                 artifact["eval_prompt_a"], artifact["eval_prompt_b"],
@@ -122,16 +131,16 @@ def main() -> None:
 
     n_csvs = len(list(SCORES_OUTPUT_DIR.glob("*.csv")))
     n_scored = sum(1 for p in SCORES_OUTPUT_DIR.glob("*.csv") if _csv_has_scores(p))
-    expected = len(PILOT_PAIRS) * (3 + len(PILOT_MODES))
     print()
     print("=" * 72)
     print("JUDGE STAGE TALLY")
-    print(f"  CSVs on disk          : {n_csvs}  (expected {expected})")
-    print(f"  CSVs with judge scores: {n_scored}  (target {expected})")
+    print(f"  CSVs on disk          : {n_csvs}")
+    print(f"  CSVs with judge scores: {n_scored}")
     print("=" * 72)
     print(
-        "\nNext step: build per-pair summary table by running\n"
-        "  COMPOSITION_PILOT_MODE=judge python -m scripts.compositions.validate_normalisations_pilot"
+        "\nNext step: build per-pair summary tables\n"
+        "  COMPOSITION_PILOT_MODE=judge python -m scripts.compositions.validate_normalisations_pilot\n"
+        "  COMPOSITION_PILOT_MODE=judge python -m scripts.compositions.validate_normalisations_pilot_2"
     )
 
 

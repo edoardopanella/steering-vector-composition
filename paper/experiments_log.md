@@ -2505,10 +2505,150 @@ Riccardo's answers:
 
 **Next: run a small 5-pair pilot comparing three composition normalisation modes (current `normalize=False`, the existing-but-unused `normalize=True`, and the new `per_axis` formulation that keeps each behavior's effective per-axis push constant at α=4 regardless of cosine). The pilot will measure joint coherence and joint trait expression under each mode. If one mode (most likely `per_axis`) clearly dominates the current setup on coherence without losing trait expression, commit to a full re-run at that mode (Phase 12.5) replacing Phase 12 as the primary RQ1 + RQ2 dataset. The full re-run will also drop `power_seeking` (likely), use a tightened `apathetic` rubric (likely), and add axis-type split to the regime classifier. The v_i^(L) dual-projection robustness check, the fixed-completion sanity pass, and other deferred items will be done on the Phase 12.5 parquet after the re-run lands. Total expected cost: pilot ~$20 + ~4h, full re-run (if committed) ~$25 + ~15h cluster wall.**
 
-### E15.9 — Files / artefacts referenced
+### E15.9 — Files / artefacts referenced (plan stage)
 
 - [paper/experiments_log.md](experiments_log.md) — this log (Phase 14 diagnoses → Phase 15 plan).
 - [scripts/compositions/audit_judge_calibration.py](../scripts/compositions/audit_judge_calibration.py) — Phase 14 reproducer.
 - [src/composition/joint_injection.py](../src/composition/joint_injection.py) — where `compose_steering_vector` lives; needs `per_axis` mode added.
 - [scripts/compositions/composition_scoring.py](../scripts/compositions/composition_scoring.py) — Phase 12 driver; will be patched (or wrapped) for the re-run.
 - [results/composition_scoring_l17/Llama-3.1-8B-Instruct/](../results/composition_scoring_l17/Llama-3.1-8B-Instruct/) — Phase 12 baseline data; preserved as historical reference.
+
+---
+
+### E15.10 — Pilot 1 results: False vs True vs per_axis at α=4 (Riccardo, 2026-05-20)
+
+Ran the 6-pair × 3-mode comparison from E15.3 on the cluster (job 497392, ~2.5h). Judged on laptop with `gpt-4.1-mini`. All 36 CSVs (6 pairs × 6 settings = 1 baseline + 2 singles + 3 joints) scored at 100/100 with 0 fails.
+
+**Per-pair results (joint condition only, ordered by cosine):**
+
+| pair | cos | False α=4: tr_a/tr_b/coh | True α=4: tr_a/tr_b/coh | per_axis α=4: tr_a/tr_b/coh | ‖δ‖ (False/True/per_axis) |
+|---|---:|---|---|---|---|
+| formality + humorous | −0.52 | 89.9 / 0.1 / **86** | 88.8 / 0.3 / 83 | 34.5 / 9.6 / **11** 💥 | 3.9 / 4.0 / **8.2** |
+| formality + impolite | −0.23 | 89.5 / 9.2 / 77 | 91.0 / 5.3 / 88 | **84.6 / 24.1 / 53** | 5.0 / 4.0 / 6.5 |
+| apathetic + confidence | +0.01 | 60.7 / 50.7 / 58 | 32.0 / 70.7 / 86 | 62.8 / 51.2 / 58 | 5.7 / 4.0 / 5.7 |
+| evil + sycophantic | +0.42 | 49.5 / 57.8 / **27** ⚠️ | 18.0 / 63.4 / 69 | 31.0 / 61.9 / 54 | 6.8 / 4.0 / 4.7 |
+| apathetic + impolite | +0.69 | 81.4 / 72.0 / **23** ⚠️ | 44.9 / 38.2 / 68 | 58.1 / 49.6 / 58 | 7.4 / 4.0 / 4.4 |
+| apathetic + power_seeking | −0.01 | 47.1 / 4.2 / 80 | 21.1 / 7.9 / 94 | 44.8 / 5.2 / 82 | 5.6 / 4.0 / 5.7 |
+
+**Three structural findings:**
+
+1. **`per_axis` breaks catastrophically on the most antipodal pair** — formality+humorous at α=4 has ‖δ‖=8.2 and coh=11. The fairness intuition (per-axis push = α regardless of cos) translates to *unbounded magnitude* when vectors cancel, and the model decoheres past a magnitude threshold around ‖δ‖≈7.
+2. **Phase 12's `normalize=False` reproduces the audited coherence collapse** on high-cos pairs: coh=27 on evil+sycophantic, coh=23 on apathetic+impolite — same numbers as Phase 12's summary JSON within stochastic noise. This is the bug Phase 14 diagnosed.
+3. **`normalize=True` never breaks** — joint coh stays 69–94 across the cosine range. But at α=4 it under-doses: per-axis push is only α·√((1+cos)/2) ∈ [2.0, 3.5] across our pair set, well below the α=4 dose E10.4 calibrated for single vectors.
+
+**Cosine ≈ 0 sanity check passes:** `per_axis` and `False` give numerically identical results on `apathetic+confidence` (62.8/51.2/58 vs 60.7/50.7/58) — required by the math (per_axis ≡ False at cos=0).
+
+**Reframe.** E10.4 explicitly calibrated α=4 with composition's magnitude inflation in mind: the expected joint regime was `α_unit ∈ [4, ~7.5]` single-trait equivalent, with coh expected around 50 in the worst case. So Phase 12's coh ~50–80 is *the predicted regime*, just with `normalize=False` swinging ‖δ‖ wildly across cosines (4 to 7.4) and Phase 14's variance complaint hidden behind it. Switching to `normalize=True` at α=4 collapses to the safe single-α=4 regime everywhere, leaving E10.4's headroom unused — that's the dial we want to re-explore.
+
+### E15.11 — Pilot 2: True α-sweep + per_axis α=3 + single α=3 (Riccardo, 2026-05-21..22)
+
+After E15.10's reframe, ran three extensions on the cluster:
+
+**A) `normalize=True` α-sweep on the same 6 pairs.** Added α ∈ {4.5, 5, 5.5, 6} (α=4 already in pilot 1). Tests whether higher α with bounded ‖δ‖ recovers trait expression while staying coherent. Job 497933 + 498598 (split because the first didn't include the fine-grained α=4.5/5.5; α=4.5/5.5 added after seeing the α=5/6 result and deciding the figure needed denser α resolution).
+
+**B) `per_axis` α=3 on the same 6 pairs.** Tests whether `per_axis` is salvageable at lower α (‖δ‖ on the most antipodal pair drops from 8.2 to 6.1).
+
+**C) Single-vector α=3 on the 9 traits.** Extends E10.3's grid {2, 4, 6, 8} with α=3 to probe the phase-shift region. Cluster job 498431. Generate-only on cluster (compute nodes have no outbound network), judge on laptop via [scripts/validation/run_single_alpha3_judge_local.py](../scripts/validation/run_single_alpha3_judge_local.py).
+
+**Aggregate `normalize=True` dose-response (mean ± SEM across 5 working pairs — apathetic+power_seeking excluded as broken trait):**
+
+| α | mean Δ_comp | mean coh | utility = Δ_comp · coh / 100 |
+|---:|---:|---:|---:|
+| 4.0 | 20.05 ± 8.6 | 78.81 ± 4.2 | 14.49 ± 5.8 |
+| **4.5** | 25.97 ± 11.7 | 69.24 ± 5.9 | **15.43 ± 6.3 ← peak** |
+| 5.0 | 28.04 ± 12.5 | 60.91 ± 5.7 | 14.57 ± 5.8 |
+| 5.5 | 29.44 ± 13.7 | 51.93 ± 5.8 | 12.94 ± 5.2 |
+| 6.0 | 29.21 ± 14.9 | 43.94 ± 5.1 | 10.78 ± 4.9 |
+
+Reading:
+- Coherence falls ~10 pts per +0.5 α from α=4 onward.
+- Δ_comp gains +6 pts at α=4→4.5, then plateaus from α=5 onward (most expression unlocked early).
+- Utility (Δ_comp × coh / 100) peaks at α=4.5; α=4 and α=5 statistically tied within ±SEM.
+- Anthropic coherence floor (50) crossed between α=5 and α=5.5.
+
+**Phase 12 reference (`normalize=False`, α=4) on the same 5-pair aggregate:** Δ_comp ≈ 33, coh ≈ 31, utility ≈ 10. Strictly dominated by every True point on utility, even though Phase 12 has higher trait expression — its coherence cost outweighs the gain.
+
+**B) per_axis α=3 result:** ‖δ‖ on antipodals drops from 8 to 6, coherence recovers (formality+humorous: 11 → 38). But per-axis push on positive-cos pairs collapses (cos=+0.69: push drops from 4 to 3.3), so trait expression undershoots — apathetic+impolite drops from 53 trait-comp at per_axis α=4 to 22 at per_axis α=3. The mode's fairness property is preserved; the empirical payoff isn't.
+
+**C) Single α=3 result on 9 traits:**
+
+| α | mean Δ_trait | mean coh | n Δ > 50 |
+|---:|---:|---:|---:|
+| 2 | +10.3 | 93.9 | 0/9 |
+| **3** | **+18.9** | **88.6** | **1/9 (humorous)** |
+| 4 | +45.6 | 77.7 | 5/9 |
+| 6 | +63.5 | 52.0 | 6/9 |
+| 8 | +65.6 | 31.2 | 6/9 |
+
+Findings:
+- The "phase shift" Riccardo conjectured is between α=3 and α=4 (Δ=19 → 46), not between α=2 and α=4. α=3 only adds ~9 Δ over α=2; α=4 adds another +27.
+- `humorous` has a *clean α=3 sweet spot*: trait +59 at coh 76, dominating its α=4 (+77/58) and α=6 (+79/24) points on the gain/cost trade. Reopens the per-trait-α calibration question E10.4 left as a follow-up.
+- `power_seeking` goes *negative* at α=3 (−13 trait vs baseline) before climbing to +59 at α=4. Confirms Phase 14's diagnosis that this trait has unstable, non-monotonic dose-response — the broken-axis interpretation is robust.
+
+### E15.12 — Dose-response figure (Riccardo, 2026-05-22)
+
+Built [scripts/plotting/plot_pilot_normalisations.py](../scripts/plotting/plot_pilot_normalisations.py) to render the normalize=True α-sweep. Two output figures, each 3-panel (Δ composition / coherence / utility, all vs α):
+
+- [results/composition_pilot_normalisations/fig_alpha_sweep_true_per_pair.{pdf,png}](../results/composition_pilot_normalisations/fig_alpha_sweep_true_per_pair.png) — one coloured line per pair (cos in legend). Phase 12 reference shown as a hollow ◇ marker at x=3.85 in the pair colour, immediately left of the True_α=4 marker so the two are visually side-by-side.
+- [results/composition_pilot_normalisations/fig_alpha_sweep_true_aggregate.{pdf,png}](../results/composition_pilot_normalisations/fig_alpha_sweep_true_aggregate.png) — single blue line with ±1 SEM band across the 5 working pairs (apathetic+power_seeking excluded). Phase 12 reference shown as a single red ★ at α=4.
+
+Reading the aggregate panel (c): the utility curve has a clear peak at α=4.5 (~15.4), with α=4 (~14.5) and α=5 (~14.6) tied just below. The Phase 12 ★ sits well below the curve (~10), dominated everywhere — the figure makes the case for the recalibration without needing the table.
+
+Reading the per-pair panel (b): the diamond markers for the high-|cos| pairs (`apathetic+impolite`, `evil+sycophantic`) sit far below their pair's True curve at α=4, visually showing Phase 12's over-steering on those pairs.
+
+### E15.13 — Phase 12.5 commit decision (Riccardo, 2026-05-22)
+
+**Operating point: `normalize=True`, α = 4.5, L = 17.** Locked for Phase 12.5.
+
+Reasoning chain:
+1. Phase 14's coherence collapse is real and confined to high-cos pairs where `normalize=False`'s ‖δ‖ inflates (Pilot 1 reproduces 23 ≤ coh ≤ 27 on those pairs).
+2. `per_axis` swaps the problem to the antipodal side (‖δ‖ inflation at cos<0). Empirically dominated. Discarded.
+3. `normalize=True` at α=4 is safe but under-doses (mean Δ_comp = 20, vs Phase 12's 33). Going up the α-sweep recovers expression while keeping ‖δ‖ ≤ α.
+4. α=4.5 maximises utility = Δ_comp × coh / 100, with coh = 69 ± 6 — comfortable margin above the Anthropic threshold of 50. α=5 is statistically tied on utility but loses 8 pts of coherence for only +2 Δ_comp; α=5.5/6 cross the threshold.
+5. The decision aligns with E10.4's implicit target (composition lands in single-α=4–7 regime). At α=4.5 with normalize=True, per-axis push is α·√((1+cos)/2) ∈ [2.25, 4.0] across our cosine range — single-α=2.25–4 regime, slightly *below* E10.4's intent but with the bounded-magnitude safety that Phase 12 lacked. Acceptable trade.
+
+**Locked Phase 12.5 design (matches E15.4 with the changes from E15.5 applied):**
+
+- 36 → 28 pairs (drop power_seeking from main trait set; the trait was repeatedly confirmed broken on these prompts — pilot 1 pair 6, Phase 14 Problem 1).
+- α = 4.5, normalize = True, L = 17.
+- Same N_per_question=10, same trajectory capture, same 3-stage split as Phase 12.
+- Output directory: `results/composition_scoring_l17_v2/` (Phase 12 outputs untouched).
+- Apathetic rubric: KEEP v1 for the re-run (changing both the geometry and the rubric simultaneously would confound the mode comparison in the writeup). Rubric tightening is a separate change that can land after Phase 12.5.
+- Single α=3 results from E15.11C are reported as an extension of E10.3's table, not part of Phase 12.5's joint dataset.
+
+**Out of scope for Phase 12.5 itself (deferred):** trajectory dual-projection robustness check (E11.9 #1), fixed-completion sanity pass (E11.9 #2), per-trait α calibration (E10.7), apathetic v2 rubric (E15.5 #2). All land on top of the Phase 12.5 parquet once it's written.
+
+### E15.14 — Files added during Phase 15
+
+**Library:**
+- [src/composition/joint_injection.py](../src/composition/joint_injection.py) — added `normalize="per_axis"` mode to `compose_steering_vector` + smoke tests for the new branch.
+
+**Drivers + judge wrappers:**
+- [scripts/compositions/validate_normalisations_pilot.py](../scripts/compositions/validate_normalisations_pilot.py) — pilot 1 driver (3 modes × 6 pairs at α=4).
+- [scripts/compositions/validate_normalisations_pilot_2.py](../scripts/compositions/validate_normalisations_pilot_2.py) — pilot 2 driver (True α-sweep + per_axis α=3 on same 6 pairs).
+- [scripts/compositions/validate_normalisations_judge_local.py](../scripts/compositions/validate_normalisations_judge_local.py) — laptop judge wrapper; walks the dir, idempotent on `trait_a.isna()`. Handles power_seeking edge case in filename parsing.
+- [scripts/validation/run_single_alpha3.py](../scripts/validation/run_single_alpha3.py) — single-vector α=3 generator (extends E10.3's grid).
+- [scripts/validation/run_single_alpha3_judge_local.py](../scripts/validation/run_single_alpha3_judge_local.py) — its laptop judge wrapper.
+
+**SLURM:**
+- [slurm/validate_normalisations_pilot.sh](../slurm/validate_normalisations_pilot.sh) — pilot 1 cluster job.
+- [slurm/validate_normalisations_pilot_2.sh](../slurm/validate_normalisations_pilot_2.sh) — pilot 2 + single α=3 cluster job (bundled).
+
+**Plots:**
+- [scripts/plotting/plot_pilot_normalisations.py](../scripts/plotting/plot_pilot_normalisations.py) — renders both per-pair and aggregate figures from the latest scored CSVs.
+
+**Data:**
+- [results/composition_pilot_normalisations/Llama-3.1-8B-Instruct/](../results/composition_pilot_normalisations/Llama-3.1-8B-Instruct/) — 66 scored CSVs (6 pairs × 11 settings: 1 baseline + 2 singles_α4 + 6 joints at α∈{4, 4.5, 5, 5.5, 6} × {True, False, per_axis where defined}).
+- [results/composition_pilot_normalisations_summary.json](../results/composition_pilot_normalisations_summary.json) — pilot 1 summary.
+- [results/composition_pilot_normalisations_pilot2_summary.json](../results/composition_pilot_normalisations_pilot2_summary.json) — pilot 2 summary.
+- [results/alpha_sweep_l17/Llama-3.1-8B-Instruct/*alpha3.0.csv](../results/alpha_sweep_l17/Llama-3.1-8B-Instruct/) — 9 newly scored single-vector α=3 CSVs (filenames follow E10.3's naming convention; they slot into the existing per-trait α-sweep dataset).
+- [results/composition_pilot_normalisations/fig_alpha_sweep_true_{per_pair,aggregate}.{pdf,png}](../results/composition_pilot_normalisations/) — the two preliminary figures + their sidecar data CSVs.
+
+### E15.15 — Open follow-ups (post-Phase-15 baseline list)
+
+Same as E15.6 (deferred until after Phase 12.5 lands) plus the new ones surfaced by the pilot:
+
+1. **Phase 12.5 implementation** — patch `composition_scoring.py` or wrap it in a `_v2` variant per E15.13's spec, run, judge, aggregate. ~$25 + ~11h cluster.
+2. **`humorous` per-trait α calibration** — E15.11C showed α=3 dominates α=4 for this trait. Worth a small re-validation if any joint pair involving humorous shows odd results in Phase 12.5.
+3. **Update `paper/research_plan.md`** with the calibrated operating point if/when Phase 12.5 lands as the primary dataset.
+4. From E15.6 (still open): v_i^(L) dual-projection check, fixed-completion sanity pass, 15×15 cosine matrix, humorous MWE sign-flip.
