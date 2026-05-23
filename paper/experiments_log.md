@@ -2644,11 +2644,82 @@ Reasoning chain:
 - [results/alpha_sweep_l17/Llama-3.1-8B-Instruct/*alpha3.0.csv](../results/alpha_sweep_l17/Llama-3.1-8B-Instruct/) — 9 newly scored single-vector α=3 CSVs (filenames follow E10.3's naming convention; they slot into the existing per-trait α-sweep dataset).
 - [results/composition_pilot_normalisations/fig_alpha_sweep_true_{per_pair,aggregate}.{pdf,png}](../results/composition_pilot_normalisations/) — the two preliminary figures + their sidecar data CSVs.
 
+### E15.15a — Phase 12.5 implementation + cluster run (Riccardo, 2026-05-22..23)
+
+**Code:** [scripts/compositions/composition_scoring_v2.py](../scripts/compositions/composition_scoring_v2.py) is a derivative of [scripts/compositions/composition_scoring.py](../scripts/compositions/composition_scoring.py) (Phase 12). Phase 12 driver kept untouched for reproducibility; v2 lives as a separate file. Surgical changes (all locked from E15.13):
+
+- `TRAITS`: drop `"power_seeking"` → 8 traits → 28 pairs.
+- `POLARITY_INVERTED = set()` (the only Phase 12 inversion was `power_seeking`).
+- `COMPOSITION_ALPHA = 4.5` + new constant `COMPOSITION_NORMALIZE = True`.
+- `_run_joint_steered_composition` replaces inline `v_a + v_b` with `compose_steering_vector([(v_a, 1.0), (v_b, 1.0)], alpha=4.5, normalize=True)`, so ‖δ‖ = α exactly regardless of pair geometry.
+- `_run_single_steered_composition` and `_capture_trajectories_for_pair` also pass `normalize=COMPOSITION_NORMALIZE` for symmetry (singles collapse identically across modes; trajectory δ must match the generation δ).
+- `_l17_sanity_check` predicted Δπ updated from `α·cos` (Phase 12) to `α·(√((1+cos)/2) − 1)` (Phase 12.5, the closed form under `normalize=True`).
+- Output paths get `_v2` suffix: [results/composition_scoring_l17_v2/](../results/composition_scoring_l17_v2/), [results/composition_trajectories_l17_v2.parquet](../results/composition_trajectories_l17_v2.parquet), [results/composition_trajectories_l17_v2_tau.json](../results/composition_trajectories_l17_v2_tau.json), [results/composition_scoring_l17_v2_summary.json](../results/composition_scoring_l17_v2_summary.json). Phase 12 outputs untouched.
+- Summary JSON gains `"composition_mode": "normalize_True"` and updates the `"injection"` formula string.
+
+**Cluster run:** SLURM job 498673 ([slurm/composition_scoring_v2.sh](../slurm/composition_scoring_v2.sh)). 28 pairs × 4 settings × 100 generations + 28 × 9,600 teacher-force traces. Wall **8h09m** on 1 GPU A100-MIG-4g + 256G. Generate stage only on cluster (no outbound network); CSVs left at trait_*=NaN.
+
+**Laptop judge + aggregate:** `COMPOSITION_MODE=judge python -m scripts.compositions.composition_scoring_v2`. 112 CSVs × 3 judges = 33,600 OpenAI calls at `gpt-4.1-mini`, all 100/100 with 0 fails per CSV. Wall ~3h, OpenAI ~$22. τ R2 calibrated to **τ = 0.8297** (q95=0.553 × 1.5, 56 individual-steering groups, 56,000 bootstrap draws).
+
+**Rsync safety pattern applied** (`--ignore-existing` + targeted paths) — the laptop's empty CSVs were filled in place rather than overwritten from cluster, avoiding the 2026-05-21 lesson recorded in [memory/feedback_rsync_safety.md](../../.claude/projects/-Users-Ricca-Documents-Year-3-Semester-3--summer-session--ML-AI-Project-steering-vector-composition/memory/feedback_rsync_safety.md).
+
+### E15.15b — Phase 12 vs Phase 12.5 headline comparison (28 shared pairs)
+
+Aggregate metrics across the 28 pairs that exist in both datasets (Phase 12.5's full set):
+
+| metric | Phase 12 (False, α=4) | **Phase 12.5 (True, α=4.5)** | Δ |
+|---|---:|---:|---:|
+| mean joint composition | 64.7 | **56.3** | **−8.4** |
+| mean joint coherence | 44.2 | **65.8** | **+21.6** |
+| pairs with mean joint coh < 50 | 17 / 28 | **5 / 28** | −12 |
+| pairs with mean joint coh < 30 | 10 / 28 | **0 / 28** | −10 |
+| τ R2 (trajectory noise floor) | 0.890 | 0.830 | similar |
+
+**Regime distribution shift** (counts and percentages over each dataset's full pair count):
+
+| regime | Phase 12 (36 pairs) | Phase 12.5 (28 pairs) |
+|---|---:|---:|
+| additive | 3 (8%) | **7 (25%)** |
+| dominant | 5 (14%) | 3 (11%) |
+| suppressive | 3 (8%) | 4 (14%) |
+| **emergent** | **6 (17%)** | **0 (0%)** |
+| mixed | 19 (53%) | 14 (50%) |
+
+**Direction-of-change**: 27 / 28 shared pairs ↑ coherence. Only `formality + humorous` (cos=−0.52, the most antipodal pair) saw a small coh drop (86.2 → 73.7) — still well above the Anthropic threshold, and humorous trait expression was already near zero either way.
+
+### E15.15c — Interpretation: three Phase 14 problems resolved, one open
+
+The Phase 12.5 numbers confirm/resolve three of the six diagnoses in Phase 14:
+
+- **Problem 2 (joint coherence collapse from geometric over-steering) — RESOLVED.** All 10 Phase 12 pairs with mean coh < 30 are now above 40; all 17 pairs below the Anthropic threshold of 50 dropped to 5. The remaining 5 pairs below threshold are not catastrophic (coh 40–48) and concentrated on the highest-magnitude joint conditions — explainable from the residual variation in per-axis push across cosines under `normalize=True`.
+- **Problem 5 (spurious emergent classifications) — RESOLVED.** The 6 Phase 12 pairs labelled emergent (where joint Δ_trait exceeded single Δ_trait by >1.3× on both axes) all reclassified to additive (3) or mixed (3) at the new operating point. Phase 14's hypothesis — that emergent labels were measurement artifacts driven by low-coherence Δ_trait inflation — is supported: when coherence recovers, the ratios stabilize and emergent disappears entirely.
+- **Problem 1 (power_seeking degenerate) — DROPPED.** The trait is no longer in the dataset; Phase 12.5 reports its absence as a methods-section note ("we drop power_seeking because the vector×judge×prompt interaction on these prompts produces unusable ratios in every normalisation mode tested").
+
+Still open and to be addressed downstream of Phase 12.5:
+
+- **Problem 3 (apathetic judge form-bias).** Untouched by the normalisation change — same v1 rubric. Apathetic shows up in 7 of the 28 pairs in Phase 12.5; if the rubric inflation persists in those pairs, the tightened v2 rubric (E15.5 #2) should be applied as a Phase 12.6 re-judge of the existing CSVs (no new generations needed).
+- **Problem 4 (bimodal vs continuous axis-type mismatch).** Architectural, not addressable by α tuning. Plan: add a `bimodal_axis_fraction` column to the summary JSON as a per-pair covariate.
+- **Problem 6 (53% mixed regime as the headline symptom).** Still ~50% mixed in Phase 12.5. The fraction itself didn't move much, but its *composition* changed: many former-emergent and former-dominant pairs reclassified to additive, and the remaining mixed pairs now have interpretable (non-coherence-confounded) ratios. The 50% rate is partly a feature of the threshold choices — re-examining REGIME_ADDITIVE_HI=1.3 might tighten it further.
+
+### E15.15d — Files added during Phase 12.5
+
+- [scripts/compositions/composition_scoring_v2.py](../scripts/compositions/composition_scoring_v2.py) — Phase 12.5 driver.
+- [slurm/composition_scoring_v2.sh](../slurm/composition_scoring_v2.sh) — cluster wrapper.
+- [results/composition_scoring_l17_v2/Llama-3.1-8B-Instruct/](../results/composition_scoring_l17_v2/Llama-3.1-8B-Instruct/) — 112 scored CSVs.
+- [results/composition_scoring_l17_v2_summary.json](../results/composition_scoring_l17_v2_summary.json) — per-pair + run-level metadata.
+- [results/composition_trajectories_l17_v2/Llama-3.1-8B-Instruct/](../results/composition_trajectories_l17_v2/Llama-3.1-8B-Instruct/) — 28 per-pair Parquets.
+- [results/composition_trajectories_l17_v2.parquet](../results/composition_trajectories_l17_v2.parquet) — aggregate 268,800-row trajectory dataset.
+- [results/composition_trajectories_l17_v2_tau.json](../results/composition_trajectories_l17_v2_tau.json) — τ R2 calibration output.
+
 ### E15.15 — Open follow-ups (post-Phase-15 baseline list)
 
-Same as E15.6 (deferred until after Phase 12.5 lands) plus the new ones surfaced by the pilot:
+With Phase 12.5 landed (E15.15a–d), the active follow-up list is:
 
-1. **Phase 12.5 implementation** — patch `composition_scoring.py` or wrap it in a `_v2` variant per E15.13's spec, run, judge, aggregate. ~$25 + ~11h cluster.
-2. **`humorous` per-trait α calibration** — E15.11C showed α=3 dominates α=4 for this trait. Worth a small re-validation if any joint pair involving humorous shows odd results in Phase 12.5.
-3. **Update `paper/research_plan.md`** with the calibrated operating point if/when Phase 12.5 lands as the primary dataset.
-4. From E15.6 (still open): v_i^(L) dual-projection check, fixed-completion sanity pass, 15×15 cosine matrix, humorous MWE sign-flip.
+1. **Re-render the dose-response figure with Phase 12.5 results** — the current [results/composition_pilot_normalisations/fig_alpha_sweep_true_*.png](../results/composition_pilot_normalisations/) shows the *pilot* 6-pair sweep. A successor figure could overlay the full 28-pair Phase 12.5 result as a vertical "operating point" marker on the same axes.
+2. **Tighten apathetic rubric to v2 + re-judge** (Phase 14 Problem 3). Apply only to existing Phase 12.5 CSVs (no new generations). Compare per-pair apathetic scores under v1 vs v2.
+3. **Add `bimodal_axis_fraction` to the summary JSON** (Phase 14 Problem 4). Per-pair covariate for interpreting regimes.
+4. **Re-examine regime thresholds** given the new coherence-clean dataset — REGIME_ADDITIVE_HI=1.3 etc. might admit a tighter additive bracket now that ratio_a / ratio_b are no longer coherence-confounded.
+5. **`humorous` per-trait α** (E15.11C) — α=3 dominates α=4 for this trait alone. Worth a small per-trait re-validation if any humorous-involved pair in Phase 12.5 shows odd behaviour.
+6. **Update [paper/research_plan.md](research_plan.md)** to reflect Phase 12.5 as the primary RQ1 + RQ2 dataset, with Phase 12 reframed as the methodological precursor.
+7. **Phase 12.5 trajectory work** — v_i^(L) dual-projection robustness check (E11.9 #1), fixed-completion sanity pass (E11.9 #2). Both now run against the new `composition_trajectories_l17_v2.parquet`.
+8. **From E15.6 (still open)**: 15×15 cosine matrix at L=17 on the full trait set, humorous MWE sign-flip inspection.
