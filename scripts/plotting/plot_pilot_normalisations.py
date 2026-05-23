@@ -239,16 +239,28 @@ def _plot_per_pair(rows: list[dict], false_per_pair: dict, out_path: Path) -> No
     ax_u.axhline(0, color="gray", linewidth=0.5)
     ax_u.grid(alpha=0.3)
 
+    # Phase 12.5 operating-point marker — vertical dashed line at α=4.5.
+    for ax in (ax_d, ax_c, ax_u):
+        ax.axvline(4.5, color="#2ca02c", linewidth=1.5, linestyle="--",
+                   alpha=0.7, zorder=0)
+    op_handle = Line2D(
+        [0], [0], color="#2ca02c", linewidth=1.5, linestyle="--",
+        label="Phase 12.5 operating point\n(committed α = 4.5)",
+    )
+
     # Legend on far right.
     handles, labels = ax_u.get_legend_handles_labels()
     handles.append(ref_handle)
     labels.append(ref_handle.get_label())
+    handles.append(op_handle)
+    labels.append(op_handle.get_label())
     ax_u.legend(handles, labels, loc="upper left", bbox_to_anchor=(1.02, 1.0),
                 fontsize=8, frameon=False, title="pair (cos)")
 
     fig.suptitle(
-        "Phase 15 pilot — per-pair dose-response under normalize=True",
-        fontsize=12, y=1.01,
+        "Phase 15 pilot — per-pair dose-response under normalize=True\n"
+        "green dashed line = Phase 12.5 committed operating point (α = 4.5)",
+        fontsize=11, y=1.02,
     )
     fig.tight_layout()
     png = out_path.with_suffix(".png")
@@ -310,6 +322,9 @@ def _plot_aggregate(agg: pd.DataFrame, false_per_pair: dict, out_path: Path) -> 
         ax.set_ylabel(ylabel)
         ax.set_title(title)
         ax.grid(alpha=0.3)
+        # Phase 12.5 operating-point marker.
+        ax.axvline(4.5, color="#2ca02c", linewidth=1.5, linestyle="--",
+                   alpha=0.7, zorder=0, label="Phase 12.5 op. point (α=4.5)")
         if col == "coherence":
             ax.axhline(50, color="red", linewidth=0.7, linestyle="--", alpha=0.6)
             ax.text(4.05, 51, "Anthropic threshold (coh=50)",
@@ -324,7 +339,8 @@ def _plot_aggregate(agg: pd.DataFrame, false_per_pair: dict, out_path: Path) -> 
 
     fig.suptitle(
         "Phase 15 pilot — aggregate dose-response under normalize=True\n"
-        f"mean across {int(agg['n'].iloc[0])} pairs (apathetic+power_seeking excluded — broken trait)",
+        f"mean across {int(agg['n'].iloc[0])} pairs (apathetic+power_seeking excluded — broken trait); "
+        "green dashed line = Phase 12.5 committed operating point (α = 4.5)",
         fontsize=11, y=1.02,
     )
     fig.tight_layout()
