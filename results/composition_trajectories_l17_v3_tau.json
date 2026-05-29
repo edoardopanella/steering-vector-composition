@@ -1,0 +1,13 @@
+{
+  "recipe": "R2_split_half_bootstrap_q95_x1.5",
+  "tau": 0.8262850564867241,
+  "factor": 1.5,
+  "q": 0.95,
+  "q_value_pre_factor": 0.5508567043244827,
+  "bootstrap_draws_per_group": 1000,
+  "n_groups": 56,
+  "n_draws_total": 56000,
+  "pooled_diff_min": 0.00973802883177996,
+  "pooled_diff_max": 1.2962252473831173,
+  "pooled_diff_mean": 0.2509839236431751
+}

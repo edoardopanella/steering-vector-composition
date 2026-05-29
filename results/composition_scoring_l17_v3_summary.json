@@ -1,0 +1,1459 @@
+{
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "judge_model": "gpt-4.1-mini",
+  "layer": 17,
+  "alpha": 4.5,
+  "vector_normalisation": "unit",
+  "composition_mode": "per_axis",
+  "injection": "h += alpha * (v_a_unit + v_b_unit) / ||v_a_unit + v_b_unit||",
+  "traits": [
+    "apathetic",
+    "evil",
+    "hallucinating",
+    "humorous",
+    "impolite",
+    "sycophantic",
+    "confidence",
+    "formality"
+  ],
+  "polarity_inverted_for_steering": [],
+  "projection_axis": "raw_direction_no_polarity_flip",
+  "n_per_question": 5,
+  "trajectory_layers": [
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32
+  ],
+  "trajectory_settings": [
+    [
+      1,
+      0
+    ],
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "tau_recipe": "R2_split_half_bootstrap_q95_x1.5",
+  "tau_value": 0.8262850564867241,
+  "pairs": [
+    {
+      "trait_a": "apathetic",
+      "trait_b": "confidence",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.0143,
+      "regime": "dominant",
+      "baseline": {
+        "trait_a_mean": 3.58,
+        "trait_b_mean": 60.79,
+        "composition_mean": 32.19,
+        "coherence_mean": 97.84
+      },
+      "single_a": {
+        "trait_a_mean": 45.48,
+        "trait_b_mean": 46.58,
+        "composition_mean": 46.03,
+        "coherence_mean": 73.37
+      },
+      "single_b": {
+        "trait_a_mean": 8.64,
+        "trait_b_mean": 83.42,
+        "composition_mean": 46.03,
+        "coherence_mean": 92.29
+      },
+      "steered": {
+        "trait_a_mean": 64.61,
+        "trait_b_mean": 44.74,
+        "composition_mean": 54.67,
+        "coherence_mean": 50.01
+      },
+      "delta": {
+        "trait_a_joint": 61.03,
+        "trait_b_joint": -16.05,
+        "trait_a_single": 41.9,
+        "trait_b_single": 22.63,
+        "composition": 22.49,
+        "coherence": -47.83
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.0143,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.2953,
+        "pred_diff_phase12_false": 0.0644,
+        "obs_pi_a_diff": 0.2365,
+        "obs_pi_b_diff": 0.0141
+      }
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "evil",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.2578,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 7.92,
+        "trait_b_mean": 0.0,
+        "composition_mean": 3.96,
+        "coherence_mean": 97.16
+      },
+      "single_a": {
+        "trait_a_mean": 53.26,
+        "trait_b_mean": 1.09,
+        "composition_mean": 27.17,
+        "coherence_mean": 74.05
+      },
+      "single_b": {
+        "trait_a_mean": 68.98,
+        "trait_b_mean": 68.57,
+        "composition_mean": 68.78,
+        "coherence_mean": 45.61
+      },
+      "steered": {
+        "trait_a_mean": 77.96,
+        "trait_b_mean": 22.11,
+        "composition_mean": 50.03,
+        "coherence_mean": 37.53
+      },
+      "delta": {
+        "trait_a_joint": 70.04,
+        "trait_b_joint": 22.11,
+        "trait_a_single": 45.34,
+        "trait_b_single": 68.57,
+        "composition": 46.07,
+        "coherence": -59.63
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.2578,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.9314,
+        "pred_diff_phase12_false": 1.1601,
+        "obs_pi_a_diff": 0.4987,
+        "obs_pi_b_diff": -0.564
+      }
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "formality",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.015,
+      "regime": "dominant",
+      "baseline": {
+        "trait_a_mean": 2.07,
+        "trait_b_mean": 87.42,
+        "composition_mean": 44.75,
+        "coherence_mean": 97.88
+      },
+      "single_a": {
+        "trait_a_mean": 37.51,
+        "trait_b_mean": 51.86,
+        "composition_mean": 44.69,
+        "coherence_mean": 77.71
+      },
+      "single_b": {
+        "trait_a_mean": 50.0,
+        "trait_b_mean": 94.1,
+        "composition_mean": 72.05,
+        "coherence_mean": 92.05
+      },
+      "steered": {
+        "trait_a_mean": 71.15,
+        "trait_b_mean": 88.76,
+        "composition_mean": 79.96,
+        "coherence_mean": 74.36
+      },
+      "delta": {
+        "trait_a_joint": 69.08,
+        "trait_b_joint": 1.34,
+        "trait_a_single": 35.44,
+        "trait_b_single": 6.68,
+        "composition": 35.21,
+        "coherence": -23.52
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.015,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.2942,
+        "pred_diff_phase12_false": 0.0676,
+        "obs_pi_a_diff": 0.1229,
+        "obs_pi_b_diff": -0.0144
+      }
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "hallucinating",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": -0.1642,
+      "regime": "emergent",
+      "baseline": {
+        "trait_a_mean": 12.1,
+        "trait_b_mean": 8.84,
+        "composition_mean": 10.47,
+        "coherence_mean": 94.16
+      },
+      "single_a": {
+        "trait_a_mean": 43.57,
+        "trait_b_mean": 20.93,
+        "composition_mean": 32.25,
+        "coherence_mean": 74.63
+      },
+      "single_b": {
+        "trait_a_mean": 20.27,
+        "trait_b_mean": 50.14,
+        "composition_mean": 35.21,
+        "coherence_mean": 78.94
+      },
+      "steered": {
+        "trait_a_mean": 74.55,
+        "trait_b_mean": 78.7,
+        "composition_mean": 76.63,
+        "coherence_mean": 29.93
+      },
+      "delta": {
+        "trait_a_joint": 62.46,
+        "trait_b_joint": 69.85,
+        "trait_a_single": 31.47,
+        "trait_b_single": 41.3,
+        "composition": 66.16,
+        "coherence": -64.22
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": -0.1642,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.5909,
+        "pred_diff_phase12_false": -0.7388,
+        "obs_pi_a_diff": 0.3858,
+        "obs_pi_b_diff": -0.4437
+      }
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "humorous",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.1923,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 1.5,
+        "trait_b_mean": 0.0,
+        "composition_mean": 0.75,
+        "coherence_mean": 97.11
+      },
+      "single_a": {
+        "trait_a_mean": 29.86,
+        "trait_b_mean": 0.36,
+        "composition_mean": 15.11,
+        "coherence_mean": 76.43
+      },
+      "single_b": {
+        "trait_a_mean": 44.89,
+        "trait_b_mean": 75.36,
+        "composition_mean": 60.13,
+        "coherence_mean": 54.61
+      },
+      "steered": {
+        "trait_a_mean": 76.1,
+        "trait_b_mean": 49.84,
+        "composition_mean": 62.97,
+        "coherence_mean": 32.51
+      },
+      "delta": {
+        "trait_a_joint": 74.6,
+        "trait_b_joint": 49.84,
+        "trait_a_single": 28.36,
+        "trait_b_single": 75.36,
+        "composition": 62.22,
+        "coherence": -64.59
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.1923,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.0256,
+        "pred_diff_phase12_false": 0.8651,
+        "obs_pi_a_diff": 0.8798,
+        "obs_pi_b_diff": -0.3001
+      }
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "impolite",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.6948,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 2.66,
+        "trait_b_mean": 0.0,
+        "composition_mean": 1.33,
+        "coherence_mean": 96.91
+      },
+      "single_a": {
+        "trait_a_mean": 37.74,
+        "trait_b_mean": 17.06,
+        "composition_mean": 27.4,
+        "coherence_mean": 73.51
+      },
+      "single_b": {
+        "trait_a_mean": 67.24,
+        "trait_b_mean": 73.2,
+        "composition_mean": 70.22,
+        "coherence_mean": 47.82
+      },
+      "steered": {
+        "trait_a_mean": 65.65,
+        "trait_b_mean": 60.12,
+        "composition_mean": 62.89,
+        "coherence_mean": 48.75
+      },
+      "delta": {
+        "trait_a_joint": 62.99,
+        "trait_b_joint": 60.12,
+        "trait_a_single": 35.08,
+        "trait_b_single": 73.2,
+        "composition": 61.55,
+        "coherence": -48.16
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.6948,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.3575,
+        "pred_diff_phase12_false": 3.1268,
+        "obs_pi_a_diff": 0.3831,
+        "obs_pi_b_diff": -0.2132
+      }
+    },
+    {
+      "trait_a": "apathetic",
+      "trait_b": "sycophantic",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.0503,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 4.01,
+        "trait_b_mean": 5.04,
+        "composition_mean": 4.53,
+        "coherence_mean": 97.76
+      },
+      "single_a": {
+        "trait_a_mean": 45.42,
+        "trait_b_mean": 4.55,
+        "composition_mean": 24.98,
+        "coherence_mean": 78.04
+      },
+      "single_b": {
+        "trait_a_mean": 1.41,
+        "trait_b_mean": 83.03,
+        "composition_mean": 42.22,
+        "coherence_mean": 86.18
+      },
+      "steered": {
+        "trait_a_mean": 70.82,
+        "trait_b_mean": 38.76,
+        "composition_mean": 54.79,
+        "coherence_mean": 39.18
+      },
+      "delta": {
+        "trait_a_joint": 66.81,
+        "trait_b_joint": 33.72,
+        "trait_a_single": 41.4,
+        "trait_b_single": 77.99,
+        "composition": 50.26,
+        "coherence": -58.58
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.0503,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.2389,
+        "pred_diff_phase12_false": 0.2265,
+        "obs_pi_a_diff": 0.4887,
+        "obs_pi_b_diff": -0.0859
+      }
+    },
+    {
+      "trait_a": "confidence",
+      "trait_b": "evil",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.2294,
+      "regime": "dominant",
+      "baseline": {
+        "trait_a_mean": 60.04,
+        "trait_b_mean": 0.0,
+        "composition_mean": 30.02,
+        "coherence_mean": 97.18
+      },
+      "single_a": {
+        "trait_a_mean": 82.73,
+        "trait_b_mean": 0.0,
+        "composition_mean": 41.37,
+        "coherence_mean": 90.87
+      },
+      "single_b": {
+        "trait_a_mean": 39.34,
+        "trait_b_mean": 48.5,
+        "composition_mean": 43.92,
+        "coherence_mean": 53.95
+      },
+      "steered": {
+        "trait_a_mean": 47.35,
+        "trait_b_mean": 55.4,
+        "composition_mean": 51.38,
+        "coherence_mean": 42.8
+      },
+      "delta": {
+        "trait_a_joint": -12.69,
+        "trait_b_joint": 55.4,
+        "trait_a_single": 22.69,
+        "trait_b_single": 48.5,
+        "composition": 21.36,
+        "coherence": -54.38
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.2294,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.9719,
+        "pred_diff_phase12_false": 1.0323,
+        "obs_pi_a_diff": 0.258,
+        "obs_pi_b_diff": 0.3039
+      }
+    },
+    {
+      "trait_a": "confidence",
+      "trait_b": "formality",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.2262,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 62.83,
+        "trait_b_mean": 90.12,
+        "composition_mean": 76.47,
+        "coherence_mean": 97.26
+      },
+      "single_a": {
+        "trait_a_mean": 82.38,
+        "trait_b_mean": 87.92,
+        "composition_mean": 85.15,
+        "coherence_mean": 91.32
+      },
+      "single_b": {
+        "trait_a_mean": 63.55,
+        "trait_b_mean": 94.49,
+        "composition_mean": 79.02,
+        "coherence_mean": 93.03
+      },
+      "steered": {
+        "trait_a_mean": 71.43,
+        "trait_b_mean": 92.66,
+        "composition_mean": 82.05,
+        "coherence_mean": 83.3
+      },
+      "delta": {
+        "trait_a_joint": 8.61,
+        "trait_b_joint": 2.53,
+        "trait_a_single": 19.55,
+        "trait_b_single": 4.36,
+        "composition": 5.57,
+        "coherence": -13.96
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.2262,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.9765,
+        "pred_diff_phase12_false": 1.0179,
+        "obs_pi_a_diff": 0.1903,
+        "obs_pi_b_diff": 0.1736
+      }
+    },
+    {
+      "trait_a": "confidence",
+      "trait_b": "hallucinating",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.27,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 43.05,
+        "trait_b_mean": 7.7,
+        "composition_mean": 25.37,
+        "coherence_mean": 93.48
+      },
+      "single_a": {
+        "trait_a_mean": 69.9,
+        "trait_b_mean": 20.51,
+        "composition_mean": 45.21,
+        "coherence_mean": 87.23
+      },
+      "single_b": {
+        "trait_a_mean": 53.65,
+        "trait_b_mean": 47.7,
+        "composition_mean": 50.68,
+        "coherence_mean": 81.27
+      },
+      "steered": {
+        "trait_a_mean": 64.17,
+        "trait_b_mean": 65.22,
+        "composition_mean": 64.7,
+        "coherence_mean": 63.88
+      },
+      "delta": {
+        "trait_a_joint": 21.13,
+        "trait_b_joint": 57.52,
+        "trait_a_single": 26.85,
+        "trait_b_single": 40.01,
+        "composition": 39.33,
+        "coherence": -29.59
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.27,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.9142,
+        "pred_diff_phase12_false": 1.2148,
+        "obs_pi_a_diff": 0.3251,
+        "obs_pi_b_diff": 0.102
+      }
+    },
+    {
+      "trait_a": "confidence",
+      "trait_b": "humorous",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": -0.0802,
+      "regime": "dominant",
+      "baseline": {
+        "trait_a_mean": 66.05,
+        "trait_b_mean": 0.12,
+        "composition_mean": 33.09,
+        "coherence_mean": 96.93
+      },
+      "single_a": {
+        "trait_a_mean": 82.64,
+        "trait_b_mean": 0.09,
+        "composition_mean": 41.37,
+        "coherence_mean": 91.32
+      },
+      "single_b": {
+        "trait_a_mean": 18.07,
+        "trait_b_mean": 78.33,
+        "composition_mean": 48.2,
+        "coherence_mean": 48.35
+      },
+      "steered": {
+        "trait_a_mean": 18.81,
+        "trait_b_mean": 55.85,
+        "composition_mean": 37.33,
+        "coherence_mean": 26.45
+      },
+      "delta": {
+        "trait_a_joint": -47.25,
+        "trait_b_joint": 55.73,
+        "trait_a_single": 16.58,
+        "trait_b_single": 78.2,
+        "composition": 4.24,
+        "coherence": -70.48
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": -0.0802,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.4484,
+        "pred_diff_phase12_false": -0.3611,
+        "obs_pi_a_diff": -0.0765,
+        "obs_pi_b_diff": -0.1246
+      }
+    },
+    {
+      "trait_a": "confidence",
+      "trait_b": "impolite",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.1573,
+      "regime": "dominant",
+      "baseline": {
+        "trait_a_mean": 62.86,
+        "trait_b_mean": 0.25,
+        "composition_mean": 31.55,
+        "coherence_mean": 95.93
+      },
+      "single_a": {
+        "trait_a_mean": 82.29,
+        "trait_b_mean": 2.12,
+        "composition_mean": 42.21,
+        "coherence_mean": 90.09
+      },
+      "single_b": {
+        "trait_a_mean": 31.74,
+        "trait_b_mean": 69.37,
+        "composition_mean": 50.56,
+        "coherence_mean": 50.57
+      },
+      "steered": {
+        "trait_a_mean": 38.91,
+        "trait_b_mean": 64.46,
+        "composition_mean": 51.69,
+        "coherence_mean": 40.26
+      },
+      "delta": {
+        "trait_a_joint": -23.95,
+        "trait_b_joint": 64.21,
+        "trait_a_single": 19.43,
+        "trait_b_single": 69.12,
+        "composition": 20.13,
+        "coherence": -55.67
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.1573,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.0769,
+        "pred_diff_phase12_false": 0.708,
+        "obs_pi_a_diff": -0.0193,
+        "obs_pi_b_diff": -0.0542
+      }
+    },
+    {
+      "trait_a": "confidence",
+      "trait_b": "sycophantic",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.3546,
+      "regime": "additive",
+      "baseline": {
+        "trait_a_mean": 47.22,
+        "trait_b_mean": 2.78,
+        "composition_mean": 25.0,
+        "coherence_mean": 97.16
+      },
+      "single_a": {
+        "trait_a_mean": 80.49,
+        "trait_b_mean": 26.25,
+        "composition_mean": 53.37,
+        "coherence_mean": 91.57
+      },
+      "single_b": {
+        "trait_a_mean": 74.8,
+        "trait_b_mean": 80.72,
+        "composition_mean": 77.76,
+        "coherence_mean": 86.14
+      },
+      "steered": {
+        "trait_a_mean": 84.21,
+        "trait_b_mean": 86.39,
+        "composition_mean": 85.3,
+        "coherence_mean": 73.47
+      },
+      "delta": {
+        "trait_a_joint": 37.0,
+        "trait_b_joint": 83.61,
+        "trait_a_single": 33.28,
+        "trait_b_single": 77.94,
+        "composition": 60.3,
+        "coherence": -23.69
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.3546,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.7966,
+        "pred_diff_phase12_false": 1.5955,
+        "obs_pi_a_diff": 0.292,
+        "obs_pi_b_diff": 0.2934
+      }
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "formality",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": -0.1059,
+      "regime": "suppressive",
+      "baseline": {
+        "trait_a_mean": 0.0,
+        "trait_b_mean": 90.11,
+        "composition_mean": 45.05,
+        "coherence_mean": 96.76
+      },
+      "single_a": {
+        "trait_a_mean": 59.67,
+        "trait_b_mean": 8.59,
+        "composition_mean": 34.13,
+        "coherence_mean": 43.94
+      },
+      "single_b": {
+        "trait_a_mean": 0.0,
+        "trait_b_mean": 94.78,
+        "composition_mean": 47.39,
+        "coherence_mean": 92.83
+      },
+      "steered": {
+        "trait_a_mean": 22.14,
+        "trait_b_mean": 62.71,
+        "composition_mean": 42.43,
+        "coherence_mean": 31.29
+      },
+      "delta": {
+        "trait_a_joint": 22.14,
+        "trait_b_joint": -27.39,
+        "trait_a_single": 59.67,
+        "trait_b_single": 4.68,
+        "composition": -2.63,
+        "coherence": -65.46
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": -0.1059,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.4912,
+        "pred_diff_phase12_false": -0.4765,
+        "obs_pi_a_diff": -0.4007,
+        "obs_pi_b_diff": -0.0845
+      }
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "hallucinating",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.2708,
+      "regime": "emergent",
+      "baseline": {
+        "trait_a_mean": 0.0,
+        "trait_b_mean": 9.35,
+        "composition_mean": 4.68,
+        "coherence_mean": 92.84
+      },
+      "single_a": {
+        "trait_a_mean": 35.37,
+        "trait_b_mean": 64.42,
+        "composition_mean": 49.89,
+        "coherence_mean": 59.61
+      },
+      "single_b": {
+        "trait_a_mean": 1.03,
+        "trait_b_mean": 53.25,
+        "composition_mean": 27.14,
+        "coherence_mean": 77.91
+      },
+      "steered": {
+        "trait_a_mean": 48.84,
+        "trait_b_mean": 85.22,
+        "composition_mean": 67.03,
+        "coherence_mean": 37.44
+      },
+      "delta": {
+        "trait_a_joint": 48.83,
+        "trait_b_joint": 75.86,
+        "trait_a_single": 35.36,
+        "trait_b_single": 43.89,
+        "composition": 62.35,
+        "coherence": -55.4
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.2708,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.9129,
+        "pred_diff_phase12_false": 1.2187,
+        "obs_pi_a_diff": 0.8419,
+        "obs_pi_b_diff": 0.3011
+      }
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "humorous",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.3685,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 0.0,
+        "trait_b_mean": 0.0,
+        "composition_mean": 0.0,
+        "coherence_mean": 96.13
+      },
+      "single_a": {
+        "trait_a_mean": 48.3,
+        "trait_b_mean": 31.39,
+        "composition_mean": 39.84,
+        "coherence_mean": 54.74
+      },
+      "single_b": {
+        "trait_a_mean": 0.18,
+        "trait_b_mean": 78.95,
+        "composition_mean": 39.56,
+        "coherence_mean": 48.36
+      },
+      "steered": {
+        "trait_a_mean": 14.79,
+        "trait_b_mean": 71.62,
+        "composition_mean": 43.2,
+        "coherence_mean": 28.32
+      },
+      "delta": {
+        "trait_a_joint": 14.79,
+        "trait_b_joint": 71.62,
+        "trait_a_single": 48.3,
+        "trait_b_single": 78.95,
+        "composition": 43.2,
+        "coherence": -67.81
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.3685,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.7777,
+        "pred_diff_phase12_false": 1.6581,
+        "obs_pi_a_diff": 0.1208,
+        "obs_pi_b_diff": 0.1416
+      }
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "impolite",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.3995,
+      "regime": "additive",
+      "baseline": {
+        "trait_a_mean": 0.0,
+        "trait_b_mean": 0.0,
+        "composition_mean": 0.0,
+        "coherence_mean": 96.0
+      },
+      "single_a": {
+        "trait_a_mean": 53.67,
+        "trait_b_mean": 68.68,
+        "composition_mean": 61.18,
+        "coherence_mean": 51.46
+      },
+      "single_b": {
+        "trait_a_mean": 5.51,
+        "trait_b_mean": 70.51,
+        "composition_mean": 38.01,
+        "coherence_mean": 50.93
+      },
+      "steered": {
+        "trait_a_mean": 39.63,
+        "trait_b_mean": 86.3,
+        "composition_mean": 62.96,
+        "coherence_mean": 31.34
+      },
+      "delta": {
+        "trait_a_joint": 39.63,
+        "trait_b_joint": 86.3,
+        "trait_a_single": 53.67,
+        "trait_b_single": 70.51,
+        "composition": 62.96,
+        "coherence": -64.65
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.3995,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.7358,
+        "pred_diff_phase12_false": 1.7975,
+        "obs_pi_a_diff": -0.0539,
+        "obs_pi_b_diff": 0.3066
+      }
+    },
+    {
+      "trait_a": "evil",
+      "trait_b": "sycophantic",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.4184,
+      "regime": "additive",
+      "baseline": {
+        "trait_a_mean": 0.0,
+        "trait_b_mean": 1.7,
+        "composition_mean": 0.85,
+        "coherence_mean": 96.66
+      },
+      "single_a": {
+        "trait_a_mean": 59.17,
+        "trait_b_mean": 27.39,
+        "composition_mean": 43.28,
+        "coherence_mean": 51.49
+      },
+      "single_b": {
+        "trait_a_mean": 0.31,
+        "trait_b_mean": 83.02,
+        "composition_mean": 41.66,
+        "coherence_mean": 83.23
+      },
+      "steered": {
+        "trait_a_mean": 48.97,
+        "trait_b_mean": 64.0,
+        "composition_mean": 56.49,
+        "coherence_mean": 43.1
+      },
+      "delta": {
+        "trait_a_joint": 48.97,
+        "trait_b_joint": 62.3,
+        "trait_a_single": 59.17,
+        "trait_b_single": 81.32,
+        "composition": 55.64,
+        "coherence": -53.56
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.4184,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.7104,
+        "pred_diff_phase12_false": 1.8829,
+        "obs_pi_a_diff": 0.2433,
+        "obs_pi_b_diff": 0.5779
+      }
+    },
+    {
+      "trait_a": "formality",
+      "trait_b": "hallucinating",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.1033,
+      "regime": "dominant",
+      "baseline": {
+        "trait_a_mean": 85.11,
+        "trait_b_mean": 9.81,
+        "composition_mean": 47.46,
+        "coherence_mean": 92.94
+      },
+      "single_a": {
+        "trait_a_mean": 90.6,
+        "trait_b_mean": 14.27,
+        "composition_mean": 52.44,
+        "coherence_mean": 89.83
+      },
+      "single_b": {
+        "trait_a_mean": 64.17,
+        "trait_b_mean": 52.61,
+        "composition_mean": 58.39,
+        "coherence_mean": 76.63
+      },
+      "steered": {
+        "trait_a_mean": 86.45,
+        "trait_b_mean": 62.78,
+        "composition_mean": 74.61,
+        "coherence_mean": 58.74
+      },
+      "delta": {
+        "trait_a_joint": 1.34,
+        "trait_b_joint": 52.96,
+        "trait_a_single": 5.49,
+        "trait_b_single": 42.8,
+        "composition": 27.15,
+        "coherence": -34.2
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.1033,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.1577,
+        "pred_diff_phase12_false": 0.4648,
+        "obs_pi_a_diff": 0.3456,
+        "obs_pi_b_diff": 0.2312
+      }
+    },
+    {
+      "trait_a": "formality",
+      "trait_b": "humorous",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": -0.5225,
+      "regime": "suppressive",
+      "baseline": {
+        "trait_a_mean": 89.77,
+        "trait_b_mean": 0.18,
+        "composition_mean": 44.98,
+        "coherence_mean": 96.95
+      },
+      "single_a": {
+        "trait_a_mean": 93.67,
+        "trait_b_mean": 0.0,
+        "composition_mean": 46.84,
+        "coherence_mean": 91.94
+      },
+      "single_b": {
+        "trait_a_mean": 3.38,
+        "trait_b_mean": 75.69,
+        "composition_mean": 39.54,
+        "coherence_mean": 52.28
+      },
+      "steered": {
+        "trait_a_mean": 21.97,
+        "trait_b_mean": 9.39,
+        "composition_mean": 15.68,
+        "coherence_mean": 6.28
+      },
+      "delta": {
+        "trait_a_joint": -67.8,
+        "trait_b_joint": 9.21,
+        "trait_a_single": 3.9,
+        "trait_b_single": 75.52,
+        "composition": -29.29,
+        "coherence": -90.67
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": -0.5225,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -2.3012,
+        "pred_diff_phase12_false": -2.3512,
+        "obs_pi_a_diff": -0.4372,
+        "obs_pi_b_diff": -1.0981
+      }
+    },
+    {
+      "trait_a": "formality",
+      "trait_b": "impolite",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": -0.23,
+      "regime": "suppressive",
+      "baseline": {
+        "trait_a_mean": 88.33,
+        "trait_b_mean": 0.02,
+        "composition_mean": 44.17,
+        "coherence_mean": 96.31
+      },
+      "single_a": {
+        "trait_a_mean": 93.53,
+        "trait_b_mean": 2.29,
+        "composition_mean": 47.91,
+        "coherence_mean": 90.19
+      },
+      "single_b": {
+        "trait_a_mean": 15.76,
+        "trait_b_mean": 69.42,
+        "composition_mean": 42.59,
+        "coherence_mean": 53.6
+      },
+      "steered": {
+        "trait_a_mean": 78.96,
+        "trait_b_mean": 25.42,
+        "composition_mean": 52.19,
+        "coherence_mean": 39.7
+      },
+      "delta": {
+        "trait_a_joint": -9.37,
+        "trait_b_joint": 25.41,
+        "trait_a_single": 5.2,
+        "trait_b_single": 69.4,
+        "composition": 8.02,
+        "coherence": -56.61
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": -0.23,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.7078,
+        "pred_diff_phase12_false": -1.0349,
+        "obs_pi_a_diff": 0.1851,
+        "obs_pi_b_diff": -0.6153
+      }
+    },
+    {
+      "trait_a": "formality",
+      "trait_b": "sycophantic",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": -0.1252,
+      "regime": "dominant",
+      "baseline": {
+        "trait_a_mean": 90.4,
+        "trait_b_mean": 2.83,
+        "composition_mean": 46.62,
+        "coherence_mean": 97.76
+      },
+      "single_a": {
+        "trait_a_mean": 94.39,
+        "trait_b_mean": 1.02,
+        "composition_mean": 47.7,
+        "coherence_mean": 93.19
+      },
+      "single_b": {
+        "trait_a_mean": 28.45,
+        "trait_b_mean": 74.46,
+        "composition_mean": 51.46,
+        "coherence_mean": 84.96
+      },
+      "steered": {
+        "trait_a_mean": 80.25,
+        "trait_b_mean": 69.71,
+        "composition_mean": 74.98,
+        "coherence_mean": 37.14
+      },
+      "delta": {
+        "trait_a_joint": -10.15,
+        "trait_b_joint": 66.88,
+        "trait_a_single": 3.99,
+        "trait_b_single": 71.63,
+        "composition": 28.36,
+        "coherence": -60.62
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": -0.1252,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.5238,
+        "pred_diff_phase12_false": -0.5633,
+        "obs_pi_a_diff": 0.0126,
+        "obs_pi_b_diff": 0.388
+      }
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "humorous",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.1311,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 10.5,
+        "trait_b_mean": 0.15,
+        "composition_mean": 5.33,
+        "coherence_mean": 92.56
+      },
+      "single_a": {
+        "trait_a_mean": 60.18,
+        "trait_b_mean": 7.8,
+        "composition_mean": 33.99,
+        "coherence_mean": 75.38
+      },
+      "single_b": {
+        "trait_a_mean": 49.88,
+        "trait_b_mean": 59.83,
+        "composition_mean": 54.86,
+        "coherence_mean": 56.93
+      },
+      "steered": {
+        "trait_a_mean": 85.94,
+        "trait_b_mean": 73.88,
+        "composition_mean": 79.91,
+        "coherence_mean": 23.18
+      },
+      "delta": {
+        "trait_a_joint": 75.44,
+        "trait_b_joint": 73.73,
+        "trait_a_single": 49.68,
+        "trait_b_single": 59.68,
+        "composition": 74.59,
+        "coherence": -69.38
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.1311,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.1159,
+        "pred_diff_phase12_false": 0.5899,
+        "obs_pi_a_diff": -0.1157,
+        "obs_pi_b_diff": 0.6366
+      }
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "impolite",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": -0.0508,
+      "regime": "emergent",
+      "baseline": {
+        "trait_a_mean": 10.26,
+        "trait_b_mean": 2.91,
+        "composition_mean": 6.58,
+        "coherence_mean": 92.72
+      },
+      "single_a": {
+        "trait_a_mean": 61.04,
+        "trait_b_mean": 8.32,
+        "composition_mean": 34.68,
+        "coherence_mean": 74.02
+      },
+      "single_b": {
+        "trait_a_mean": 42.93,
+        "trait_b_mean": 53.25,
+        "composition_mean": 48.09,
+        "coherence_mean": 61.2
+      },
+      "steered": {
+        "trait_a_mean": 82.73,
+        "trait_b_mean": 77.02,
+        "composition_mean": 79.87,
+        "coherence_mean": 23.34
+      },
+      "delta": {
+        "trait_a_joint": 72.47,
+        "trait_b_joint": 74.11,
+        "trait_a_single": 50.78,
+        "trait_b_single": 50.34,
+        "composition": 73.29,
+        "coherence": -69.38
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": -0.0508,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -1.3999,
+        "pred_diff_phase12_false": -0.2287,
+        "obs_pi_a_diff": -0.2946,
+        "obs_pi_b_diff": 0.592
+      }
+    },
+    {
+      "trait_a": "hallucinating",
+      "trait_b": "sycophantic",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.247,
+      "regime": "emergent",
+      "baseline": {
+        "trait_a_mean": 9.57,
+        "trait_b_mean": 2.37,
+        "composition_mean": 5.97,
+        "coherence_mean": 93.24
+      },
+      "single_a": {
+        "trait_a_mean": 52.54,
+        "trait_b_mean": 31.51,
+        "composition_mean": 42.03,
+        "coherence_mean": 77.61
+      },
+      "single_b": {
+        "trait_a_mean": 30.21,
+        "trait_b_mean": 57.91,
+        "composition_mean": 44.06,
+        "coherence_mean": 79.6
+      },
+      "steered": {
+        "trait_a_mean": 73.68,
+        "trait_b_mean": 82.37,
+        "composition_mean": 78.02,
+        "coherence_mean": 55.18
+      },
+      "delta": {
+        "trait_a_joint": 64.11,
+        "trait_b_joint": 79.99,
+        "trait_a_single": 42.97,
+        "trait_b_single": 55.53,
+        "composition": 72.05,
+        "coherence": -38.06
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.247,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.9467,
+        "pred_diff_phase12_false": 1.1116,
+        "obs_pi_a_diff": 0.307,
+        "obs_pi_b_diff": 0.631
+      }
+    },
+    {
+      "trait_a": "humorous",
+      "trait_b": "impolite",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.4368,
+      "regime": "additive",
+      "baseline": {
+        "trait_a_mean": 0.17,
+        "trait_b_mean": 0.02,
+        "composition_mean": 0.09,
+        "coherence_mean": 95.43
+      },
+      "single_a": {
+        "trait_a_mean": 79.26,
+        "trait_b_mean": 45.27,
+        "composition_mean": 62.26,
+        "coherence_mean": 50.0
+      },
+      "single_b": {
+        "trait_a_mean": 25.26,
+        "trait_b_mean": 64.74,
+        "composition_mean": 45.0,
+        "coherence_mean": 56.44
+      },
+      "steered": {
+        "trait_a_mean": 68.34,
+        "trait_b_mean": 78.4,
+        "composition_mean": 73.37,
+        "coherence_mean": 32.07
+      },
+      "delta": {
+        "trait_a_joint": 68.17,
+        "trait_b_joint": 78.38,
+        "trait_a_single": 79.09,
+        "trait_b_single": 64.72,
+        "composition": 73.28,
+        "coherence": -63.35
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.4368,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.6859,
+        "pred_diff_phase12_false": 1.9655,
+        "obs_pi_a_diff": -0.0492,
+        "obs_pi_b_diff": 0.7705
+      }
+    },
+    {
+      "trait_a": "humorous",
+      "trait_b": "sycophantic",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.3787,
+      "regime": "additive",
+      "baseline": {
+        "trait_a_mean": 0.25,
+        "trait_b_mean": 2.48,
+        "composition_mean": 1.37,
+        "coherence_mean": 95.91
+      },
+      "single_a": {
+        "trait_a_mean": 75.45,
+        "trait_b_mean": 52.74,
+        "composition_mean": 64.1,
+        "coherence_mean": 55.7
+      },
+      "single_b": {
+        "trait_a_mean": 24.48,
+        "trait_b_mean": 67.86,
+        "composition_mean": 46.17,
+        "coherence_mean": 86.32
+      },
+      "steered": {
+        "trait_a_mean": 76.5,
+        "trait_b_mean": 78.9,
+        "composition_mean": 77.7,
+        "coherence_mean": 41.66
+      },
+      "delta": {
+        "trait_a_joint": 76.26,
+        "trait_b_joint": 76.41,
+        "trait_a_single": 75.21,
+        "trait_b_single": 65.38,
+        "composition": 76.33,
+        "coherence": -54.25
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.3787,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.7637,
+        "pred_diff_phase12_false": 1.7044,
+        "obs_pi_a_diff": 0.1348,
+        "obs_pi_b_diff": 0.3537
+      }
+    },
+    {
+      "trait_a": "impolite",
+      "trait_b": "sycophantic",
+      "status": "ok",
+      "alpha": 4.5,
+      "cos": 0.2889,
+      "regime": "mixed",
+      "baseline": {
+        "trait_a_mean": 0.0,
+        "trait_b_mean": 2.31,
+        "composition_mean": 1.16,
+        "coherence_mean": 96.1
+      },
+      "single_a": {
+        "trait_a_mean": 67.29,
+        "trait_b_mean": 14.12,
+        "composition_mean": 40.71,
+        "coherence_mean": 53.15
+      },
+      "single_b": {
+        "trait_a_mean": 21.76,
+        "trait_b_mean": 77.41,
+        "composition_mean": 49.59,
+        "coherence_mean": 83.78
+      },
+      "steered": {
+        "trait_a_mean": 85.02,
+        "trait_b_mean": 45.44,
+        "composition_mean": 65.23,
+        "coherence_mean": 42.32
+      },
+      "delta": {
+        "trait_a_joint": 85.02,
+        "trait_b_joint": 43.13,
+        "trait_a_single": 67.29,
+        "trait_b_single": 75.1,
+        "composition": 64.07,
+        "coherence": -53.78
+      },
+      "l17_sanity": {
+        "layer": 17,
+        "alpha": 4.5,
+        "cos": 0.2889,
+        "pred_diff_per_axis": 0.0,
+        "pred_diff_normalize_true": -0.8875,
+        "pred_diff_phase12_false": 1.3002,
+        "obs_pi_a_diff": 0.505,
+        "obs_pi_b_diff": 0.1383
+      }
+    }
+  ],
+  "tau_summary_path": "results/composition_trajectories_l17_v3_tau.json"
+}
