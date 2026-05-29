@@ -12,7 +12,7 @@ paper/experiments_log.md §E15.13:
   2. α: 4.0 -> 4.5
      Picked from the Phase 15 pilot dose-response: utility = Δcomp × coh / 100
      peaks at α=4.5 (coh=69 ± 6, comfortable margin above the Anthropic
-     coh=50 threshold). See [results/composition_pilot_normalisations/
+     coh=50 threshold). See [results/pilots/composition_normalisations/
      fig_alpha_sweep_true_aggregate.png] and E15.11/E15.13.
 
   3. Drop `power_seeking` from the main trait set: 9 -> 8 traits, 36 -> 28
@@ -20,14 +20,14 @@ paper/experiments_log.md §E15.13:
      trait × judge × prompt interaction is broken on these prompts in every
      normalisation mode.
 
-The Phase 12 outputs (results/composition_scoring_l17/, results/composition_
-trajectories_l17.parquet, ...) are preserved untouched. Phase 12.5 lands
-under `_v2` paths:
-    results/composition_scoring_l17_v2/Llama-3.1-8B-Instruct/
-    results/composition_scoring_l17_v2_summary.json
-    results/composition_trajectories_l17_v2/Llama-3.1-8B-Instruct/
-    results/composition_trajectories_l17_v2.parquet
-    results/composition_trajectories_l17_v2_tau.json
+The Phase 12 outputs (results/composition/v1_phase12_normFalse_a4/scoring/,
+.../trajectories/aggregate.parquet, ...) are preserved untouched. Phase 12.5
+lands under the v2 dataset dir:
+    results/composition/v2_phase125_normTrue_a4.5/scoring/Llama-3.1-8B-Instruct/
+    results/composition/v2_phase125_normTrue_a4.5/scoring/summary.json
+    results/composition/v2_phase125_normTrue_a4.5/trajectories/Llama-3.1-8B-Instruct/
+    results/composition/v2_phase125_normTrue_a4.5/trajectories/aggregate.parquet
+    results/composition/v2_phase125_normTrue_a4.5/trajectories/tau.json
 
 Run (same 3-stage mode-gated pattern as Phase 12):
     # stage 1 (compute / GPU, no internet): generate completions + trajectories
@@ -101,14 +101,14 @@ MAX_CONCURRENT_JUDGES = 5
 
 VECTOR_OUTPUT_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
 COMPOSITION_DATA_DIR = Path("data/composition_eval")
-SCORES_OUTPUT_DIR = Path("results/composition_scoring_l17_v2/Llama-3.1-8B-Instruct")
-SUMMARY_OUT_PATH = Path("results/composition_scoring_l17_v2_summary.json")
+SCORES_OUTPUT_DIR = Path("results/composition/v2_phase125_normTrue_a4.5/scoring/Llama-3.1-8B-Instruct")
+SUMMARY_OUT_PATH = Path("results/composition/v2_phase125_normTrue_a4.5/scoring/summary.json")
 LOGS_DIR = Path("logs")
 
 # --- Phase 2 trajectory dataset (same protocol as Phase 12, v2 paths) -------
 TRAJECTORY_SETTINGS: list[tuple[int, int]] = [(1, 0), (0, 1), (1, 1)]
-TRAJECTORY_OUT_DIR = Path("results/composition_trajectories_l17_v2/Llama-3.1-8B-Instruct")
-TRAJECTORY_AGG_PARQUET = Path("results/composition_trajectories_l17_v2.parquet")
+TRAJECTORY_OUT_DIR = Path("results/composition/v2_phase125_normTrue_a4.5/trajectories/Llama-3.1-8B-Instruct")
+TRAJECTORY_AGG_PARQUET = Path("results/composition/v2_phase125_normTrue_a4.5/trajectories/aggregate.parquet")
 
 # Regime classification thresholds — held identical to Phase 12 for direct
 # comparability of the per-pair regime labels.
@@ -524,7 +524,7 @@ TAU_RECIPE = "R2_split_half_bootstrap_q95_x1.5"
 TAU_FACTOR = 1.5
 TAU_BOOTSTRAP_DRAWS = 1000
 TAU_Q = 0.95
-TAU_OUT_PATH = Path("results/composition_trajectories_l17_v2_tau.json")
+TAU_OUT_PATH = Path("results/composition/v2_phase125_normTrue_a4.5/trajectories/tau.json")
 
 
 def _calibrate_tau_r2(

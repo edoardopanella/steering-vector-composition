@@ -2,7 +2,8 @@
 LLM-judge calibration + composition-data audit for Phase 12.
 
 Reproduces every check that produced the Phase 14 findings. No GPU, no API calls
-— pure analysis on the existing CSVs under `results/composition_scoring_l17/`.
+— pure analysis on the existing CSVs under
+`results/composition/v1_phase12_normFalse_a4/scoring/`.
 
 Run from repo root:
     venv/bin/python scripts/compositions/audit_judge_calibration.py
@@ -79,7 +80,7 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-CSV_DIR = Path("results/composition_scoring_l17/Llama-3.1-8B-Instruct")
+CSV_DIR = Path("results/composition/v1_phase12_normFalse_a4/scoring/Llama-3.1-8B-Instruct")
 SAMPLES_DIR = Path("analysis/audit_samples")
 
 # Regime thresholds — match composition_scoring.py _classify_regime
@@ -355,7 +356,7 @@ def check_per_pair_distributions() -> None:
     print("Substantial mass in middle bins = continuous distribution.")
 
     import json
-    with open("results/composition_scoring_l17_summary.json") as f:
+    with open("results/composition/v1_phase12_normFalse_a4/scoring/summary.json") as f:
         summary = json.load(f)
     pairs_by_regime = defaultdict(list)
     for p in summary["pairs"]:

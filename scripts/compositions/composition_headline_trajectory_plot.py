@@ -31,8 +31,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-AGG_PARQUET = Path("results/composition_trajectories_l17.parquet")
-SUMMARY_PATH = Path("results/composition_scoring_l17_summary.json")
+AGG_PARQUET = Path("results/composition/v1_phase12_normFalse_a4/trajectories/aggregate.parquet")
+SUMMARY_PATH = Path("results/composition/v1_phase12_normFalse_a4/scoring/summary.json")
 FIG_OUT = Path("results/figures/composition_headline_trajectory.pdf")
 
 ALPHA = 4.0

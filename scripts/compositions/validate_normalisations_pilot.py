@@ -25,8 +25,8 @@ laptop (no GPU, needs OPENAI_API_KEY). Both are idempotent: kill+rerun is
 safe; existing scored rows are not re-judged.
 
 Outputs:
-    results/composition_pilot_normalisations/Llama-3.1-8B-Instruct/*.csv (36)
-    results/composition_pilot_normalisations_summary.json
+    results/pilots/composition_normalisations/Llama-3.1-8B-Instruct/*.csv (36)
+    results/pilots/composition_normalisations/summary.json
     logs/pilot_<a>__<b>_<setting>.log
 """
 
@@ -87,8 +87,8 @@ MAX_CONCURRENT_JUDGES = 5
 
 VECTOR_OUTPUT_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
 COMPOSITION_DATA_DIR = Path("data/composition_eval")
-SCORES_OUTPUT_DIR = Path("results/composition_pilot_normalisations/Llama-3.1-8B-Instruct")
-SUMMARY_OUT_PATH = Path("results/composition_pilot_normalisations_summary.json")
+SCORES_OUTPUT_DIR = Path("results/pilots/composition_normalisations/Llama-3.1-8B-Instruct")
+SUMMARY_OUT_PATH = Path("results/pilots/composition_normalisations/summary.json")
 LOGS_DIR = Path("logs")
 
 

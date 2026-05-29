@@ -17,7 +17,7 @@ Designed for laptop:
   - idempotent on row.trait_a.isna() — kill + rerun is safe
 
 Data needed on laptop (rsync from cluster before running):
-  results/composition_pilot_normalisations/Llama-3.1-8B-Instruct/*.csv
+  results/pilots/composition_normalisations/Llama-3.1-8B-Instruct/*.csv
   data/composition_eval/*.json
 
 Run:

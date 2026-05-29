@@ -18,7 +18,7 @@ reused — no regeneration needed. This script only emits the 3 NEW joint CSVs
 per pair = 18 new CSVs total.
 
 Outputs land in the same dir as pilot 1
-(results/composition_pilot_normalisations/Llama-3.1-8B-Instruct/) with
+(results/pilots/composition_normalisations/Llama-3.1-8B-Instruct/) with
 filenames disambiguating mode AND α:
     {a}__{b}_joint_true_alpha5.0.csv
     {a}__{b}_joint_true_alpha6.0.csv
@@ -74,7 +74,7 @@ PILOT_2_JOINT_CONDITIONS: list[tuple[float, bool | str]] = [
     (5.5, True),
 ]
 
-SUMMARY_OUT_PATH = Path("results/composition_pilot_normalisations_pilot2_summary.json")
+SUMMARY_OUT_PATH = Path("results/pilots/composition_normalisations/pilot2_summary.json")
 
 
 def main() -> None:

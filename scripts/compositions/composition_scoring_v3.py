@@ -26,11 +26,11 @@ Why this experiment:
   flag collapsed ones (coh<30) at aggregation.
 
 Outputs land under `_v3` paths (Phase 12 and Phase 12.5 outputs are preserved):
-    results/composition_scoring_l17_v3/Llama-3.1-8B-Instruct/
-    results/composition_scoring_l17_v3_summary.json
-    results/composition_trajectories_l17_v3/Llama-3.1-8B-Instruct/
-    results/composition_trajectories_l17_v3.parquet
-    results/composition_trajectories_l17_v3_tau.json
+    results/composition/v3_phase1516_perAxis_a4.5/scoring/Llama-3.1-8B-Instruct/
+    results/composition/v3_phase1516_perAxis_a4.5/scoring/summary.json
+    results/composition/v3_phase1516_perAxis_a4.5/trajectories/Llama-3.1-8B-Instruct/
+    results/composition/v3_phase1516_perAxis_a4.5/trajectories/aggregate.parquet
+    results/composition/v3_phase1516_perAxis_a4.5/trajectories/tau.json
 
 Run (same 3-stage mode-gated pattern as Phase 12):
     # stage 1 (compute / GPU, no internet): generate completions + trajectories
@@ -104,14 +104,14 @@ MAX_CONCURRENT_JUDGES = 5
 
 VECTOR_OUTPUT_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
 COMPOSITION_DATA_DIR = Path("data/composition_eval")
-SCORES_OUTPUT_DIR = Path("results/composition_scoring_l17_v3/Llama-3.1-8B-Instruct")
-SUMMARY_OUT_PATH = Path("results/composition_scoring_l17_v3_summary.json")
+SCORES_OUTPUT_DIR = Path("results/composition/v3_phase1516_perAxis_a4.5/scoring/Llama-3.1-8B-Instruct")
+SUMMARY_OUT_PATH = Path("results/composition/v3_phase1516_perAxis_a4.5/scoring/summary.json")
 LOGS_DIR = Path("logs")
 
 # --- Phase 2 trajectory dataset (same protocol as Phase 12, v2 paths) -------
 TRAJECTORY_SETTINGS: list[tuple[int, int]] = [(1, 0), (0, 1), (1, 1)]
-TRAJECTORY_OUT_DIR = Path("results/composition_trajectories_l17_v3/Llama-3.1-8B-Instruct")
-TRAJECTORY_AGG_PARQUET = Path("results/composition_trajectories_l17_v3.parquet")
+TRAJECTORY_OUT_DIR = Path("results/composition/v3_phase1516_perAxis_a4.5/trajectories/Llama-3.1-8B-Instruct")
+TRAJECTORY_AGG_PARQUET = Path("results/composition/v3_phase1516_perAxis_a4.5/trajectories/aggregate.parquet")
 
 # Regime classification thresholds — held identical to Phase 12 for direct
 # comparability of the per-pair regime labels.
@@ -527,7 +527,7 @@ TAU_RECIPE = "R2_split_half_bootstrap_q95_x1.5"
 TAU_FACTOR = 1.5
 TAU_BOOTSTRAP_DRAWS = 1000
 TAU_Q = 0.95
-TAU_OUT_PATH = Path("results/composition_trajectories_l17_v3_tau.json")
+TAU_OUT_PATH = Path("results/composition/v3_phase1516_perAxis_a4.5/trajectories/tau.json")
 
 
 def _calibrate_tau_r2(

@@ -1,7 +1,7 @@
 """
 Trajectory-side diagnostic plots for the composition-scoring run.
 
-Loads results/composition_trajectories_l17.parquet (long-form table of
+Loads results/composition/v1_phase12_normFalse_a4/trajectories/aggregate.parquet (long-form table of
 π_i^(α_i, α_j)(L) values across 36 pairs × 3 settings × 100 prompts × 16 layers
 × 2 behaviour axes) plus the τ JSON and the per-pair regime metadata. Produces
 one multi-panel PDF for sanity-checking the RQ2 Phase 2 dataset BEFORE writing
@@ -35,9 +35,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-AGG_PARQUET = Path("results/composition_trajectories_l17.parquet")
-TAU_PATH = Path("results/composition_trajectories_l17_tau.json")
-SUMMARY_PATH = Path("results/composition_scoring_l17_summary.json")
+AGG_PARQUET = Path("results/composition/v1_phase12_normFalse_a4/trajectories/aggregate.parquet")
+TAU_PATH = Path("results/composition/v1_phase12_normFalse_a4/trajectories/tau.json")
+SUMMARY_PATH = Path("results/composition/v1_phase12_normFalse_a4/scoring/summary.json")
 FIG_OUT = Path("results/figures/composition_trajectory_diagnostics.pdf")
 
 ALPHA = 4.0
@@ -274,7 +274,7 @@ def main() -> None:
     print(f"\nwrote {FIG_OUT}  ({FIG_OUT.stat().st_size / 1024:.0f} KB)")
 
     # Also save the derived Δ/L_div table for downstream scripts.
-    out_csv = Path("results/composition_delta_ldiv.csv")
+    out_csv = Path("results/composition/v1_phase12_normFalse_a4/trajectories/composition_delta_ldiv.csv")
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     dl.to_csv(out_csv, index=False)
     print(f"wrote {out_csv}  ({len(dl)} rows)")

@@ -8,10 +8,10 @@ post-judge analysis artefacts in one pass:
   - per-pair regime (additive / dominant / suppressive / emergent / mixed)
     from Δ_joint / Δ_single ratios on judge means
   - per-pair L17 sanity check (closed form π_a^(1,1)(L*) − π_a^(1,0)(L*) ≈ α·cos)
-  - results/composition_trajectories_l17.parquet — long-form trajectory dataset
+  - results/composition/v1_phase12_normFalse_a4/trajectories/aggregate.parquet — long-form trajectory dataset
     concatenated across 36 per-pair parquets, merged with regime metadata
-  - results/composition_trajectories_l17_tau.json — τ via R2 split-half × 1.5
-  - results/composition_scoring_l17_summary.json — per-pair regime + Δ table + τ
+  - results/composition/v1_phase12_normFalse_a4/trajectories/tau.json — τ via R2 split-half × 1.5
+  - results/composition/v1_phase12_normFalse_a4/scoring/summary.json — per-pair regime + Δ table + τ
 
 No API calls. No GPU. No HF model load. Pure pandas / numpy.
 

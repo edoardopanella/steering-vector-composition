@@ -89,8 +89,8 @@ MAX_CONCURRENT_JUDGES = 5
 
 VECTOR_OUTPUT_DIR = Path("results/persona_vectors/Llama-3.1-8B-Instruct")
 COMPOSITION_DATA_DIR = Path("data/composition_eval")
-SCORES_OUTPUT_DIR = Path("results/composition_scoring_l17/Llama-3.1-8B-Instruct")
-SUMMARY_OUT_PATH = Path("results/composition_scoring_l17_summary.json")
+SCORES_OUTPUT_DIR = Path("results/composition/v1_phase12_normFalse_a4/scoring/Llama-3.1-8B-Instruct")
+SUMMARY_OUT_PATH = Path("results/composition/v1_phase12_normFalse_a4/scoring/summary.json")
 LOGS_DIR = Path("logs")
 
 # --- Phase 2 trajectory dataset ---------------------------------------------
@@ -98,8 +98,8 @@ LOGS_DIR = Path("logs")
 # layer, behaviour) at the operating point. Settings reduced to (1,0)/(0,1)/(1,1)
 # — the antipodal probes (1,-1)/(-1,1) are RQ1 robustness, not mechanism.
 TRAJECTORY_SETTINGS: list[tuple[int, int]] = [(1, 0), (0, 1), (1, 1)]
-TRAJECTORY_OUT_DIR = Path("results/composition_trajectories_l17/Llama-3.1-8B-Instruct")
-TRAJECTORY_AGG_PARQUET = Path("results/composition_trajectories_l17.parquet")
+TRAJECTORY_OUT_DIR = Path("results/composition/v1_phase12_normFalse_a4/trajectories/Llama-3.1-8B-Instruct")
+TRAJECTORY_AGG_PARQUET = Path("results/composition/v1_phase12_normFalse_a4/trajectories/aggregate.parquet")
 
 # Regime classification thresholds — applied to ratio(Δ_joint / Δ_single) per axis.
 # Δ_joint = composition setting (1,1) Δ on a given trait vs baseline (0,0);
@@ -559,7 +559,7 @@ TAU_RECIPE = "R2_split_half_bootstrap_q95_x1.5"
 TAU_FACTOR = 1.5
 TAU_BOOTSTRAP_DRAWS = 1000
 TAU_Q = 0.95
-TAU_OUT_PATH = Path("results/composition_trajectories_l17_tau.json")
+TAU_OUT_PATH = Path("results/composition/v1_phase12_normFalse_a4/trajectories/tau.json")
 
 
 def _calibrate_tau_r2(

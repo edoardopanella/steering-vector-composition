@@ -30,8 +30,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-CSV_DIR = Path("results/composition_pilot_normalisations/Llama-3.1-8B-Instruct")
-FIG_OUT_DIR = Path("results/composition_pilot_normalisations")
+CSV_DIR = Path("results/pilots/composition_normalisations/Llama-3.1-8B-Instruct")
+FIG_OUT_DIR = Path("results/pilots/composition_normalisations")
 
 PAIRS = [
     ("formality", "humorous"),

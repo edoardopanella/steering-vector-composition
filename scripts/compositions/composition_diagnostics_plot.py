@@ -1,7 +1,7 @@
 """
 Diagnostic plots for composition-scoring results.
 
-Loads results/composition_scoring_l17_summary.json (per-pair regimes + Δ +
+Loads results/composition/v1_phase12_normFalse_a4/scoring/summary.json (per-pair regimes + Δ +
 baselines + steered means + cos) and produces a single multi-panel PDF for
 sanity-checking the RQ1 Part A dataset BEFORE running any inferential
 analysis. The aim is to surface dataset pathologies that would invalidate
@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-SUMMARY_PATH = Path("results/composition_scoring_l17_summary.json")
+SUMMARY_PATH = Path("results/composition/v1_phase12_normFalse_a4/scoring/summary.json")
 FIG_OUT = Path("results/figures/composition_diagnostics.pdf")
 
 # Composition-quality stability ε (research_plan.md Eq 4).
