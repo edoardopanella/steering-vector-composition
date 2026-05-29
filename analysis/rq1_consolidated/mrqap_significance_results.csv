@@ -1,0 +1,11 @@
+scheme,outcome,predictor,controls,bivariate_r,beta_std_partial,exact_two_sided_p,n_nodes,n_perms,n_edges_used
+normalized_sum,Smat,COS,[STR],0.4754,0.5363,0.00898,8,40320,28
+normalized_sum,Smat,abs(COS),[STR],0.0205,0.0223,0.91637,8,40320,28
+normalized_sum,Mmat,COS,[STR],0.6459,0.508,0.01458,8,40320,28
+normalized_sum,Smat,COS,[],0.4754,0.4754,0.01833,8,40320,28
+normalized_sum,Mmat,COS,[],0.6459,0.6459,0.00206,8,40320,28
+per_axis,Smat,COS,[STR],0.4724,0.5187,0.05119,8,40320,22
+per_axis,Smat,abs(COS),[STR],0.2328,0.2333,0.40893,8,40320,22
+per_axis,Mmat,COS,[STR],0.6421,0.3985,0.13941,8,40320,22
+per_axis,Smat,COS,[],0.4724,0.4724,0.06431,8,40320,22
+per_axis,Mmat,COS,[],0.6421,0.6421,0.01627,8,40320,22
