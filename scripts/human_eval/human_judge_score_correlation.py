@@ -15,8 +15,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-IN_PATH = Path("results/human_eval/human_eval_layer17.xlsx")
-OUT_PATH = Path("results/human_eval/human_judge_correlation.md")
+ROOT = Path(__file__).resolve().parents[2]
+IN_PATH = ROOT / "results/human_eval/human_eval_layer17.xlsx"
+OUT_PATH = ROOT / "results/human_eval/human_judge_correlation.md"
 
 # Judge column -> human column, per trait role (b1 = trait a, b2 = trait b).
 SCORE_PAIRS = [("judge_b1", "rating_b1"), ("judge_b2", "rating_b2")]
