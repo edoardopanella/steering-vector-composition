@@ -1,59 +1,44 @@
-"""Convert results/human_eval_layer{LAYER}.csv into two .xlsx files:
-
-  * `..._full.xlsx`   — all columns including `setting`, original row order.
-                       Use this for the final merge with judge scores.
-  * `..._blind.xlsx`  — `setting` column dropped, rows shuffled.
-                       Use this for the unbiased human rating pass; the human
-                       cannot infer the steering setting from column or position.
-
-An `id` column is added before writing so blind ratings can be merged back into
-the full table after evaluation. Set RANDOM_SEED to make the shuffle reproducible.
-"""
-
+import ast
 from pathlib import Path
 
 import pandas as pd
-from openpyxl.styles import Alignment
-from openpyxl.utils import get_column_letter
 
-LAYER = 17
-RANDOM_SEED = 0
-IN_PATH = Path(f"results/human_eval_layer{LAYER}.csv")
-FULL_PATH = IN_PATH.with_name(f"human_eval_layer{LAYER}_full.xlsx")
-BLIND_PATH = IN_PATH.with_name(f"human_eval_layer{LAYER}_blind.xlsx")
-
-COLUMN_WIDTHS = {
-    "id": 6,
-    "behavior_pair": 22,
-    "setting": 10,
-    "prompt": 50,
-    "completion": 80,
-    "rating_b1": 12,
-    "rating_b2": 12,
-    "notes": 30,
-}
+CSV_PATH = Path("results/human_eval/human_eval_layer17.csv")
+XLSX_PATH = Path("results/human_eval/human_eval_layer17.xlsx")
 
 
-def write_xlsx(df: pd.DataFrame, path: Path, sheet: str) -> None:
-    with pd.ExcelWriter(path, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name=sheet)
-        ws = writer.sheets[sheet]
-        ws.freeze_panes = "A2"
-        for idx, col in enumerate(df.columns, start=1):
-            ws.column_dimensions[get_column_letter(idx)].width = COLUMN_WIDTHS.get(col, 18)
-        wrap = Alignment(wrap_text=True, vertical="top")
-        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
-            for cell in row:
-                cell.alignment = wrap
+def parse_pair(x):
+    if isinstance(x, tuple):
+        return x
+    return ast.literal_eval(x)
 
 
-if __name__ == "__main__":
-    df = pd.read_csv(IN_PATH)
-    df.insert(0, "id", range(len(df)))
+def parse_setting(x):
+    if isinstance(x, tuple):
+        return x
+    return ast.literal_eval(x)
 
-    write_xlsx(df, FULL_PATH, sheet="human_eval_full")
-    print(f"Wrote {len(df)} rows to {FULL_PATH}")
 
-    blind = df.drop(columns=["setting"]).sample(frac=1.0, random_state=RANDOM_SEED).reset_index(drop=True)
-    write_xlsx(blind, BLIND_PATH, sheet="human_eval_blind")
-    print(f"Wrote {len(blind)} rows to {BLIND_PATH}  (setting hidden, rows shuffled)")
+df = pd.read_csv(CSV_PATH)
+
+pairs = df["behavior_pair"].map(parse_pair)
+settings = df["setting"].map(parse_setting)
+
+out = pd.DataFrame({
+    "behavior_1": pairs.map(lambda p: p[0]),
+    "behavior_2": pairs.map(lambda p: p[1]),
+    "coef_1": settings.map(lambda s: s[0]),
+    "coef_2": settings.map(lambda s: s[1]),
+    "prompt": df["prompt"],
+    "completion": df["completion"],
+    "judge_b1": df["judge_b1"],
+    "judge_b2": df["judge_b2"],
+    "judge_coherence": df["judge_coherence"],
+    "rating_b1": df.get("rating_b1", ""),
+    "rating_b2": df.get("rating_b2", ""),
+    "notes": df.get("notes", ""),
+})
+
+XLSX_PATH.parent.mkdir(parents=True, exist_ok=True)
+out.to_excel(XLSX_PATH, index=False)
+print(f"Wrote {len(out)} rows to {XLSX_PATH}")
