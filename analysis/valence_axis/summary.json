@@ -1,0 +1,168 @@
+{
+  "layer": 17,
+  "extraction": "response_avg_diff",
+  "traits": [
+    "apathetic",
+    "evil",
+    "hallucinating",
+    "humorous",
+    "impolite",
+    "sycophantic",
+    "confidence",
+    "formality"
+  ],
+  "sanity_max_cos_diff": 4.898286255292095e-05,
+  "shared_pca": {
+    "explained_variance_ratio": [
+      0.3317241708429349,
+      0.23983174730457243,
+      0.1347839088887289,
+      0.09709583419909178,
+      0.09368374021524452,
+      0.06584499085234069,
+      0.03703560769708683,
+      1.8032664915730546e-31
+    ]
+  },
+  "configs": [
+    {
+      "name": "antisocial5",
+      "title": "Antisocial-5 (hallucinating included)",
+      "negative_traits": [
+        "evil",
+        "impolite",
+        "apathetic",
+        "sycophantic",
+        "hallucinating"
+      ],
+      "positive_traits": [
+        "confidence",
+        "humorous",
+        "formality"
+      ],
+      "excluded_traits": [],
+      "valence_axis": {
+        "raw_norm": 0.5921533443387254,
+        "cos_with_trait": {
+          "apathetic": 0.4963112622383339,
+          "evil": 0.5155832242532095,
+          "hallucinating": 0.15614442791860242,
+          "humorous": 0.2854767826575686,
+          "impolite": 0.5828011357912791,
+          "sycophantic": 0.3347691159853831,
+          "confidence": -0.2986849329907876,
+          "formality": -0.5118862681643342
+        },
+        "cos_with_centroid": 0.38472697737731604
+      },
+      "residual_cosine": {
+        "n_pairs": 28,
+        "mean_signed_orig": 0.15093653550733008,
+        "mean_signed_residual": 0.1636024516795974,
+        "mean_abs_orig": 0.24227960038182875,
+        "mean_abs_residual": 0.23911978119220295,
+        "neg_neg_mean_signed_orig": 0.24126251346703825,
+        "neg_neg_mean_signed_residual": 0.09806327294387651,
+        "neg_neg_mean_abs_orig": 0.28426242159590126,
+        "neg_neg_mean_abs_residual": 0.2180846588971233
+      },
+      "pca": {
+        "pc_alignment_with_valence": [
+          0.6614294769260664,
+          0.040366895494529494,
+          0.12015889839768842,
+          0.374004231287245,
+          0.046517650975364096,
+          0.6358033506731747,
+          0.012427483133392819,
+          2.6937311279132126e-10
+        ],
+        "pc1_alignment": 0.6614294769260664,
+        "best_matching_pc": 1,
+        "valence_variance_fraction": 0.1878701876608045,
+        "verdict": "WEAK \u2014 PC1 is the closest PC but only loosely aligned with valence (|cos|=0.661, PC1 explains 33% of variance)",
+        "permutation_test": {
+          "statistic": "abs_cos_pc1_valence",
+          "exact": true,
+          "n_labellings": 56,
+          "observed": 0.6614294769260664,
+          "null_mean": 0.4478980326004658,
+          "null_std": 0.271955311382228,
+          "null_p95": 0.8475385574947089,
+          "null_max": 0.9710176402107256,
+          "p_value": 0.2857142857142857
+        }
+      }
+    },
+    {
+      "name": "core4",
+      "title": "Core-4 (hallucinating excluded as neutral failure mode)",
+      "negative_traits": [
+        "evil",
+        "impolite",
+        "apathetic",
+        "sycophantic"
+      ],
+      "positive_traits": [
+        "confidence",
+        "humorous",
+        "formality"
+      ],
+      "excluded_traits": [
+        "hallucinating"
+      ],
+      "valence_axis": {
+        "raw_norm": 0.6945549639285927,
+        "cos_with_trait": {
+          "apathetic": 0.6146029675366647,
+          "evil": 0.5110049748565955,
+          "hallucinating": -0.13302857050038935,
+          "humorous": 0.3047148908768571,
+          "impolite": 0.6830761611795155,
+          "sycophantic": 0.3408135195238826,
+          "confidence": -0.27798787375325756,
+          "formality": -0.49826852033152946
+        },
+        "cos_with_centroid": 0.3808841327666055
+      },
+      "residual_cosine": {
+        "n_pairs": 28,
+        "mean_signed_orig": 0.15093653550733008,
+        "mean_signed_residual": 0.17583967657714245,
+        "mean_abs_orig": 0.24227960038182875,
+        "mean_abs_residual": 0.23668480028581204,
+        "neg_neg_mean_signed_orig": 0.35162790978517,
+        "neg_neg_mean_signed_residual": 0.10734649786129967,
+        "neg_neg_mean_abs_orig": 0.35162790978517,
+        "neg_neg_mean_abs_residual": 0.20653316278294545
+      },
+      "pca": {
+        "pc_alignment_with_valence": [
+          0.7631477577658956,
+          0.14341840938840064,
+          0.05883230579627018,
+          0.3605494270091726,
+          0.07313560217488549,
+          0.5079917813064748,
+          0.01323117390975743,
+          1.1508523214270872e-10
+        ],
+        "pc1_alignment": 0.7631477577658956,
+        "best_matching_pc": 1,
+        "valence_variance_fraction": 0.22871522497330535,
+        "verdict": "PARTIAL \u2014 PC1 is the closest PC and aligns moderately (|cos|=0.763)",
+        "permutation_test": {
+          "statistic": "abs_cos_pc1_valence",
+          "exact": true,
+          "n_labellings": 280,
+          "observed": 0.7631477577658956,
+          "null_mean": 0.45149445895577306,
+          "null_std": 0.2672776631256998,
+          "null_p95": 0.8867935854812442,
+          "null_max": 0.9703884164552429,
+          "p_value": 0.15
+        }
+      }
+    }
+  ]
+}
