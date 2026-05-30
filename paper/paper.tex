@@ -1,0 +1,468 @@
+\documentclass{article}
+\PassOptionsToPackage{numbers,sort&compress}{natbib}
+
+\usepackage[dblblindworkshop, final]{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{enumitem}
+
+\workshoptitle{30562 --- Machine Learning and Artificial Intelligence}
+\title{Predicting Behavior Composition from Steering-Vector Geometry}
+
+\author{%
+  Author One \\
+  Bocconi University \\
+  \texttt{author.one@studbocconi.it} \\
+  \And
+  Author Two \\
+  Bocconi University \\
+  \texttt{author.two@studbocconi.it} \\
+  \And
+  Author Three \\
+  Bocconi University \\
+  \texttt{author.three@studbocconi.it} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Steering vectors offer a cheap way to alter language-model behavior at inference time, but
+composing two behaviors by simply adding their vectors is unreliable. We ask a diagnostic question:
+when two already-steerable behavior directions are added, does their geometry predict what happens?
+We study eight persona and style directions in Llama-3.1-8B-Instruct and evaluate all $28$ pairs
+under two controlled composition schemes. We separate each joint outcome into a \emph{behavioral
+magnitude}, how much behavior is expressed, and a \emph{directional residual}, whether adding the
+second vector reinforces or suppresses expression relative to steering each behavior alone. Because
+the same behaviors recur across many pairs, we assess significance with exact behavior-level
+permutations rather than treating pairs as independent. We find that signed cosine predicts the directional
+residual in both schemes ($\beta=0.31$ and $0.41$), while magnitude effects have smaller
+coefficients ($\beta\approx0.19$) and are more sensitive to the injection control and permutation
+structure. The result is therefore not a universal composition rule, but a moderate geometric
+tendency: vector orientation is most informative about reinforcement versus suppression, conditional
+on one model, one layer, an LLM judge, and sparse coverage of strongly opposed behavior pairs.
+\end{abstract}
+
+%=========================================================================
+\section{Introduction}
+%=========================================================================
+
+Activation steering aims to change a language model's behavior at inference time by adding a
+vector to an internal activation. Prior work shows that contrastively extracted directions can
+induce behaviors such as style, sentiment, refusal, or persona-like traits without retraining
+\citep{turner2023actadd,zou2023repe,panickssery2024caa,chen2025persona}. This makes steering
+vectors attractive not only as controls but also as probes: if behaviors are approximately linear
+directions in activation space, then their pairwise geometry should say something about how they
+interact \citep{park2024linear}.
+
+The difficulty is that multi-behavior steering is not reliably additive. A practitioner may want to
+make a model, for example, both more formal and more humorous by adding two vectors. In practice,
+naive addition can preserve one behavior while weakening the other, amplify both, or degrade text
+entirely \citep{vanderweij2024extending}. Existing work has mostly responded constructively, by
+searching for better composition operators or more robust steering procedures, including layer-wise
+multi-vector injection, conceptor-based steering matrices, dynamic vector composition, and nonlinear
+multi-attribute control \citep{vanderweij2024extending,postmus2024conceptorsteering,han2026steer2adapt,oozeer2025beyond}. We instead ask the
+simpler diagnostic question: \emph{under additive composition, what aspect of the joint outcome is
+predicted by the geometry of the two directions?} This diagnostic question is significant because recent composition methods suggest that additive
+failure has multiple possible causes: the vectors may need to be injected at different layers
+\citep{vanderweij2024extending}, a single direction may be too poor a representation of a behaviour
+\citep{postmus2024conceptorsteering}, the right coefficients may be task-dependent
+\citep{han2026steer2adapt}, or the control surface may be nonlinear
+\citep{oozeer2025beyond}. Our goal is to isolate what can already be explained before introducing
+any of these additional mechanisms. By fixing the operator to addition and varying only the geometry
+of the two directions, we ask whether pairwise geometry diagnoses a scale problem, a directional
+compatibility problem, or neither. This makes additive composition a
+controlled probe of what more sophisticated composition methods must ultimately handle.
+
+Our answer is a decomposition. The total amount of behavior expressed under joint steering and the
+sign of the compositional change are different quantities. We therefore measure both: a
+\emph{magnitude} outcome, which asks how large the joint behavioral movement is, and a
+\emph{directional residual}, which asks whether the second vector reinforces or suppresses each
+behavior relative to injecting that behavior alone. To avoid mistaking geometry for raw steering
+power, we control for \emph{single-vector strength}: how strongly each behavior is activated when its
+own vector is injected by itself. To make our results more robust, we also evaluate two normalizations of the composed perturbation,
+one fixing its total norm and one fixing its projection onto each behavior direction. Across all
+pairs of eight validated directions, the signed cosine between directions predicts the directional
+residual under both normalization schemes. Magnitude has a smaller controlled coefficient and a less
+direct interpretation, because it is more entangled with perturbation size and coherence failures.
+Therefore, for this model and behavior set, geometry is more informative
+about reinforcement versus suppression than about absolute joint expression.
+
+%=========================================================================
+\section{Related Work}
+%=========================================================================
+
+\paragraph{Activation steering and behavior directions.}
+Activation Addition, Contrastive Activation Addition, Representation Engineering, and related
+inference-time interventions extract or learn directions in activation space and add them during a
+forward pass to shift model behavior \citep{turner2023actadd,panickssery2024caa,zou2023repe,li2023iti}.
+We follow the response-averaged, difference-of-means construction used by Persona Vectors
+\citep{chen2025persona}, which is well suited to persona and style traits. Recent work also cautions
+that steerability is not automatic: effectiveness varies across behaviors, prompts, and examples
+\citep{tan2024analysing,imli2025unified}. We therefore condition our study on directions that are
+individually steerable under a validation protocol.
+
+\paragraph{Composition, reliability, and geometry.}
+Naive composition of steering vectors is known to be fragile, motivating alternatives to plain
+summation. These include placing individual vectors at different layers, replacing vectors with
+conceptor or projection-like steering matrices, dynamically composing reusable vector bases, and
+computing nonlinear multi-attribute interventions from classifiers
+\citep{vanderweij2024extending,postmus2024conceptorsteering,han2026steer2adapt,oozeer2025beyond}.
+Those works ask how to compose better. We ask when the simplest composition is predictable. This
+question is naturally geometric: if behavior directions are approximately linear, then the angle
+between two objectives should affect whether they reinforce or trade off \citep{park2024linear,young2026alignmenttax}.
+Our contribution is empirical and diagnostic: we test whether pairwise vector geometry predicts a
+measured compositional residual, while controlling for the fact that some single vectors are simply
+more effective than others.
+
+%=========================================================================
+\section{Methods}
+%=========================================================================
+
+\paragraph{Behaviors and directions.}
+We study eight behaviors: \emph{apathetic}, \emph{confidence}, \emph{evil}, \emph{formality},
+\emph{hallucinating}, \emph{humorous}, \emph{impolite}, and \emph{sycophantic}. Six behaviours, and the prompts used to elicit them, are taken from
+the released Persona Vectors trait set, and two (\emph{confidence} and \emph{formality}) are generated
+with the same prompt template. The set spans persona and stylistic register, and was constrained by
+compute and by the requirement that each direction be individually steerable under our validation
+protocol.
+
+For each behavior $b$, we compute a residual-stream direction by contrasting responses generated
+under a behavior-inducing system prompt with responses generated under a matched neutral prompt.
+Let $A_b^+$ and $A_b^-$ be the retained positive and neutral activation sets, where each activation
+is the response-token average of the residual stream at a fixed layer $L^\star$. The direction is
+\begin{equation}
+  v_b = \frac{1}{|A_b^+|}\sum_{a\in A_b^+}a
+      - \frac{1}{|A_b^-|}\sum_{a\in A_b^-}a,
+  \qquad
+  \hat v_b = v_b/\lVert v_b\rVert .
+  \label{eq:direction}
+\end{equation}
+All experiments use \texttt{meta-llama/Llama-3.1-8B-Instruct}. We intervene at $L^\star=17$ in
+our code convention, corresponding to the residual stream after transformer block $16$ in the
+32-block stack. The perturbation is added only to generated response tokens, not to prompt tokens.
+
+\paragraph{Composition schemes.}
+For a pair $(i,j)$, write the cosine similarity $c_{ij}=\hat v_i^\top \hat v_j$ and $s=\hat v_i+\hat v_j$. We evaluate two
+controlled additive schemes. \emph{Normalized-sum} injection fixes the total perturbation norm,
+\begin{equation}
+  \delta_{\mathrm{norm}} = \alpha_{\mathrm{norm}}\frac{s}{\lVert s\rVert},
+  \qquad \alpha_{\mathrm{norm}}=4.5.
+  \label{eq:normsum}
+\end{equation}
+We chose $\alpha_{\mathrm{norm}}=4.5$ by a small search over normalized-sum strengths, selecting the
+best effect--coherence tradeoff, and then used the same value for the projection-controlled scheme
+for comparability (Appendix~\ref{app:composition-strength}). \emph{Projection-controlled} injection fixes
+the projection of the perturbation onto each behavior direction,
+\begin{equation}
+  \delta_{\mathrm{axis}} = \frac{\alpha_{\mathrm{axis}}}{1+c_{ij}}s,
+  \qquad \alpha_{\mathrm{axis}}=4.5.
+  \label{eq:axis}
+\end{equation}
+This second scheme controls one notion of dose but not all of them: its total norm is
+$\lVert\delta_{\mathrm{axis}}\rVert=\alpha_{\mathrm{axis}}\sqrt{2/(1+c_{ij})}$, so for opposed pairs the model can
+receive a larger total perturbation. We analyze the
+resulting coherence failures are as composition failures.
+
+\paragraph{Outcomes.}
+For each pair and scheme we run four settings: no steering $(0,0)$, steering $i$ alone $(1,0)$,
+steering $j$ alone $(0,1)$, and joint steering $(1,1)$. Let $E_i^{(a,b)}$ be the mean judge score for
+behavior $i$ under setting $(a,b)$. We define the single-vector and joint effects for behavior $i$ as
+\begin{equation}
+  \Delta_i^{\mathrm{single}}=E_i^{(1,0)}-E_i^{(0,0)},
+  \qquad
+  \Delta_i^{\mathrm{joint}}=E_i^{(1,1)}-E_i^{(0,0)},
+\end{equation}
+with analogous quantities for $j$. The magnitude outcome is
+\begin{equation}
+  M(i,j)=\tfrac{1}{2}\left(\Delta_i^{\mathrm{joint}}+\Delta_j^{\mathrm{joint}}\right),
+  \label{eq:mag}
+\end{equation}
+and the directional residual is
+\begin{equation}
+  S(i,j)=\tfrac{1}{2}\left[(\Delta_i^{\mathrm{joint}}-\Delta_i^{\mathrm{single}})
+  +(\Delta_j^{\mathrm{joint}}-\Delta_j^{\mathrm{single}})\right].
+  \label{eq:directional}
+\end{equation}
+Positive $S$ means joint steering reinforces the behaviors relative to steering them alone; negative
+$S$ means suppression. This quantity asks whether adding the second vector raises or lowers the
+score obtained from the first vector alone, averaged symmetrically over the two behaviors. To avoid mistaking single-vector strength for composition, all confirmatory
+models control for both the mean and the maximum of
+$|\Delta_i^{\mathrm{single}}|$ and $|\Delta_j^{\mathrm{single}}|$.
+
+%=========================================================================
+\section{Experiments}
+%=========================================================================
+
+\paragraph{Evaluation protocol.}
+For every pair, scheme, and setting, we generate $20$ prompts with $5$ samples per prompt
+($100$ generations), using temperature $1.0$, top-$p=1.0$, and a maximum of $600$ new tokens. We
+score behavior and coherence with a blinded LLM judge, \texttt{gpt-4.1-mini}, following the Persona
+Vectors \citep{chen2025persona} protocol: each call sees only the question and answer, and returns a probability-weighted
+mean over integer scores from $0$ to $100$. The coherence judge is independent of the behavior
+rubrics. Validation of the LLM judge is done by checking agreement between LLM judge scores and human annotated ones (\textcolor{red}{$n$, agreement metric, and agreement value to insert}), as reported in Appendix ~\ref{app:judge}.
+
+\paragraph{Coherence gate.}
+Large activation interventions can make generations repetitive or malformed, making behavior
+scores unreliable. We therefore analyze behavior only for pairs whose joint generations remain
+coherent: a pair is retained if its mean coherence over the $100$ joint samples is at least $30$.
+This gate removes no normalized-sum pairs and six projection-controlled pairs. These removals are
+not random: five of the six have $c_{ij}\leq 0.13$, as expected from the total-norm inflation of
+Eq.~\ref{eq:axis} at low cosine. Thus, projection-controlled results should be read on the retained
+support, while normalized-sum covers the full observed range $c_{ij}\in[-0.52,0.70]$.
+
+\paragraph{Relational-data inference.}
+The $28$ behavior pairs are not independent observations: each behavior appears in seven pairs, so
+pairs sharing a behavior also share part of their geometric and behavioral measurements. We therefore
+use a dyadic, or relational-data, inference procedure rather than treating the $28$ pair measurements
+as independent samples. For each scheme, we fit standardized regressions of $M$ or $S$ on $c_{ij}$,
+controlling for mean and maximum single-vector strength, and compute significance by exact
+behavior-level permutation.
+
+\subsection{Results}
+\label{sec:results}
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Per-scheme linear regressions of each pair-level outcome on geometry:
+$Y_{ij}\sim c_{ij}$, controlling for the mean and maximum single-vector steering strength of the
+two behaviours. Entries are standardized coefficients on $c_{ij}$ or $|c_{ij}|$ with exact
+node-permutation $p$-values over all $8!$ behavior relabelings. Normalized-sum has $28$ pairs;
+projection-controlled has $22$ after the coherence gate.}
+  \label{tab:main}
+  \begin{tabular}{llcc}
+    \toprule
+    Outcome & Predictor & Normalized-sum & Projection-controlled \\
+    \midrule
+    Directional residual $S$ & $c_{ij}$     & $\beta=+0.310,\ p=0.047$ & $\beta=+0.411,\ p<0.001$ \\
+    Directional residual $S$ & $|c_{ij}|$   & $\beta=+0.053,\ p=0.742$ & $\beta=+0.193,\ p<0.001$ \\
+    Magnitude $M$            & $c_{ij}$     & $\beta=+0.188,\ p=0.081$ & $\beta=+0.187,\ p<0.001$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Table~\ref{tab:main} gives the main result. Signed cosine predicts the directional residual in both
+controlled schemes. The effect is moderate rather than deterministic: the normalized-sum coefficient
+is $+0.310$ with exact $p=0.047$, and the projection-controlled coefficient is $+0.411$ with
+$p<0.001$ under the masked node-permutation null. The interpretation is that aligned directions tend
+to reinforce each other relative to single-vector steering, while opposed directions tend to
+suppress.
+
+Two qualifications are important. First, the evidence favors signed orientation over unsigned
+similarity. Replacing $c_{ij}$ by $|c_{ij}|$ attenuates the
+directional coefficient strongly in both schemes, especially under normalized-sum, but the
+projection-controlled estimate remains significant. Second, magnitude
+is not null: its controlled coefficient is small in both schemes ($\beta\approx0.19$), but the
+projection-controlled permutation test assigns it a very small $p$-value. Thus, the result is not that geometry affects only direction. Rather, its clearest role is in
+predicting reinforcement versus suppression.
+
+Appendix~\ref{app:stats} and Appendix~\ref{app:coherence} support the same cautious reading:
+semantic similarity does not explain the directional association, but leave-one-behavior-out and
+coherence-gating checks show that the effect oscillated between behavior-sets. We therefore read it as a
+moderate tendency, not a sharp rule.
+
+%=========================================================================
+\section{Conclusion}
+%=========================================================================
+
+We studied whether the geometry of two steering vectors predicts the outcome of additive behavior
+composition. Using eight individually steerable persona and style directions in
+Llama-3.1-8B-Instruct, we evaluated every behavior pair under normalized-sum and
+projection-controlled joint injection. We separated each outcome into a magnitude term, measuring
+how much behavior is expressed under joint steering, and a directional residual, measuring whether
+adding the second vector reinforces or suppresses behavior relative to steering that behavior alone.
+Because behavior pairs are not independent, we used exact node-permutation tests rather than
+treating pairs as independent.
+
+The main empirical finding is that signed cosine is predictive of the directional residual in both
+controlled schemes. Aligned directions tend to reinforce one another, while opposed directions tend
+to suppress. Magnitude also shows geometric association in some analyses, but with smaller
+coefficients and a less direct interpretation because magnitude is more entangled with single-vector
+strength, perturbation size, and the coherence gate. Thus the paper's narrow conclusion is that
+vector orientation is most useful for predicting the sign of compositional change, not for providing
+a complete rule for how strongly two behaviors will jointly appear.
+
+The study has several limitations. It uses one model, one layer, one behavior set, and an LLM judge
+whose human-validation numbers must be inserted before submission. Only seven of the $28$ behavior
+pairs have negative cosine, so the suppression side is thinly sampled. The projection-controlled
+scheme censors several low-cosine pairs through coherence collapse, making its permutation null
+unusual and requiring the very small $p$-values to be read alongside effect sizes. Finally, our
+residual $S$ is operational: it measures change relative to single-vector steering, but it is not a
+full factorial interaction that subtracts cross-expression from the other vector alone.
+
+Future work should first broaden the behavior set to populate the strongly opposed regime and test
+whether the same directional pattern survives with more negative-cosine pairs. A second priority is
+to compute stricter interaction quantities that subtract cross-expression, and to validate the
+judge-derived outcomes against larger human-labeled samples. Finally, repeating the analysis across
+models, layers, and composition operators would clarify whether this geometric tendency is a
+property of these particular directions or a more general feature of activation-space behavior
+composition.
+
+%=========================================================================
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+%=========================================================================
+\appendix
+%=========================================================================
+
+\section{Implementation details}
+\label{app:impl}
+
+All experiments use \texttt{meta-llama/Llama-3.1-8B-Instruct}, which has $32$ transformer blocks and
+hidden size $4096$. Layer indexing in code is zero-indexed for blocks, while hidden states follow
+the Hugging Face convention: $L^\star=17$ refers to \texttt{output\_hidden\_states[17]}, the residual
+stream after block $16$. The hook is registered on \texttt{model.model.layers[16]} and writes into
+the block output, i.e. post-attention, post-MLP, after residual addition. Steering is applied only to
+response positions during autoregressive decoding; prompt tokens are not perturbed. During
+generation, the hook adds the perturbation to the newly generated token at each step.
+
+Generation uses sampling with temperature $1.0$, top-$p=1.0$, no top-$k$, and
+\texttt{max\_new\_tokens}=600. There is no early stop criterion other than the maximum token budget.
+Each pair/scheme/setting condition has $20$ prompts and $5$ samples per prompt, for $100$
+generations. Each pair and scheme has four settings: baseline, first single-vector injection, second
+single-vector injection, and joint injection.
+
+Single-vector strength was swept over $\alpha\in\{2,4,6,8\}$ on unit-normalized directions at
+$L^\star=17$, with $\alpha=3$ additionally probed for a separate trait-specific check. The selected
+single-vector operating point was $\alpha=4$, chosen as a knee of the effect--coherence tradeoff
+across validated traits, with mean trait change $+45.6$ and mean coherence $77.7$. Composition uses
+$\alpha_{\mathrm{norm}}=4.5$ for normalized-sum and $\alpha_{\mathrm{axis}}=4.5$ for
+projection-controlled injection. Experiments ran on one NVIDIA A100 MIG-4g.40gb slice with bf16
+weights.
+
+\section{Composition-strength calibration}
+\label{app:composition-strength}
+
+Single-vector steering used $\alpha=4$, selected from a sweep over $\{2,4,6,8\}$ as the knee of the
+single-behavior effect--coherence curve. For composition, we separately tuned the normalized-sum
+scheme because fixing the total norm changes the effective per-direction push relative to
+single-vector steering. On a five-pair pilot we swept $\alpha\in\{4,4.5,5,5.5,6\}$ and used the
+utility $\Delta_{\mathrm{comp}}\cdot \mathrm{coherence}/100$ to balance behavioral movement against
+coherence. The utility peaked at $\alpha=4.5$, with nearby values giving lower or comparable utility.
+We therefore fixed $\alpha_{\mathrm{norm}}=4.5$ for the full normalized-sum run. The
+projection-controlled scheme was not separately tuned; we set $\alpha_{\mathrm{axis}}=4.5$ to keep
+the two controlled composition schemes directly comparable.
+
+\section{Behavior set and selection}
+\label{app:behaviors}
+
+The final eight behaviors are \emph{apathetic}, \emph{confidence}, \emph{evil}, \emph{formality},
+\emph{hallucinating}, \emph{humorous}, \emph{impolite}, and \emph{sycophantic}. Six
+(\emph{apathetic}, \emph{evil}, \emph{hallucinating}, \emph{humorous}, \emph{impolite},
+\emph{sycophantic}) come from the released Persona Vectors trait set. Two (\emph{confidence},
+\emph{formality}) were generated with the same prompt-template procedure using \texttt{gpt-4.1}.
+
+The candidate pool had $15$ traits: seven from the released set and eight project-generated traits.
+Four traits failed individual-vector validation under the dual judge/log-probability protocol,
+primarily because of RLHF baseline saturation or weak generated artifacts. Two had unresolved
+judge--log-probability or polarity disagreements. One individually validated trait,
+\emph{power-seeking}, was removed after a single-vector audit on the composition prompts revealed a
+structural topic-bias problem in the trait judge. No pairwise composition outcomes were used to
+choose the final trait set.
+
+\section{Extraction details}
+\label{app:extraction}
+
+For each behavior, contrastive system prompts elicit behavior-positive and neutral responses to a
+fixed bank of questions. A response is retained for vector construction only if it passes behavior
+and coherence filters under the judge. Each activation entering Eq.~\ref{eq:direction} is the mean
+residual stream over response tokens at $L^\star=17$. This follows the response-averaged
+Persona Vectors construction rather than a single prompt-token construction.
+
+\textcolor{red}{Insert: number of contrastive prompts, number of eliciting questions, generations
+per behavior, filtering thresholds, and retained counts per behavior.}
+
+\section{Judge mechanics and validation}
+\label{app:judge}
+
+We use \texttt{gpt-4.1-mini} as the judge for extraction, validation, and composition scoring. For
+each scored response, the judge receives the question and answer only; it does not see the steering
+scheme, condition, pair partner, steering strength, or any method label. Trait and coherence scores
+are obtained through separate calls. The score is the probability-weighted mean over integer tokens
+from $0$ to $100$: the API is queried for one output token with log probabilities, and the final
+score is the normalized expectation over tokens that parse as integers in the valid range. If
+non-numeric tokens hold more than $75\%$ of the mass, the score is treated as missing.
+
+Trait rubrics use the exact \texttt{eval\_prompt} stored for each trait. The coherence rubric is the
+Persona Vectors coherence judge: $0$ means invalid or nonsensical English, $50$ means confused or
+rambling, and $100$ means the answer is clearly coherent. The rubric instructs the judge to evaluate
+coherence independently of trait expression and not to judge correctness.
+
+\textcolor{red}{Insert human validation: number of hand-labeled responses, annotation protocol,
+agreement metric, agreement value, and any threshold used for accepting the judge.}
+
+\section{Coherence gate and censored pairs}
+\label{app:coherence}
+
+The coherence gate is applied separately for each behavior pair and composition scheme. For each
+joint condition, we average coherence over its $100$ generations and retain that pair/scheme
+observation if the mean coherence is at least $30$. The threshold was chosen after auditing
+generations below $30$, where broken or repetitive text caused behavior over-attribution by the
+judge. A stricter threshold of $50$ discards too much readable signal; threshold-sensitivity checks
+preserve the qualitative directional result.
+
+Under normalized-sum injection, no pairs are removed. Under projection-controlled injection, six of
+$28$ pairs are removed:
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\toprule
+Pair & Cosine & Mean joint coherence \\
+\midrule
+formality + humorous & $-0.52$ & $6.28$ \\
+apathetic + hallucinating & $-0.16$ & $29.93$ \\
+confidence + humorous & $-0.08$ & $26.45$ \\
+hallucinating + impolite & $-0.05$ & $23.34$ \\
+hallucinating + humorous & $+0.13$ & $23.18$ \\
+evil + humorous & $+0.37$ & $28.32$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Five of the six removed pairs have cosine at most $+0.13$, consistent with the total-norm blow-up of
+projection-controlled injection for opposed directions.
+
+\section{Additional statistical checks}
+\label{app:stats}
+
+The main paper reports exact node-permutation tests with controls for mean and maximum
+single-vector strength. Bivariate associations are larger: for normalized-sum,
+$r(c_{ij},M)=0.646$ and $r(c_{ij},S)=0.475$; for projection-controlled injection,
+$r(c_{ij},M)=0.642$ and $r(c_{ij},S)=0.472$. These bivariate relationships are not confirmatory,
+because they do not control for single-vector strength.
+
+Adding a semantic-similarity control between behavior descriptions strengthens rather than removes
+the directional cosine coefficient: normalized-sum increases from $+0.310$ to $+0.361$, and
+projection-controlled from $+0.411$ to $+0.443$. Thus the directional association is not explained
+by label-level semantic similarity.
+
+Leave-one-behavior-out results show that the normalized-sum effect is sensitive to the behavior set:
+dropping \emph{apathetic} reduces the coefficient to $+0.064$, while several other drops preserve a
+positive coefficient. Projection-controlled estimates remain positive across folds, ranging from
+$+0.246$ to $+0.549$, though this scheme is also affected by coherence censoring. These checks
+support the main interpretation as a moderate behavior-set-dependent tendency rather than a sharp
+rule.
+
+\section{Naive unnormalized composition}
+\label{app:naive}
+
+We also audited an earlier unnormalized-sum baseline, which injects $\alpha(\hat v_i+\hat v_j)$.
+Its total perturbation norm is $\alpha\sqrt{2+2c_{ij}}$, so high-cosine pairs receive a larger total
+perturbation. This produces coherence collapse in high-cosine, over-dosed pairs and creates a
+misleading relationship between geometry and discrete composition regimes. Because this analysis
+used an earlier trait frame and is confounded by angle-dependent dose, it is treated as a diagnostic
+failure mode rather than a confirmatory result.
+
+\end{document}

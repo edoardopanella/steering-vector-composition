@@ -1,0 +1,171 @@
+% Uses only booktabs (already loaded by appendix_filtering.tex); no extra packages required.
+
+\section{Additional statistical checks}
+\label{app:stats}
+
+The main paper reports exact node-permutation tests of the cosine coefficient with
+controls for mean and maximum single-vector strength. This appendix gives the full
+inferential setup, the supporting tables, and the robustness checks behind that result.
+Both schemes analysed here are the normalized injection variants that survive the scheme
+filter of Appendix~\ref{app:naive}: normalized-sum (\texttt{normTrue}) and
+projection-controlled (\texttt{per\_axis}); both use the eight behaviours that remain after
+\texttt{power\_seeking} is dropped (Appendix~\ref{app:naive}, Filter~1).
+
+\paragraph{Why an exact node-permutation null.}
+The dyads are not independent. With eight behaviours there are $\binom{8}{2}=28$ pairs, and
+each behaviour appears in seven of them, so any two dyads that share a behaviour are
+correlated. Edge-wise permutation---shuffling the cosine entries independently---treats the
+dyads as exchangeable and so ignores exactly this dependence. We instead use the
+node-permutation (MRQAP) null: we draw a permutation $\pi$ of the eight behaviours, apply it
+\emph{simultaneously} to the rows and columns of the cosine matrix, and refit, holding the
+outcome, the single-vector controls, and the coherence mask fixed at their observed $(i,j)$
+positions. Because there are only $8!=40{,}320$ permutations we enumerate all of them: the
+resulting $p$-value is \emph{exact}, not Monte-Carlo. Throughout, we regress the standardized
+outcome on the standardized mean and maximum single-vector strength and the standardized
+cosine $c_{ij}$, and report the partial cosine coefficient $\beta_c$. The two outcomes are the
+joint magnitude $M$ and the directional residual $S$; normalized-sum uses all $28$ dyads,
+while projection-controlled retains $22$ after the coherence gate.
+
+\paragraph{Bivariate associations.}
+The uncontrolled correlations (Table~\ref{tab:app-bivar}) are larger than the controlled
+coefficients: for normalized-sum, $r(c_{ij},M)=0.646$ and $r(c_{ij},S)=0.475$; for
+projection-controlled, $r(c_{ij},M)=0.642$ and $r(c_{ij},S)=0.472$. These bivariate
+relationships are not confirmatory, because they do not control for single-vector strength;
+once the mean and maximum single-vector magnitudes enter the model the cosine coefficient
+shrinks substantially, and it is the controlled estimate that the node-permutation test
+evaluates.
+
+\begin{table}[h]
+  \centering
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{llcccc}
+    \toprule
+    scheme & outcome & $\beta_c$ & $p_{\text{node}}$ & $r(c_{ij},\cdot)$ & $p_{\text{biv}}$ \\
+    \midrule
+    Normalized-sum ($n=28$) & Magnitude $M$ & $+0.188$ & $0.081$ & $0.646$ & $0.0002$ \\
+                            & Directional residual $S$ & $+0.310$ & $0.047$ & $0.475$ & $0.011$ \\
+    \midrule
+    Projection-controlled ($n=22$) & Magnitude $M$ & $+0.187$ & ${<}0.001$ & $0.642$ & $0.001$ \\
+                            & Directional residual $S$ & $+0.411$ & ${<}0.001$ & $0.472$ & $0.026$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Per-scheme dyadic regressions. $\beta_c$ is the standardized partial coefficient
+  of $c_{ij}$ after controlling for mean and maximum single-vector strength, with the exact
+  node-permutation $p$-value ($p_{\text{node}}$) over all $8!$ behaviour relabellings. The last
+  two columns give the uncontrolled bivariate Pearson correlation and its $p$-value.}
+  \label{tab:app-bivar}
+\end{table}
+
+\paragraph{Edge-wise versus node-permutation inference.}
+Table~\ref{tab:app-null} contrasts the two nulls for the same fitted coefficient. For
+normalized-sum the two agree to within $0.013$, with the node-permutation $p$ marginally
+\emph{more} conservative ($M$: $0.068\!\to\!0.081$; $S$: $0.042\!\to\!0.047$): accounting for
+the shared-node dependence does not inflate significance. For projection-controlled the node
+permutation instead yields markedly stronger evidence (magnitude $0.148\!\to\!{<}0.001$).
+Because the node-permutation null holds the distribution of cosine values fixed and only
+relabels behaviours, a small $p$ means the association depends on \emph{which specific
+behaviours} are geometrically aligned, not merely on the spread of cosine values---a property
+the edge-wise null cannot detect.
+
+\begin{table}[h]
+  \centering
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{llccc}
+    \toprule
+    scheme & outcome & $\beta_c$ & $p_{\text{edge}}$ (MC) & $p_{\text{node}}$ ($n!$) \\
+    \midrule
+    Normalized-sum & Magnitude $M$ & $+0.188$ & $0.068$ & $0.081$ \\
+                   & Directional residual $S$ & $+0.310$ & $0.042$ & $0.047$ \\
+    \midrule
+    Projection-controlled & Magnitude $M$ & $+0.187$ & $0.148$ & ${<}0.001$ \\
+                   & Directional residual $S$ & $+0.411$ & $0.047$ & ${<}0.001$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Edge-wise versus node-permutation $p$-values for the cosine coefficient. The point
+  estimate is identical (same fit); only the null differs. Edge-wise uses $10{,}000$
+  Monte-Carlo shuffles of the cosine entries; node-permutation is the exact $8!$ relabelling.}
+  \label{tab:app-null}
+\end{table}
+
+\paragraph{Semantic similarity and signed versus unsigned cosine.}
+Adding a semantic-similarity control between behaviour descriptions strengthens rather than
+removes the directional cosine coefficient: normalized-sum increases from $+0.310$ to $+0.361$,
+and projection-controlled from $+0.411$ to $+0.443$ (Table~\ref{tab:app-dir}). The directional
+association is therefore not explained by label-level semantic similarity. The check that most
+sharply separates the schemes is replacing signed $c_{ij}$ with its magnitude $|c_{ij}|$: for
+normalized-sum the effect collapses ($+0.053$, $p=0.742$), whereas projection-controlled
+retains a significant coefficient ($+0.193$, $p<0.001$). The association is thus genuinely
+\emph{signed}---the direction of alignment matters, not merely its degree---and this signed
+structure is far more pronounced under projection-controlled injection.
+
+\begin{table}[h]
+  \centering
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{lcccccc}
+    \toprule
+     & \multicolumn{2}{c}{signed $c_{ij}$} & \multicolumn{2}{c}{$+$ semantic sim.} & \multicolumn{2}{c}{unsigned $|c_{ij}|$} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+    scheme & $\beta$ & $p$ & $\beta$ & $p$ & $\beta$ & $p$ \\
+    \midrule
+    Normalized-sum        & $+0.310$ & $0.047$    & $+0.361$ & $0.023$    & $+0.053$ & $0.742$    \\
+    Projection-controlled & $+0.411$ & ${<}0.001$ & $+0.443$ & ${<}0.001$ & $+0.193$ & ${<}0.001$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Robustness of the directional ($S$) cosine coefficient under the node-permutation
+  null: signed-cosine baseline; with an added semantic-similarity control; and with unsigned
+  $|c_{ij}|$ substituted for signed cosine. All $\beta$ are standardized.}
+  \label{tab:app-dir}
+\end{table}
+
+\paragraph{Leave-one-behaviour-out.}
+Each fold drops one behaviour, shrinking the cosine matrix to $7\times7$ and making the
+node-permutation null exact at $7!=5{,}040$ (Table~\ref{tab:app-loo}). For normalized-sum every
+fold has exactly $\binom{7}{2}=21$ dyads; for projection-controlled the fold size varies
+($15$--$19$) because removing a behaviour also changes which remaining dyads pass the coherence
+gate. The normalized-sum effect is sensitive to the behaviour set: dropping \emph{apathetic}
+reduces the coefficient to $+0.064$ ($p=0.754$), while several other drops preserve or amplify a
+positive coefficient (dropping \emph{hallucinating} gives $+0.632$). Projection-controlled
+estimates remain positive and significant across all folds, ranging from $+0.246$ to $+0.549$,
+though this scheme is also affected by coherence censoring. These checks support the main
+interpretation as a moderate, behaviour-set-dependent tendency rather than a sharp rule.
+
+\begin{table}[h]
+  \centering
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{lccc@{\hskip 2em}ccc}
+    \toprule
+     & \multicolumn{3}{c}{Normalized-sum} & \multicolumn{3}{c}{Projection-controlled} \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    dropped behaviour & $n$ & $\beta_c$ & $p_{\text{node}}$ & $n$ & $\beta_c$ & $p_{\text{node}}$ \\
+    \midrule
+    (none)        & 28 & $+0.310$ & $0.047$    & 22 & $+0.411$ & ${<}0.001$ \\
+    \midrule
+    apathetic     & 21 & $+0.064$ & $0.754$    & 16 & $+0.246$ & ${<}0.001$ \\
+    confidence    & 21 & $+0.405$ & $0.029$    & 16 & $+0.519$ & ${<}0.001$ \\
+    evil          & 21 & $+0.418$ & $0.013$    & 16 & $+0.463$ & ${<}0.001$ \\
+    formality     & 21 & $+0.263$ & $0.242$    & 16 & $+0.384$ & ${<}0.001$ \\
+    hallucinating & 21 & $+0.632$ & ${<}0.001$ & 18 & $+0.549$ & ${<}0.001$ \\
+    humorous      & 21 & $+0.288$ & $0.135$    & 19 & $+0.382$ & $0.002$    \\
+    impolite      & 21 & $+0.335$ & $0.088$    & 16 & $+0.269$ & ${<}0.001$ \\
+    sycophantic   & 21 & $+0.213$ & $0.216$    & 15 & $+0.430$ & ${<}0.001$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Leave-one-behaviour-out for the directional ($S$) coefficient. $n$ is the number of
+  dyads surviving the coherence gate in that fold; $p_{\text{node}}$ is the exact $7!$
+  node-permutation $p$-value.}
+  \label{tab:app-loo}
+\end{table}
+
+\paragraph{Summary.}
+\textbf{Projection-controlled (\texttt{per\_axis}).} A consistent, signed, semantically robust,
+and fold-stable directional association between behaviour-vector cosine and the steering
+outcome, with magnitude also significant under the exact null. \textbf{Normalized-sum
+(\texttt{normTrue}).} The same qualitative pattern---positive, signed, and reinforced by the
+semantic control---but weaker and dependent on the behaviour set, with the magnitude
+coefficient and several leave-one-behaviour-out folds not reaching significance. We therefore
+read the geometry--control relationship as a moderate, scheme- and behaviour-set-dependent
+tendency rather than a universal law.
