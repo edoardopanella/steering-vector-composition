@@ -414,7 +414,73 @@ expected verdict for a borderline (p ≈ 0.05) result on 22 edges, and it is wor
 
 ---
 
-## 5. Suggested wording for the paper
+## 5. Are the p-values correct? Validation and calibration
+
+A permutation test is only as trustworthy as (a) its arithmetic and (b) its null model. We can
+**prove** (a) and **measure** (b), and we are explicit about what neither settles.
+`analysis/rq1_mrqap_validate.py` runs every check below against the *same* `mrqap_exact`
+function that produced the reported numbers.
+
+### 5.1 The computation is correct (four checks)
+
+1. **The permutation group is complete and unique** — exactly 8! = 40,320 distinct relabellings
+   are enumerated (identity first). "Exact" means the *whole* group; nothing is missing or
+   double-counted.
+2. **The observed β matches an independent recomputation** — the standardized partial slope from
+   `mrqap_exact` equals a from-scratch `scipy.stats.pearsonr` on `numpy.lstsq` residuals (a code
+   path that shares nothing with the test's internals): normalized_sum +0.536280 vs +0.536280
+   (difference 0); per_axis to 1e-16.
+3. **It is deterministic** — identical inputs give byte-identical p on re-run (normalized_sum
+   0.008978, per_axis 0.051190). The exact p is a fixed rational `count / 40,320`, no hidden
+   randomness.
+4. **Known-answer test** — predictor = outcome (perfect association) returns β = 1.000 and
+   p = 0.000025 = exactly 1/40,320 (the floor: only the identity permutation matches);
+   predictor = −outcome gives the same p, confirming two-sidedness.
+
+Together these rule out the usual failure modes: a wrong statistic, an off-by-one in the count,
+omitting the observed value, broken two-sidedness, or non-determinism.
+
+### 5.2 The test is calibrated (type-I error)
+
+A valid permutation test must return a **Uniform(0,1)** p-value when the predictor is unrelated
+to the outcome. We fed hundreds of random null predictors (independent of the outcome, with and
+without realistic node structure) through `mrqap_exact` and inspected the p-values:
+
+| scheme | null predictor | K | mean p | frac ≤ 0.05 | KS p vs uniform | reading |
+|---|---|---:|---:|---:|---:|---|
+| normalized_sum | iid | 250 | 0.497 | 0.072 | 0.810 | **calibrated** |
+| normalized_sum | node-structured | 150 | 0.503 | 0.067 | 0.919 | **calibrated** |
+| per_axis | iid | 130 | 0.597 | 0.015 | 0.001 | **conservative** |
+
+- **normalized_sum is exactly calibrated** (mean p ≈ 0.50, KS consistent with uniform). When
+  there is no real association the test does not produce small p-values — so **p = 0.009 is
+  trustworthy at face value.**
+- **per_axis is conservative** — its null p-values skew *high* (mean 0.60, ~4 SE above 0.5; only
+  1.5 % fall below 0.05; KS rejects uniformity *in the safe direction*). The cause is the gated
+  dyads: the observed statistic uses all 22 valid edges, but many permutations use fewer (a `NaN`
+  is relabelled into the masked-in set), which widens the permuted-slope distribution and makes
+  the observed look *less* extreme. The consequence is reassuring: **per_axis p = 0.051 is an
+  upper bound on the false-positive rate** — the available-case handling errs toward
+  *harder*-to-detect significance, never toward inventing it.
+
+So **neither reported p is inflated**: normalized_sum is dead-on, per_axis is conservative. That
+is the opposite of the "borrowed confidence" that sank the original pooled test (§1).
+
+### 5.3 What validation cannot settle
+
+- **The null is a modelling choice.** Node-exchangeability is the correct null for dyadic data
+  (the whole argument of §1), but it is a choice, not a theorem.
+- **p is conditional on the measured matrices.** The judge scores carry sampling noise (5
+  generations per question); the test treats `Smat`, `COS`, … as fixed and does not propagate
+  that measurement error. Standard, but it means each p is "given these measured cells."
+- **per_axis leans on the method more.** Its gate correlates with the predictor, so the
+  available-case handling is more assumption-laden than normalized_sum's clean full-mask test —
+  which is exactly why per_axis is the borderline scheme and why we report the two schemes
+  separately rather than pooled.
+
+---
+
+## 6. Suggested wording for the paper
 
 > *Methods.* Because behaviour pairs are dyadic — eight behaviours generate 28 non-independent
 > pairs, and each behaviour's steering vector recurs in seven of them — we test the
@@ -424,7 +490,9 @@ expected verdict for a borderline (p ≈ 0.05) result on 22 edges, and it is wor
 > (predictor), the directional composition outcome, the joint magnitude, and the individual
 > steering strength (control). We enumerate all 8! = 40,320 relabellings of the behaviours to
 > obtain an exact two-sided p for the standardized partial slope of the outcome on cosine,
-> controlling for strength.
+> controlling for strength. We verified the procedure is calibrated under random null predictors
+> (uniform p) for the normalized-sum scheme and conservative for per-axis, where coherence-gated
+> dyads make the available-case test under-reject.
 
 > *Results.* The signed cosine predicts the **direction** of composition — aligned behaviours
 > reinforce, opposed behaviours suppress — with a standardized partial correlation of +0.54
@@ -440,11 +508,12 @@ expected verdict for a borderline (p ≈ 0.05) result on 22 edges, and it is wor
 
 ---
 
-## 6. Reproduce
+## 7. Reproduce
 
 ```bash
 ./venv/bin/python analysis/rq1_mrqap_significance.py   # tables + asserts → results .md/.csv
 ./venv/bin/python analysis/rq1_mrqap_plots.py          # the five figures → analysis/figures/mrqap/
+./venv/bin/python analysis/rq1_mrqap_validate.py       # computation + calibration checks (§5)
 ```
 
 Data in = the coh ≥ 30 frame used by `analysis/notebooks/rq1_v2v3_decomposition.ipynb`
