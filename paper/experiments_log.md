@@ -2563,3 +2563,19 @@ Carries E15.11 plus:
 11. Pair-set design to decorrelate cos and single-trait magnitude (current 28 pairs have confounded covariates per Probe 1).
 12. Trajectory analysis on v3 parquet (dual-projection + fixed-completion checks).
 
+## RQ1 analysis — notebook→script refactor (Federico, 2026-05-30)
+
+### E16.1 — Refactored the two RQ1 analysis notebooks into script + markdown form
+
+- Description: Both RQ1 analysis notebooks were ported to a runnable `script + auto-generated markdown` shape so the canonical numbers are unambiguous and reproducible — i.e. so we know exactly *what to watch as results* instead of re-reading scrolling notebook output. Each pair is a thin runner (editable params) + a worker module that writes one combined `.md`/`.json` report whose hand-written `## Conclusions` section is preserved across re-runs. No statistics changed — the model, frame and estimates are identical to the source notebooks; this is a tooling/reproducibility refactor only, verified by reproducing every figure from the notebooks.
+    - **bins analysis** (cross-tab / correlation / multinomial + binary logistic battery, norm vs per-axis side by side). Source: [analysis/notebooks/norm_bins_analysis.ipynb](../analysis/notebooks/norm_bins_analysis.ipynb).
+    - **nodeperm / MRQAP** (per-scheme decomposition with the exact 8! = 40,320 node-permutation test on β_cos). Source: [analysis/notebooks/rq1_perscheme_nodeperm.ipynb](../analysis/notebooks/rq1_perscheme_nodeperm.ipynb).
+- Results: Reports regenerate and match the notebooks exactly. Key MRQAP headline reproduced — DIRECTION (supp_mean_signed): v2/normTrue β_cos=+0.3096, node-perm p=0.0470; v3/per_axis β_cos=+0.4105, node-perm p=0.0001; robustness (+sem_sim, |cos|, leave-one-trait-out) intact.
+- Scripts and files involved:
+    - bins: [analysis/notebooks_v2/bins_analysis.py](../analysis/notebooks_v2/bins_analysis.py) (runner), [bins_analysis_scripts.py](../analysis/notebooks_v2/bins_analysis_scripts.py) (worker), [bins_utils.py](../analysis/notebooks_v2/bins_utils.py).
+    - nodeperm/MRQAP: [analysis/notebooks_v2/nodeperm_analysis.py](../analysis/notebooks_v2/nodeperm_analysis.py) (runner), [nodeperm_analysis_scripts.py](../analysis/notebooks_v2/nodeperm_analysis_scripts.py) (worker).
+    - Shared source frame: [analysis/rq1_consolidated/consolidated_coh30.csv](../analysis/rq1_consolidated/consolidated_coh30.csv) (coh≥30).
+- Output files (auto-generated `.md` + `.json`, conclusions preserved on re-run):
+    - [analysis/results/RQ1/norm_vs_peraxis_bins_analysis/](../analysis/results/RQ1/norm_vs_peraxis_bins_analysis/) — `norm_vs_peraxis_bins_analysis.{md,json}`.
+    - [analysis/results/RQ1/perscheme_nodeperm_analysis/](../analysis/results/RQ1/perscheme_nodeperm_analysis/) — `perscheme_nodeperm_analysis.{md,json}`.
+
